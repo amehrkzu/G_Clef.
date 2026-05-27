@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FF14 譜面在庫一覧 リアルタイム検索</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+            background-color: #f4f5f7;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        .status {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 14px;
+            margin-bottom: 25px;
+        }
+        .search-area {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .search-box {
+            flex: 1;
+            padding: 14px 20px;
+            box-sizing: border-box;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .search-box:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 8px rgba(52, 152, 219, 0.3);
+            outline: none;
+        }
+        .clear-btn {
+            padding: 0 25px;
+            font-size: 16px;
+            font-weight: bold;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            white-space: nowrap;
+        }
+        .clear-btn:hover {
+            background-color: #2980b9;
+        }
+        .clear-btn:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 18px;
+            color: #3498db;
+            font-weight: bold;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        th {
+            background-color: #34495e;
+            color: white;
+            font-weight: 600;
+        }
+        tr:nth-child(even) {
+            background-color: #fcfcfc;
+        }
+        tr:hover {
+            background-color: #f1f3f5;
+        }
+        .badge-sheet {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            background-color: #e2e8f0;
+            color: #4a5568;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .no-result {
+            text-align: center;
+            padding: 30px;
+            color: #95a5a6;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🎼 FF14 譜面在庫検索</h1>
+    <div class="status" id="loadStatus">スプレッドシートからデータを読み込み中...</div>
+    
+    <div class="search-area">
+        <input type="text" id="searchInput" class="search-box" placeholder="譜面名、カテゴリ、入手方法などで検索..." disabled>
+        <button id="clearBtn" class="clear-btn" disabled>全部表示する</button>
+    </div>
+
+    <table id="resultTable" style="display: none;">
+        <thead>
+            <tr>
+                <th style="width: 15%;">対象シート</th>
+                <th>タイトル</th>
+                <th>取得箇所</th>
+                <th>在庫</th>
+                <th>マケボ出品数</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            </tbody>
+    </table>
+    <div id="loadingView" class="loading">⏳ データを取得しています...</div>
+</div>
+
+<script>
+const SPREADSHEET_ID = '1vzJ5TIUj-9xJuRN3CAprPBQIZPL5rQcKGpCXBWDkK8g';
+
+const SHEET_CONFIGS = [
+    { gid: '0', name: 'ID:ドロップ' },
+    { gid: '280076559', name: 'ID:制作' },
+    { gid: '2088543273', name: '討伐討滅:ドロップ' },
+    { gid: '927050495', name: '討伐討滅:制作' },
+    { gid: '1476306407', name: 'アライアンス:ドロップ' },
+    { gid: '1004826655', name: 'アライアンス:制作' },
+    { gid: '481213368', name: 'レイド' },
+    { gid: '1084391822', name: 'その他:ドロップ' },
+    { gid: '2142137428', name: 'その他:制作' },
+    { gid: '377897272', name: 'その他:交換' },
+    { gid: '883228920', name: '店売り譜面' }
+];
+
+let allMasterData = [];
+let loadedCount = 0;
+
+function loadSheetJsonp(config) {
+    return new Promise((resolve) => {
+        const callbackName = `jsonp_callback_${config.gid}`;
+        
+        window[callbackName] = function(data) {
+            const rows = [];
+            try {
+                const tableRows = data.table.rows;
+                // 5行目（インデックス4）以降をループ
+                for (let i = 4; i < tableRows.length; i++) {
+                    const row = tableRows[i];
+                    if (!row || !row.c) continue;
+                    
+                    // B列（インデックス1）の文字を取得
+                    const cellB = row.c[1] ? String(row.c[1].v || '') : '';
+                    
+                    if (cellB.trim() !== "") {
+                        // B, C, D, E列を取得
+                        const cellC = row.c[2] ? String(row.c[2].v || '') : '';
+                        const cellD = row.c[3] ? String(row.c[3].v || '') : '';
+                        const cellE = row.c[4] ? String(row.c[4].v || '') : '';
+                        
+                        rows.push({
+                            sheetName: config.name,
+                            cells: [cellB, cellC, cellD, cellE]
+                        });
+                    }
+                }
+            } catch (e) {
+                console.error(`シート「${config.name}」の解析に失敗しました:`, e);
+            }
+            
+            document.body.removeChild(script);
+            delete window[callbackName];
+            resolve(rows);
+        };
+
+        // Scriptタグを生成してGoogleからデータを読み込ませる CORSブロックを回避
+        const script = document.createElement('script');
+        script.src = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=responseHandler:${callbackName}&gid=${config.gid}`;
+        document.body.appendChild(script);
+    });
+}
+
+async function init() {
+    const promises = SHEET_CONFIGS.map(config => loadSheetJsonp(config));
+    const results = await Promise.all(promises);
+        allMasterData = results.flat();
+    
+    // 表示の切り替え
+    document.getElementById('loadingView').style.display = 'none';
+    document.getElementById('resultTable').style.display = 'table';
+    
+    const searchInput = document.getElementById('searchInput');
+    const clearBtn = document.getElementById('clearBtn');
+    
+    searchInput.removeAttribute('disabled');
+    clearBtn.removeAttribute('disabled');
+    searchInput.focus();
+    
+    document.getElementById('loadStatus').textContent = `✅ 全 ${allMasterData.length} 件の譜面データをロードしました。`;
+    
+    displayData(allMasterData);
+}
+
+function displayData(data) {
+    const tableBody = document.getElementById('tableBody');
+    tableBody.innerHTML = '';
+    
+    if (data.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="5" class="no-result">キーワードに一致する譜面がありません</td></tr>';
+        return;
+    }
+
+    data.forEach(item => {
+        const tr = document.createElement('tr');
+        
+        const tdSheet = document.createElement('td');
+        const span = document.createElement('span');
+        span.className = 'badge-sheet';
+        span.textContent = item.sheetName;
+        tdSheet.appendChild(span);
+        tr.appendChild(tdSheet);
+        
+        for (let i = 0; i < 4; i++) {
+            const td = document.createElement('td');
+            td.textContent = item.cells[i] || '';
+            tr.appendChild(td);
+        }
+        
+        tableBody.appendChild(tr);
+    });
+}
+
+document.getElementById('searchInput').addEventListener('input', (e) => {
+    const keyword = e.target.value.toLowerCase().trim();
+    
+    if (keyword === "") {
+        displayData(allMasterData);
+        return;
+    }
+    
+    const filtered = allMasterData.filter(item => {
+        return item.cells.some(cell => cell && cell.toLowerCase().includes(keyword)) || 
+               item.sheetName.toLowerCase().includes(keyword);
+    });
+    
+    displayData(filtered);
+});
+
+document.getElementById('clearBtn').addEventListener('click', () => {
+    const searchInput = document.getElementById('searchInput');
+    searchInput.value = ''; 
+    displayData(allMasterData); 
+    searchInput.focus(); 
+});
+
+init();
+</script>
+
+</body>
+</html>
