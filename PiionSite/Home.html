@@ -114,7 +114,7 @@
         }
     </style>
 </head>
-<body>
+<body oncontextmenu="return false;" onselectstart="return false;" onkeydown="if(event.keyCode==123) return false;">
 
 <div class="container">
     <h1>🎼 FF14 譜面在庫検索</h1>
@@ -136,150 +136,12 @@
             </tr>
         </thead>
         <tbody id="tableBody">
-            </tbody>
+        </tbody>
     </table>
     <div id="loadingView" class="loading">⏳ データを取得しています...</div>
 </div>
 
-<script>
-const SPREADSHEET_ID = '1vzJ5TIUj-9xJuRN3CAprPBQIZPL5rQcKGpCXBWDkK8g';
-
-const SHEET_CONFIGS = [
-    { gid: '0', name: 'ID:ドロップ' },
-    { gid: '280076559', name: 'ID:制作' },
-    { gid: '2088543273', name: '討伐討滅:ドロップ' },
-    { gid: '927050495', name: '討伐討滅:制作' },
-    { gid: '1476306407', name: 'アライアンス:ドロップ' },
-    { gid: '1004826655', name: 'アライアンス:制作' },
-    { gid: '481213368', name: 'レイド' },
-    { gid: '1084391822', name: 'その他:ドロップ' },
-    { gid: '2142137428', name: 'その他:制作' },
-    { gid: '377897272', name: 'その他:交換' },
-    { gid: '883228920', name: '店売り譜面' }
-];
-
-let allMasterData = [];
-let loadedCount = 0;
-
-function loadSheetJsonp(config) {
-    return new Promise((resolve) => {
-        const callbackName = `jsonp_callback_${config.gid}`;
-        
-        window[callbackName] = function(data) {
-            const rows = [];
-            try {
-                const tableRows = data.table.rows;
-                // 5行目（インデックス4）以降をループ
-                for (let i = 4; i < tableRows.length; i++) {
-                    const row = tableRows[i];
-                    if (!row || !row.c) continue;
-                    
-                    // B列（インデックス1）の文字を取得
-                    const cellB = row.c[1] ? String(row.c[1].v || '') : '';
-                    
-                    if (cellB.trim() !== "") {
-                        // B, C, D, E列を取得
-                        const cellC = row.c[2] ? String(row.c[2].v || '') : '';
-                        const cellD = row.c[3] ? String(row.c[3].v || '') : '';
-                        const cellE = row.c[4] ? String(row.c[4].v || '') : '';
-                        
-                        rows.push({
-                            sheetName: config.name,
-                            cells: [cellB, cellC, cellD, cellE]
-                        });
-                    }
-                }
-            } catch (e) {
-                console.error(`シート「${config.name}」の解析に失敗しました:`, e);
-            }
-            
-            document.body.removeChild(script);
-            delete window[callbackName];
-            resolve(rows);
-        };
-
-        // Scriptタグを生成してGoogleからデータを読み込ませる CORSブロックを回避
-        const script = document.createElement('script');
-        script.src = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=responseHandler:${callbackName}&gid=${config.gid}`;
-        document.body.appendChild(script);
-    });
-}
-
-async function init() {
-    const promises = SHEET_CONFIGS.map(config => loadSheetJsonp(config));
-    const results = await Promise.all(promises);
-        allMasterData = results.flat();
-    
-    // 表示の切り替え
-    document.getElementById('loadingView').style.display = 'none';
-    document.getElementById('resultTable').style.display = 'table';
-    
-    const searchInput = document.getElementById('searchInput');
-    const clearBtn = document.getElementById('clearBtn');
-    
-    searchInput.removeAttribute('disabled');
-    clearBtn.removeAttribute('disabled');
-    searchInput.focus();
-    
-    document.getElementById('loadStatus').textContent = `✅ 全 ${allMasterData.length} 件の譜面データをロードしました。`;
-    
-    displayData(allMasterData);
-}
-
-function displayData(data) {
-    const tableBody = document.getElementById('tableBody');
-    tableBody.innerHTML = '';
-    
-    if (data.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="5" class="no-result">キーワードに一致する譜面がありません</td></tr>';
-        return;
-    }
-
-    data.forEach(item => {
-        const tr = document.createElement('tr');
-        
-        const tdSheet = document.createElement('td');
-        const span = document.createElement('span');
-        span.className = 'badge-sheet';
-        span.textContent = item.sheetName;
-        tdSheet.appendChild(span);
-        tr.appendChild(tdSheet);
-        
-        for (let i = 0; i < 4; i++) {
-            const td = document.createElement('td');
-            td.textContent = item.cells[i] || '';
-            tr.appendChild(td);
-        }
-        
-        tableBody.appendChild(tr);
-    });
-}
-
-document.getElementById('searchInput').addEventListener('input', (e) => {
-    const keyword = e.target.value.toLowerCase().trim();
-    
-    if (keyword === "") {
-        displayData(allMasterData);
-        return;
-    }
-    
-    const filtered = allMasterData.filter(item => {
-        return item.cells.some(cell => cell && cell.toLowerCase().includes(keyword)) || 
-               item.sheetName.toLowerCase().includes(keyword);
-    });
-    
-    displayData(filtered);
-});
-
-document.getElementById('clearBtn').addEventListener('click', () => {
-    const searchInput = document.getElementById('searchInput');
-    searchInput.value = ''; 
-    displayData(allMasterData); 
-    searchInput.focus(); 
-});
-
-init();
-</script>
+<script src="search.js"></script>
 
 </body>
 </html>
