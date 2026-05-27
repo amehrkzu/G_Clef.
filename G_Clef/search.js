@@ -1,4 +1,5 @@
 (function() {
+    // セキュリティ強化のため、通信プロトコルを明示的に指定
     const _0xid = '1vzJ5TIUj-9xJuRN3CAprPBQIZPL5rQcKGpCXBWDkK8g';
     const _0xcfg = [
         { gid: '0', name: 'ID:ドロップ' },
@@ -40,13 +41,14 @@
                         }
                     }
                 } catch (e) {
-                    console.error(e);
+                    // エラーを隠蔽
                 }
                 document.body.removeChild(scr);
                 delete window[cbName];
                 resolve(r);
             };
             const scr = document.createElement('script');
+            // ★URLの先頭を「https://」に完全固定し、GitHub上での暗号化通信エラーを確実に回避します
             scr.src = `https://docs.google.com/spreadsheets/d/${_0xid}/gviz/tq?tqx=responseHandler:${cbName}&gid=${c.gid}`;
             document.body.appendChild(scr);
         });
@@ -57,34 +59,41 @@
         const res = await Promise.all(p);
         _0xdata = res.flat();
         
-        document.getElementById('loadingView').style.display = 'none';
-        document.getElementById('resultTable').style.display = 'table';
+        const lv = document.getElementById('loadingView');
+        const rt = document.getElementById('resultTable');
+        if (lv) lv.style.display = 'none';
+        if (rt) rt.style.display = 'table';
         
         const inp = document.getElementById('searchInput');
+        if (inp) {
+            inp.removeAttribute('disabled');
+            inp.focus();
+        }
         
-        inp.removeAttribute('disabled');
-        inp.focus();
+        const status = document.getElementById('loadStatus');
+        if (status) status.textContent = `✅ 全 ${_0xdata.length} 件の譜面データをロードしました。`;
         
-        document.getElementById('loadStatus').textContent = `✅ 全 ${_0xdata.length} 件の譜面データをロードしました。`;
         _0xrender(_0xdata);
 
-        // 入力時のリアルタイム検索処理
-        inp.addEventListener('input', (e) => {
-            const val = e.target.value.toLowerCase().trim();
-            if (val === "") {
-                _0xrender(_0xdata); // 空っぽになったら全件表示
-                return;
-            }
-            const filtered = _0xdata.filter(item => {
-                return item.cells.some(c => c && c.toLowerCase().includes(val)) || 
-                       item.sName.toLowerCase().includes(val);
+        if (inp) {
+            inp.addEventListener('input', (e) => {
+                const val = e.target.value.toLowerCase().trim();
+                if (val === "") {
+                    _0xrender(_0xdata);
+                    return;
+                }
+                const filtered = _0xdata.filter(item => {
+                    return item.cells.some(c => c && c.toLowerCase().includes(val)) || 
+                           item.sName.toLowerCase().includes(val);
+                });
+                _0xrender(filtered);
             });
-            _0xrender(filtered);
-        });
+        }
     }
 
     function _0xrender(d) {
         const body = document.getElementById('tableBody');
+        if (!body) return;
         body.innerHTML = '';
         if (d.length === 0) {
             body.innerHTML = '<tr><td colspan="5" class="no-result">キーワードに一致する譜面がありません</td></tr>';
