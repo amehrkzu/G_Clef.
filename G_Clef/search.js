@@ -61,19 +61,18 @@
         document.getElementById('resultTable').style.display = 'table';
         
         const inp = document.getElementById('searchInput');
-        const btn = document.getElementById('clearBtn');
         
         inp.removeAttribute('disabled');
-        btn.removeAttribute('disabled');
         inp.focus();
         
         document.getElementById('loadStatus').textContent = `✅ 全 ${_0xdata.length} 件の譜面データをロードしました。`;
         _0xrender(_0xdata);
 
+        // 入力時のリアルタイム検索処理
         inp.addEventListener('input', (e) => {
             const val = e.target.value.toLowerCase().trim();
             if (val === "") {
-                _0xrender(_0xdata);
+                _0xrender(_0xdata); // 空っぽになったら全件表示
                 return;
             }
             const filtered = _0xdata.filter(item => {
@@ -81,12 +80,6 @@
                        item.sName.toLowerCase().includes(val);
             });
             _0xrender(filtered);
-        });
-
-        btn.addEventListener('click', () => {
-            inp.value = ''; 
-            _0xrender(_0xdata); 
-            inp.focus(); 
         });
     }
 
