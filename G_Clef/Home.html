@@ -4,232 +4,463 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>譜面屋「G Clef.」へようこそ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+JP:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --ink: #1a1a2e;
+            --cream: #f5f0e8;
+            --gold: #c9a84c;
+            --gold-light: #e8d5a3;
+            --blue-accent: #2471a3;
+            --white: #ffffff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
-            background-color: #f4f5f7; /* 検索画面と同じライトグレー */
-            color: #333; /* 検索画面と同じダークグレーの文字色 */
-            margin: 0;
-            padding: 20px;
-            line-height: 1.8;
+            font-family: 'Noto Serif JP', serif;
+            background-color: var(--cream);
+            color: var(--ink);
+            overflow-x: hidden;
         }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: #fff; /* 検索画面と同じ白コンテナ */
-            padding: 30px 40px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+
+        /* ===== NAVBAR ===== */
+        .navbar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 48px;
+            height: 64px;
+            background: rgba(245, 240, 232, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(201, 168, 76, 0.3);
         }
-        header {
-            text-align: center;
-            border-bottom: 2px double #34495e; /* 検索画面のヘッダー色に合わせた二重線 */
-            padding-bottom: 20px;
-            margin-bottom: 30px;
-        }
-        .welcome-title {
-            font-size: 14px;
-            letter-spacing: 0.2em;
-            color: #3498db; /* 検索画面のアクセントブルー */
-            margin: 0;
-            font-weight: bold;
-        }
-        h1 {
-            font-size: 28px;
-            margin: 5px 0 10px 0;
-            color: #2c3e50;
+        .navbar-logo {
+            font-family: 'Noto Serif JP', serif;
+            font-size: 22px;
             font-weight: 700;
-        }
-        .owner-name {
-            font-size: 14px;
-            color: #7f8c8d;
-            margin: 0;
-        }
-        
-        /* 検索ページへの案内ボタン */
-        .search-nav-box {
-            background: linear-gradient(135deg, #2c3e50, #34495e);
-            border-radius: 6px;
-            padding: 20px;
-            text-align: center;
-            margin-bottom: 35px;
-        }
-        .search-nav-box p {
-            margin: 0 0 12px 0;
-            font-size: 14px;
-            color: #ffffff;
-        }
-        .btn-search {
-            display: inline-block;
-            background-color: #3498db; /* 検索画面のボタンと同じブルー */
-            color: #ffffff;
-            padding: 12px 35px;
-            font-size: 16px;
-            font-weight: bold;
+            color: var(--ink);
+            letter-spacing: 0.05em;
             text-decoration: none;
-            border-radius: 6px;
-            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
-            transition: transform 0.2s, background-color 0.2s;
         }
-        .btn-search:hover {
-            background-color: #2980b9;
+        .navbar-links {
+            display: flex;
+            gap: 36px;
+            list-style: none;
+        }
+        .navbar-links a {
+            text-decoration: none;
+            font-size: 13px;
+            letter-spacing: 0.12em;
+            color: var(--ink);
+            opacity: 0.7;
+            transition: opacity 0.2s, color 0.2s;
+            font-family: 'Cinzel', serif;
+        }
+        .navbar-links a:hover,
+        .navbar-links a.active {
+            opacity: 1;
+            color: var(--blue-accent);
+        }
+
+        /* ===== HERO ===== */
+        .hero {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background-color: var(--cream);
+        }
+
+        /* レコード背景 */
+        @keyframes spin {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to   { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        .record-bg {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 80vmax;
+            height: 80vmax;
+            background-image: url('Record.png');
+            background-size: cover;
+            background-position: center;
+            border-radius: 50%;
+            animation: spin 40s linear infinite;
+            opacity: 0.65;
+            pointer-events: none;
+        }
+
+        /* ヒーローテキスト（背景なし） */
+        .hero-text {
+            position: relative;
+            z-index: 10;
+            width: min(460px, 85vw);
+            padding: 56px 40px 44px 40px;
+            text-align: center;
+            text-shadow: 0 2px 12px rgba(245,240,232,0.7), 0 1px 4px rgba(245,240,232,0.9);
+        }
+        .arch-deco {
+            font-size: 11px;
+            letter-spacing: 0.4em;
+            color: var(--blue-accent);
+            text-transform: uppercase;
+            margin-bottom: 6px;
+            font-family: 'Cinzel', serif;
+        }
+        .arch-divider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+            color: var(--gold);
+        }
+        .arch-divider::before,
+        .arch-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--gold);
+            opacity: 0.6;
+        }
+        .arch-title {
+            font-family: 'Cinzel', serif;
+            font-size: clamp(28px, 6vw, 42px);
+            font-weight: 700;
+            color: var(--ink);
+            letter-spacing: 0.08em;
+            line-height: 1.2;
+            margin: 4px 0 12px;
+        }
+        .arch-subtitle {
+            font-size: 13px;
+            letter-spacing: 0.15em;
+            color: rgba(26, 26, 46, 0.55);
+            margin-bottom: 20px;
+        }
+        .arch-owner {
+            font-size: 12px;
+            color: rgba(26, 26, 46, 0.5);
+            letter-spacing: 0.2em;
+        }
+        .btn-hero {
+            display: inline-block;
+            margin-top: 22px;
+            padding: 12px 32px;
+            background: var(--blue-accent);
+            color: #fff;
+            text-decoration: none;
+            font-size: 13px;
+            letter-spacing: 0.12em;
+            font-family: 'Cinzel', serif;
+            border-radius: 2px;
+            transition: background 0.2s, transform 0.2s;
+            box-shadow: 0 4px 14px rgba(36, 113, 163, 0.35);
+        }
+        .btn-hero:hover {
+            background: #1a5c8a;
             transform: translateY(-1px);
         }
 
-        /* 各セクションのレイアウト */
-        section {
-            margin-bottom: 30px;
-            background: #fcfcfc;
-            padding: 20px 25px;
-            border-radius: 6px;
-            border: 1px solid #e0e0e0;
-            border-left: 4px solid #34495e; /* 左側に濃紺のアクセントライン */
+        /* スクロール誘導 */
+        .scroll-hint {
+            position: absolute;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            z-index: 10;
+            color: rgba(26, 26, 46, 0.45);
+            font-size: 11px;
+            letter-spacing: 0.2em;
+            font-family: 'Cinzel', serif;
         }
-        /* 重要なお知らせは枠線の色を赤系にする */
-        section.notice {
-            border-left-color: #e74c3c; 
-            background: #fff5f5;
-            border-color: #fed7d7;
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(6px); }
         }
-        section.notice h2 {
-            color: #c53030;
+        .scroll-hint span {
+            animation: bounce 1.6s ease-in-out infinite;
         }
-        h2 {
-            font-size: 18px;
-            margin-top: 0;
-            margin-bottom: 12px;
-            color: #2c3e50;
+
+        /* ===== CONTENT AREA ===== */
+        .content-area {
+            background: var(--white);
+            position: relative;
+            z-index: 20;
+        }
+
+        /* セクション共通 */
+        .section-wrap {
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 72px 40px;
+        }
+
+        .section-label {
+            font-family: 'Cinzel', serif;
+            font-size: 11px;
+            letter-spacing: 0.4em;
+            color: var(--blue-accent);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        .section-title {
+            font-family: 'Cinzel', serif;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--ink);
+            margin-bottom: 40px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(201, 168, 76, 0.4);
+        }
+
+        /* お知らせカード */
+        .notice-card {
+            background: #fff8f5;
+            border: 1px solid rgba(231, 76, 60, 0.2);
+            border-left: 4px solid #e74c3c;
+            border-radius: 4px;
+            padding: 24px 28px;
+            margin-bottom: 20px;
+        }
+        .notice-card h3 {
+            font-size: 15px;
+            font-weight: 700;
+            color: #c0392b;
+            margin-bottom: 10px;
+            letter-spacing: 0.05em;
+        }
+        .notice-card p {
+            font-size: 14px;
+            line-height: 1.9;
+            color: #444;
+        }
+
+        /* セットリスト */
+        .set-price {
+            display: inline-block;
+            background: var(--ink);
+            color: var(--gold-light);
+            padding: 4px 14px;
+            border-radius: 2px;
+            font-size: 14px;
+            font-weight: 700;
+            margin: 10px 0;
+            letter-spacing: 0.05em;
+        }
+        .set-songs {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 12px 0;
+        }
+        .set-songs li {
+            background: rgba(201, 168, 76, 0.15);
+            border: 1px solid rgba(201, 168, 76, 0.4);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            color: var(--ink);
+        }
+
+        /* 通常セクションのカードグリッド */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 640px) {
+            .cards-grid { grid-template-columns: 1fr; }
+        }
+        .card {
+            background: var(--cream);
+            border: 1px solid rgba(201, 168, 76, 0.25);
+            border-radius: 4px;
+            padding: 24px 22px;
+        }
+        .card h3 {
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            color: var(--ink);
+            margin-bottom: 10px;
             display: flex;
             align-items: center;
+            gap: 8px;
         }
-        h2::before {
-            content: "♪";
-            margin-right: 8px;
-            font-size: 14px;
-            color: #3498db;
+        .card h3::before {
+            content: '♪';
+            color: var(--blue-accent);
+            font-size: 12px;
         }
-        
-        /* 特売セット用のリスト */
-        .set-list {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            padding: 15px 20px;
-            border-radius: 6px;
-            margin: 15px 0;
-            list-style-type: none;
+        .card p, .card li {
+            font-size: 13px;
+            line-height: 1.9;
+            color: #555;
         }
-        .set-list li {
-            padding-left: 15px;
-            position: relative;
+        .card ul {
+            padding-left: 16px;
         }
-        .set-list li::before {
-            content: "・";
-            position: absolute;
-            left: 0;
-            color: #3498db;
+        .price-tag {
+            display: inline-block;
+            background: var(--ink);
+            color: var(--gold-light);
+            padding: 2px 10px;
+            border-radius: 2px;
+            font-size: 13px;
+            font-weight: 700;
+            margin: 2px 0;
         }
         .caution {
-            font-size: 13px;
-            color: #7f8c8d;
-            margin-top: 10px;
+            font-size: 12px;
+            color: #888;
+            margin-top: 8px;
+            line-height: 1.7;
         }
-        .price-highlight {
-            font-weight: bold;
-            color: #2c3e50;
-            background: #edf2f7;
-            padding: 2px 6px;
-            border-radius: 4px;
-            border: 1px solid #e2e8f0;
+
+        /* 区切り線 */
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(201, 168, 76, 0.4), transparent);
+            margin: 0;
+        }
+
+        /* フッター */
+        footer {
+            background: var(--ink);
+            color: rgba(255,255,255,0.45);
+            text-align: center;
+            padding: 32px;
+            font-size: 12px;
+            letter-spacing: 0.12em;
+            font-family: 'Cinzel', serif;
         }
     </style>
 </head>
 <body oncontextmenu="return false;" onselectstart="return false;" onkeydown="if(event.keyCode==123) return false;">
 
-<div class="container">
-    <header>
-        <p class="welcome-title">WELCOME TO MUSIC SHOP</p>
-        <h1>譜面屋「G Clef.」</h1>
-        <p class="owner-name">店主：Pii Arulaq</p>
-    </header>
+<!-- NAVBAR -->
+<nav class="navbar">
+    <a href="Home.html" class="navbar-logo">G Clef.</a>
+    <ul class="navbar-links">
+        <li><a href="Home.html" class="active">TOP</a></li>
+        <li><a href="#info">お知らせ</a></li>
+        <li><a href="#system">システム</a></li>
+        <li><a href="#price">金額</a></li>
+        <li><a href="index.html">在庫検索</a></li>
+    </ul>
+</nav>
 
-    <div class="search-nav-box">
-        <p>現在のリアルタイムな在庫状況は、こちらの専用ツールから1秒でパッと検索いただけます！</p>
-        <a href="index.html" class="btn-search">🎼 在庫状況をリアルタイム検索する</a>
+<!-- HERO -->
+<section class="hero">
+    <div class="record-bg"></div>
+
+    <div class="hero-text">
+        <p class="arch-deco">Welcome to Music Shop</p>
+        <div class="arch-divider">✦</div>
+        <h1 class="arch-title">G Clef.</h1>
+        <p class="arch-subtitle">ORCHESTRION SHEET SHOP</p>
+        <div class="arch-divider">✦</div>
+        <p class="arch-owner">店主：Pii Arulaq</p>
+        <a href="index.html" class="btn-hero">🎼 在庫をリアルタイム検索</a>
     </div>
 
-    <section class="notice">
-        <h2>☆お知らせ：オケコン演奏曲セット販売☆</h2>
-        <p>昨年の年末に行われたFF14オーケストラコンサートで演奏された楽曲をセット販売致します！<br>
-        数セットのみの限定販売なので、<strong>先着順</strong>とさせて頂きます。</p>
-        <p>💰 <span class="price-highlight">6曲セット：30,000ギル</span> （バラ売り無し）</p>
-        <ul class="set-list">
-            <li>塩と苦難の歌</li>
-            <li>メビウス</li>
-            <li>希望の都</li>
-            <li>彩られし山麓</li>
-            <li>そして世界へ</li>
-            <li>To the Edge</li>
-        </ul>
-        <p class="caution">※トレードできる譜面だけをピックアップしました。<br>
-        ※入手難易度が極めて高い譜面（LH級4層など）はご用意がありませんのでご容赦ください。</p>
-    </section>
+    <div class="scroll-hint">
+        SCROLL
+        <span>▼</span>
+    </div>
+</section>
 
-    <section class="notice">
-        <h2>☆お知らせ：買い取りに関するお詫び☆</h2>
-        <p>ピルグリムの譜面の買い取りを一時中止させて頂きます！たくさんのご協力ありがとうございました！</p>
-    </section>
+<!-- CONTENT -->
+<div class="content-area">
 
-    <section>
-        <h2>☆システム☆</h2>
-        <p>気になる譜面がございましたら気軽にお申しつけください。<br>
-        X(旧Twitter)のDM、リプライ、またはゲーム内Tellにてご対応致します。<br>
-        在庫の確認や、お取り置きなどもお気軽にお問い合わせくださいませ。</p>
-    </section>
+    <!-- お知らせ -->
+    <div class="section-wrap" id="info">
+        <p class="section-label">News</p>
+        <h2 class="section-title">お知らせ</h2>
 
-    <section>
-        <h2>☆金額システム☆</h2>
-        <p>当ショップは安心の均一プライスでご提供しております。</p>
-        <ul>
-            <li>どんな譜面でも：<span class="price-highlight">1枚 3,000ギル</span> 均一</li>
-            <li>お得なセット：<span class="price-highlight">2枚セット 5,000ギル</span></li>
-        </ul>
-        <p class="caution">💡 例：5枚購入の場合 ＝ 13,000ギル (5,000ギル×2セット ＋ 3,000ギル)</p>
-    </section>
+        <div class="notice-card">
+            <h3>🎻 オケコン演奏曲セット販売</h3>
+            <p>昨年の年末に行われたFF14オーケストラコンサートで演奏された楽曲をセット販売致します！<br>
+            数セットのみの<strong>限定・先着順</strong>です。</p>
+            <div class="set-price">6曲セット：30,000ギル（バラ売り無し）</div>
+            <ul class="set-songs">
+                <li>塩と苦難の歌</li><li>メビウス</li><li>希望の都</li>
+                <li>彩られし山麓</li><li>そして世界へ</li><li>To the Edge</li>
+            </ul>
+            <p class="caution">※トレードできる譜面のみピックアップ。入手難易度が極めて高い譜面（LH級4層など）はご用意がありません。</p>
+        </div>
 
-    <section>
-        <h2>☆古びた譜面からオーケストリオンへの書き起こし☆</h2>
-        <p>「古びた譜面」をお持ち込み頂ければ、こちらで製作を請け負います！<br>
-        マイスターのみ製作可能な譜面でもすべて受付可能です。</p>
-        <p>古びた譜面以外の材料（錬金溶剤など）はこちらですべてご用意いたします。材料費なども特に必要ございません。<br>
-        <span class="price-highlight">通常の譜面1枚分の金額（3,000ギル）</span>でお作りします。</p>
-    </section>
+        <div class="notice-card">
+            <h3>📢 買い取りに関するお詫び</h3>
+            <p>ピルグリムの譜面の買い取りを一時中止させて頂きます。たくさんのご協力ありがとうございました！</p>
+        </div>
+    </div>
 
-    <section>
-        <h2>☆譜面の入手依頼☆</h2>
-        <p>EX属性（本人のみ入手可能）のアイテムで無い限りは、未所持譜面の入手代行のご相談をいただけます。</p>
-        <p class="caution">※店主がまだ開放していないコンテンツの場合、長期のお時間を頂く場合がございます。予めご了承くださいませ。</p>
-    </section>
+    <div class="divider"></div>
 
-    <section>
-        <h2>☆譜面の買い取り☆</h2>
-        <p>古びた譜面や、すでに修得済みの譜面など、トレード可能なものでしたら喜んで買い取らせて頂きます！</p>
-        <p>💰 買い取り価格：<span class="price-highlight">どんな譜面でも 1枚 1,000ギル</span> 均一</p>
-        <p class="caution">⚠️ 注意：譜面によってはマーケットボードに出品した方が高額で取引できる場合があります。しっかりとご検討いただいた上でお持ち込みください。</p>
-    </section>
+    <!-- システム & 金額 -->
+    <div class="section-wrap" id="system">
+        <p class="section-label">System & Price</p>
+        <h2 class="section-title">システム・金額</h2>
 
-    <section>
-        <h2>☆在庫一覧（検索ページ）について☆</h2>
-        <p>元々は店主の個人メモとしての機能が一番になっているため、スプレッドシートそのままの状態は大変見にくいです。<br>
-        「こんなの見れるか！」という方は、ぜひ直接お問い合わせください。私の方でお探しいたします！</p>
-        <p class="caution">※随時更新していく予定ではありますが、マケボ出品などで不定期に在庫が変動します。更新が追いつかず、在庫が無くなっている可能性もありますのでご注意ください。</p>
-    </section>
+        <div class="cards-grid">
+            <div class="card">
+                <h3>ご注文方法</h3>
+                <p>気になる譜面がございましたらお気軽にお申しつけください。<br>
+                X(旧Twitter)のDM・リプライ、またはゲーム内Tellにてご対応致します。</p>
+            </div>
+            <div class="card" id="price">
+                <h3>均一価格</h3>
+                <ul>
+                    <li>1枚：<span class="price-tag">3,000ギル</span></li>
+                    <li>2枚セット：<span class="price-tag">5,000ギル</span></li>
+                </ul>
+                <p class="caution">💡 5枚の場合 = 13,000ギル（5,000×2 + 3,000）</p>
+            </div>
+            <div class="card">
+                <h3>古びた譜面の書き起こし</h3>
+                <p>「古びた譜面」をお持ち込み頂ければ製作を請け負います。マイスターのみ製作可能な譜面も受付可。材料費は不要です。</p>
+                <p><span class="price-tag">3,000ギル</span> でお作りします。</p>
+            </div>
+            <div class="card">
+                <h3>譜面の入手代行</h3>
+                <p>EX属性（本人のみ入手可能）を除き、未所持譜面の入手代行もご相談いただけます。</p>
+                <p class="caution">※未開放コンテンツの場合、長期のお時間を頂く場合があります。</p>
+            </div>
+            <div class="card">
+                <h3>譜面の買い取り</h3>
+                <p>古びた譜面・修得済みの譜面など、トレード可能なものでしたら買い取りします！</p>
+                <p><span class="price-tag">1枚 1,000ギル</span> 均一</p>
+                <p class="caution">⚠️ マケボの方が高値になる場合もありますので要検討を。</p>
+            </div>
+            <div class="card">
+                <h3>在庫一覧・ネタバレについて</h3>
+                <p>一覧ページではコンテンツ名を<strong>一切隠していません</strong>。ネタバレが気になる方は直接お問い合わせください。</p>
+                <p class="caution">※在庫は不定期に変動します。更新が追いつかない場合もあります。</p>
+            </div>
+        </div>
+    </div>
 
-    <section>
-        <h2>☆ネタバレについて☆</h2>
-        <p>コンテンツを隠してしまうとどこの譜面か非常に分かりにくくなるため、一覧ページでは<strong>コンテンツ名を一切隠していません</strong>。</p>
-        <p class="caution">⚠️ メインクエストが最新まで追いついていない方、コンテンツ名自体をネタバレと感じる方は、一覧（検索ページ）を見ずに、店主まで直接お問い合わせください。</p>
-    </section>
 </div>
+
+<!-- FOOTER -->
+<footer>
+    <p>譜面屋「G Clef.」 &nbsp;|&nbsp; 店主：Pii Arulaq &nbsp;|&nbsp; (C) SQUARE ENIX CO.</p>
+</footer>
 
 </body>
 </html>

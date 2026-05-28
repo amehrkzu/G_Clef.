@@ -24,7 +24,7 @@
                 const r = [];
                 try {
                     const rows = d.table.rows;
-                    for (let i = 4; i < rows.length; i++) {
+                    for (let i = 0; i < rows.length; i++) {
                         const row = rows[i];
                         if (!row || !row.c) continue;
                         const b = row.c[1] ? String(row.c[1].v || '') : '';
