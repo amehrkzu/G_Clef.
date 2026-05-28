@@ -30,10 +30,32 @@
       overflow: hidden;
     }
 
+    @keyframes slideFromLeft {
+      from {
+        transform: translateY(-50%) translateX(-120vw);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(-50%) translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes slideFromRight {
+      from {
+        transform: translateX(120vw);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
     .text-right {
       position: fixed;
       top: 30%;
-      right: 13vw;
+      right: 16vw;
       transform: translateY(-50%);
       writing-mode: vertical-rl;
       text-orientation: upright;
@@ -45,12 +67,13 @@
       mix-blend-mode: difference;
       user-select: none;
       white-space: nowrap;
+      animation: slideFromLeft 0.6s 0.2s ease-out both;
     }
 
     .text-left-bottom {
       position: fixed;
       bottom: 6vh;
-      left: 13vw;
+      left: 16vw;
       writing-mode: vertical-rl;
       text-orientation: mixed;
       font-family: 'Noto Serif JP', serif;
@@ -58,9 +81,9 @@
       font-size: clamp(0.85rem, 1.6vw, 1.2rem);
       letter-spacing: 0.4em;
       color: #ffffff;
-      mix-blend-mode: difference;
       user-select: none;
       white-space: nowrap;
+      animation: slideFromRight 0.6s 0.2s ease-out both;
     }
   </style>
 </head>
