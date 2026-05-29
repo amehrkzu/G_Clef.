@@ -78,7 +78,7 @@
         .container {
             max-width: 1060px;
             margin: 0 auto;
-            padding: 100px 40px 80px;
+            padding: 100px 40px 120px;
             position: relative;
             z-index: 1;
         }
@@ -255,7 +255,7 @@
         /* ===== CART ===== */
         .cart-btn {
             position: fixed;
-            bottom: 28px;
+            bottom: 72px;
             right: 28px;
             z-index: 500;
             background: var(--ink);
@@ -456,14 +456,20 @@
         .cart-clear-btn:hover { opacity: 0.8; }
 
         footer {
-            background: var(--ink);
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            z-index: 300;
+            background: rgba(26, 26, 46, 0.92);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             color: rgba(255,255,255,0.45);
             text-align: center;
-            padding: 32px;
+            padding: 14px 24px;
             font-size: 12px;
             letter-spacing: 0.12em;
             font-family: 'Cinzel', serif;
         }
+        footer p { white-space: nowrap; font-family: 'Noto Serif JP', serif; }
         footer a {
             color: var(--gold-light);
             text-decoration: none;
@@ -598,8 +604,8 @@
 </div>
 
 <footer>
-    <p>譜面屋「G Clef.」 &nbsp;|&nbsp; 店主：Pii Arulaq &nbsp;|&nbsp; (C) SQUARE ENIX CO.</p>
-    <p style="margin-top:10px;"><a href="https://x.com/ff14_pii" target="_blank" rel="noopener">𝕏 @ff14_pii</a></p>
+    <p>譜面屋「G Clef.」&nbsp;|&nbsp;店主：Pii Arulaq&nbsp;|&nbsp;<a href="https://x.com/ff14_pii" target="_blank" rel="noopener">𝕏 @ff14_pii</a></p>
+    <p style="margin-top:6px;">(C) SQUARE ENIX CO.</p>
 </footer>
 
 <script src="search.js"></script>
@@ -616,7 +622,7 @@
         W = canvas.width  = window.innerWidth;
         H = canvas.height = window.innerHeight;
         notes = [];
-        const sy = Math.floor(H * 0.85);
+        const sy = Math.floor(H * 0.72);
         const loopW = W + 500;
         for (let x = 40; x < loopW; x += 28 + Math.random() * 36)
             notes.push({ x, sy, pitch: Math.floor(Math.random() * 10), eighth: Math.random() < 0.35 });
@@ -626,7 +632,7 @@
         ctx.clearRect(0, 0, W, H);
         offset += SPEED;
         const loopW = W + 500;
-        const sy = Math.floor(H * 0.85);
+        const sy = Math.floor(H * 0.72);
 
         ctx.strokeStyle = '#1a1a2e'; ctx.lineWidth = 0.7;
         for (let i = 0; i < 5; i++) {

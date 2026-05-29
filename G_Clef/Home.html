@@ -130,13 +130,17 @@
         /* ===== HERO ===== */
         .hero {
             position: relative;
+            z-index: 50;
             width: 100%;
             height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
-            background-color: var(--cream);
+            background:
+                radial-gradient(ellipse at 50% 50%, rgba(201, 168, 76, 0.35) 0%, transparent 60%),
+                radial-gradient(ellipse at 85% 10%, rgba(201, 168, 76, 0.2) 0%, transparent 45%),
+                linear-gradient(160deg, #fefaf3 0%, var(--cream) 40%, #ddd0be 100%);
         }
 
         /* レコード背景 */
@@ -166,15 +170,25 @@
             width: min(460px, 85vw);
             padding: 56px 40px 44px 40px;
             text-align: center;
-            text-shadow: 0 2px 12px rgba(245,240,232,0.7), 0 1px 4px rgba(245,240,232,0.9);
+        }
+        .hero-text::before {
+            content: '';
+            position: absolute;
+            top: 22%;
+            bottom: 34%;
+            left: calc(-50vw + 50%);
+            right: calc(-50vw + 50%);
+            background: rgba(245, 240, 232, 0.78);
+            z-index: -1;
         }
         .arch-deco {
             font-size: 11px;
             letter-spacing: 0.4em;
-            color: var(--blue-accent);
+            color: #ffffff;
             text-transform: uppercase;
             margin-bottom: 6px;
             font-family: 'Cinzel', serif;
+            text-shadow: 0 1px 8px rgba(245, 240, 232, 0.9);
         }
         .arch-divider {
             display: flex;
@@ -192,7 +206,7 @@
             opacity: 0.6;
         }
         .arch-title {
-            font-family: 'Cinzel', serif;
+            font-family: 'Noto Serif JP', serif;
             font-size: clamp(28px, 6vw, 42px);
             font-weight: 700;
             color: var(--ink);
@@ -256,7 +270,7 @@
 
         /* ===== CONTENT AREA ===== */
         .content-area {
-            background: var(--white);
+            background: rgba(255, 255, 255, 0.75);
             position: relative;
             z-index: 20;
         }
@@ -473,14 +487,20 @@
 
         /* フッター */
         footer {
-            background: var(--ink);
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            z-index: 300;
+            background: rgba(26, 26, 46, 0.92);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             color: rgba(255,255,255,0.45);
             text-align: center;
-            padding: 32px;
+            padding: 14px 24px;
             font-size: 12px;
             letter-spacing: 0.12em;
             font-family: 'Cinzel', serif;
         }
+        footer p { white-space: nowrap; font-family: 'Noto Serif JP', serif; }
         footer a {
             color: var(--gold-light);
             text-decoration: none;
@@ -519,7 +539,6 @@
         <h1 class="arch-title">G Clef.</h1>
         <p class="arch-subtitle">ORCHESTRION SHEET SHOP</p>
         <div class="arch-divider">✦</div>
-        <p class="arch-owner">店主：Pii Arulaq</p>
         <a href="index.html" class="btn-hero">🎼 注文票作成</a>
     </div>
 
@@ -625,8 +644,8 @@
 
 <!-- FOOTER -->
 <footer>
-    <p>譜面屋「G Clef.」 &nbsp;|&nbsp; 店主：Pii Arulaq &nbsp;|&nbsp; (C) SQUARE ENIX CO.</p>
-    <p style="margin-top:10px;"><a href="https://x.com/ff14_pii" target="_blank" rel="noopener">𝕏 @ff14_pii</a></p>
+    <p>譜面屋「G Clef.」&nbsp;|&nbsp;店主：Pii Arulaq&nbsp;|&nbsp;<a href="https://x.com/ff14_pii" target="_blank" rel="noopener">𝕏 @ff14_pii</a></p>
+    <p style="margin-top:6px;">(C) SQUARE ENIX CO.</p>
 </footer>
 
 <script>
@@ -675,67 +694,8 @@
 </script>
 <script>
 (function () {
-    const canvas = document.getElementById('scoreCanvas');
-    const ctx = canvas.getContext('2d');
-    const G = 7, SPEED = 0.6;
-    let W, H, notes, offset = 0;
-
-    function build() {
-        W = canvas.width  = canvas.offsetWidth;
-        H = canvas.height = canvas.offsetHeight;
-        notes = [];
-        const loopW = W + 500;
-        for (let x = 40; x < loopW; x += 26 + Math.random() * 34)
-            notes.push({ x, pitch: Math.floor(Math.random() * 10), eighth: Math.random() < 0.35 });
-    }
-
-    function st() { return (H - G * 4) / 2; }
-
-    function draw() {
-        ctx.clearRect(0, 0, W, H);
-        offset += SPEED;
-        const loopW = W + 500;
-
-        ctx.strokeStyle = '#1a1a2e'; ctx.lineWidth = 0.8;
-        for (let i = 0; i < 5; i++) {
-            ctx.beginPath(); ctx.moveTo(0, st() + i * G); ctx.lineTo(W, st() + i * G); ctx.stroke();
-        }
-        const bw = 128;
-        ctx.lineWidth = 0.9;
-        for (let x = ((-(offset % bw)) + bw) % bw; x < W; x += bw) {
-            ctx.beginPath(); ctx.moveTo(x, st()); ctx.lineTo(x, st() + G * 4); ctx.stroke();
-        }
-
-        notes.forEach(n => {
-            let x = n.x - (offset % loopW);
-            if (x < -15) x += loopW;
-            if (x > W + 15) return;
-            const y = st() + G * 4 - n.pitch * G / 2;
-            const up = n.pitch < 5, sx = x + (up ? 3 : -3);
-            ctx.fillStyle = ctx.strokeStyle = '#c9a84c'; ctx.lineWidth = 1.2;
-            ctx.save(); ctx.translate(x, y); ctx.rotate(-0.2);
-            ctx.beginPath(); ctx.ellipse(0, 0, 4, 2.8, 0, 0, Math.PI * 2); ctx.fill();
-            ctx.restore();
-            ctx.beginPath(); ctx.moveTo(sx, y); ctx.lineTo(sx, up ? y - 18 : y + 18); ctx.stroke();
-            if (n.eighth) {
-                const ey = up ? y - 18 : y + 18, d = up ? 1 : -1;
-                ctx.beginPath(); ctx.moveTo(sx, ey);
-                ctx.bezierCurveTo(sx + 10, ey + d * 4, sx + 10, ey + d * 10, sx + 4, ey + d * 12);
-                ctx.stroke();
-            }
-        });
-        requestAnimationFrame(draw);
-    }
-
-    build();
-    window.addEventListener('resize', build);
-    draw();
-})();
-</script>
-<script>
-(function () {
     const canvas = document.createElement('canvas');
-    canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:15;pointer-events:none;opacity:0.15;';
+    canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:15;pointer-events:none;opacity:0.4;';
     document.body.prepend(canvas);
     const ctx = canvas.getContext('2d');
     const G = 9, GAP = 90, SPEED = 0.5;
@@ -745,7 +705,7 @@
         W = canvas.width  = window.innerWidth;
         H = canvas.height = window.innerHeight;
         notes = [];
-        const sy = Math.floor(H * 0.85);
+        const sy = Math.floor(H * 0.72);
         const loopW = W + 500;
         for (let x = 40; x < loopW; x += 28 + Math.random() * 36)
             notes.push({ x, sy, pitch: Math.floor(Math.random() * 10), eighth: Math.random() < 0.35 });
@@ -755,7 +715,7 @@
         ctx.clearRect(0, 0, W, H);
         offset += SPEED;
         const loopW = W + 500;
-        const sy = Math.floor(H * 0.85);
+        const sy = Math.floor(H * 0.72);
 
         ctx.strokeStyle = '#1a1a2e'; ctx.lineWidth = 0.7;
         for (let i = 0; i < 5; i++) {
