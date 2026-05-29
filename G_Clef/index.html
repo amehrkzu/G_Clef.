@@ -310,6 +310,36 @@
             font-family: 'Cinzel', serif;
             letter-spacing: 0.12em;
         }
+        .cart-price-box {
+            background: var(--ink);
+            color: var(--gold-light);
+            border-radius: 2px;
+            padding: 14px 20px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+        .cart-price-label {
+            font-family: 'Cinzel', serif;
+            font-size: 11px;
+            letter-spacing: 0.15em;
+            opacity: 0.75;
+        }
+        .cart-price-value {
+            font-family: 'Cinzel', serif;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+        .cart-price-note {
+            font-size: 11px;
+            color: rgba(26, 26, 46, 0.4);
+            text-align: center;
+            margin-bottom: 12px;
+            font-family: 'Cinzel', serif;
+            letter-spacing: 0.08em;
+        }
         .cart-clear-btn {
             width: 100%; padding: 10px;
             background: var(--ink); color: var(--gold-light);
@@ -378,6 +408,11 @@
     </div>
     <div class="cart-footer">
         <p class="cart-count-text" id="cartCountText"></p>
+        <div class="cart-price-box" id="cartPriceBox" style="display:none;">
+            <span class="cart-price-label">お支払い合計</span>
+            <span class="cart-price-value" id="cartPriceValue"></span>
+        </div>
+        <p class="cart-price-note" id="cartPriceNote"></p>
         <button class="cart-clear-btn" id="cartClearBtn">すべてクリア</button>
     </div>
 </div>
@@ -393,6 +428,10 @@
     const cartCountText = document.getElementById('cartCountText');
     const cartClearBtn  = document.getElementById('cartClearBtn');
 
+    function calcPrice(count) {
+        return Math.floor(count / 2) * 5000 + (count % 2) * 3000;
+    }
+
     function openCart()  { cartOverlay.style.display = 'block'; cartPanel.classList.add('open'); }
     function closeCart() { cartOverlay.style.display = 'none';  cartPanel.classList.remove('open'); }
 
@@ -405,6 +444,24 @@
         const { count, items } = e.detail;
         cartBadge.textContent = count;
         cartCountText.textContent = count > 0 ? `${count} 枚選択中` : '';
+
+        const priceBox   = document.getElementById('cartPriceBox');
+        const priceValue = document.getElementById('cartPriceValue');
+        const priceNote  = document.getElementById('cartPriceNote');
+        if (count > 0) {
+            const total = calcPrice(count);
+            priceBox.style.display = 'flex';
+            priceValue.textContent = total.toLocaleString() + ' Gil';
+            const pairs = Math.floor(count / 2), singles = count % 2;
+            const parts = [];
+            if (pairs)   parts.push(`${pairs}セット × 5,000`);
+            if (singles) parts.push(`${singles}枚 × 3,000`);
+            priceNote.textContent = parts.join(' + ');
+        } else {
+            priceBox.style.display = 'none';
+            priceNote.textContent = '';
+        }
+
         cartBody.innerHTML = '';
 
         if (count === 0) {

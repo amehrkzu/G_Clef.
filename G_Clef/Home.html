@@ -226,23 +226,96 @@
             border-bottom: 1px solid rgba(201, 168, 76, 0.4);
         }
 
-        /* お知らせカード */
-        .notice-card {
-            background: #fff8f5;
-            border: 1px solid rgba(231, 76, 60, 0.2);
-            border-left: 4px solid #e74c3c;
+        /* ===== CAROUSEL ===== */
+        .carousel {
+            position: relative;
+            overflow: hidden;
             border-radius: 4px;
-            padding: 24px 28px;
+            border: 1px solid rgba(201, 168, 76, 0.25);
+            box-shadow: 0 4px 20px rgba(26, 26, 46, 0.1);
+            margin-bottom: 8px;
+        }
+        .carousel-track {
+            display: flex;
+            transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .carousel-btn {
+            position: absolute;
+            top: 0; bottom: 0;
+            width: 42px;
+            background: rgba(26, 26, 46, 0.18);
+            color: var(--gold-light);
+            border: none;
+            font-size: 26px;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            z-index: 20;
+        }
+        .carousel-btn:hover { background: rgba(26, 26, 46, 0.42); }
+        .carousel-prev { left: 0; }
+        .carousel-next { right: 0; }
+        .carousel-dots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 12px;
             margin-bottom: 20px;
         }
-        .notice-card h3 {
-            font-size: 15px;
-            font-weight: 700;
-            color: #c0392b;
-            margin-bottom: 10px;
-            letter-spacing: 0.05em;
+        .carousel-dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: rgba(201, 168, 76, 0.35);
+            cursor: pointer;
+            border: none;
+            padding: 0;
+            transition: background 0.25s, transform 0.25s;
         }
-        .notice-card p {
+        .carousel-dot.active {
+            background: var(--gold);
+            transform: scale(1.3);
+        }
+
+        /* お知らせバナー */
+        .notice-banner {
+            flex: 0 0 100%;
+            width: 100%;
+        }
+        .notice-banner-head {
+            background: var(--ink);
+            padding: 14px 28px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .notice-banner-head h3 {
+            font-family: 'Cinzel', serif;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--gold-light);
+            letter-spacing: 0.12em;
+            margin: 0;
+            flex: 1;
+        }
+        .notice-banner-tag {
+            font-family: 'Cinzel', serif;
+            font-size: 10px;
+            letter-spacing: 0.18em;
+            color: var(--ink);
+            background: var(--gold);
+            padding: 3px 10px;
+            border-radius: 2px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .notice-banner-body {
+            background: var(--white);
+            padding: 24px 28px;
+        }
+        .notice-banner-body p {
             font-size: 14px;
             line-height: 1.9;
             color: #444;
@@ -392,21 +465,42 @@
         <p class="section-label">News</p>
         <h2 class="section-title">お知らせ</h2>
 
-        <div class="notice-card">
-            <h3>🎻 オケコン演奏曲セット販売</h3>
-            <p>昨年の年末に行われたFF14オーケストラコンサートで演奏された楽曲をセット販売致します！<br>
-            数セットのみの<strong>限定・先着順</strong>です。</p>
-            <div class="set-price">6曲セット：30,000ギル（バラ売り無し）</div>
-            <ul class="set-songs">
-                <li>塩と苦難の歌</li><li>メビウス</li><li>希望の都</li>
-                <li>彩られし山麓</li><li>そして世界へ</li><li>To the Edge</li>
-            </ul>
-            <p class="caution">※トレードできる譜面のみピックアップ。入手難易度が極めて高い譜面（LH級4層など）はご用意がありません。</p>
-        </div>
+        <div class="carousel" id="noticeCarousel">
+            <div class="carousel-track" id="noticeTrack">
 
-        <div class="notice-card">
-            <h3>📢 買い取りに関するお詫び</h3>
-            <p>ピルグリムの譜面の買い取りを一時中止させて頂きます。たくさんのご協力ありがとうございました！</p>
+                <div class="notice-banner">
+                    <div class="notice-banner-head">
+                        <h3>🎻 オケコン演奏曲セット販売</h3>
+                        <span class="notice-banner-tag">LIMITED</span>
+                    </div>
+                    <div class="notice-banner-body">
+                        <p>昨年の年末に行われたFF14オーケストラコンサートで演奏された楽曲をセット販売致します！<br>
+                        数セットのみの<strong>限定・先着順</strong>です。</p>
+                        <div class="set-price">6曲セット：30,000ギル（バラ売り無し）</div>
+                        <ul class="set-songs">
+                            <li>塩と苦難の歌</li><li>メビウス</li><li>希望の都</li>
+                            <li>彩られし山麓</li><li>そして世界へ</li><li>To the Edge</li>
+                        </ul>
+                        <p class="caution">※トレードできる譜面のみピックアップ。入手難易度が極めて高い譜面（LH級4層など）はご用意がありません。</p>
+                    </div>
+                </div>
+
+                <div class="notice-banner">
+                    <div class="notice-banner-head">
+                        <h3>📢 買い取りに関するお詫び</h3>
+                    </div>
+                    <div class="notice-banner-body">
+                        <p>ピルグリムの譜面の買い取りを一時中止させて頂きます。たくさんのご協力ありがとうございました！</p>
+                    </div>
+                </div>
+
+            </div>
+            <button class="carousel-btn carousel-prev" id="noticePrev">‹</button>
+            <button class="carousel-btn carousel-next" id="noticeNext">›</button>
+        </div>
+        <div class="carousel-dots">
+            <button class="carousel-dot active" data-idx="0"></button>
+            <button class="carousel-dot"        data-idx="1"></button>
         </div>
     </div>
 
@@ -462,5 +556,23 @@
     <p>譜面屋「G Clef.」 &nbsp;|&nbsp; 店主：Pii Arulaq &nbsp;|&nbsp; (C) SQUARE ENIX CO.</p>
 </footer>
 
+<script>
+(function () {
+    const track = document.getElementById('noticeTrack');
+    const dots  = document.querySelectorAll('.carousel-dot');
+    const total = track.children.length;
+    let cur = 0;
+
+    function goTo(idx) {
+        cur = (idx + total) % total;
+        track.style.transform = `translateX(-${cur * 100}%)`;
+        dots.forEach((d, i) => d.classList.toggle('active', i === cur));
+    }
+
+    document.getElementById('noticePrev').addEventListener('click', () => goTo(cur - 1));
+    document.getElementById('noticeNext').addEventListener('click', () => goTo(cur + 1));
+    dots.forEach(d => d.addEventListener('click', () => goTo(+d.dataset.idx)));
+})();
+</script>
 </body>
 </html>

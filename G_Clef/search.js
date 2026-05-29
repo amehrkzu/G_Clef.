@@ -98,7 +98,7 @@
         }
         
         const status = document.getElementById('loadStatus');
-        if (status) status.textContent = `✅ 全 ${_0xdata.length} 件の譜面データをロードしました。`;
+        if (status) status.style.display = 'none';
         
         _0xrender(_0xdata);
 
