@@ -16,6 +16,33 @@
     ];
 
     let _0xdata = [];
+    let _0xcart = new Set();
+    let _0xcartItems = new Map();
+
+    function _0xcartKey(item) {
+        return item.sName + '||' + (item.cells[0] || '') + '||' + (item.cells[1] || '');
+    }
+
+    function _0xcartDispatch() {
+        window.dispatchEvent(new CustomEvent('cartUpdate', {
+            detail: { count: _0xcart.size, items: Array.from(_0xcartItems.values()) }
+        }));
+    }
+
+    window._0xcartClear = function() {
+        _0xcart.clear();
+        _0xcartItems.clear();
+        document.querySelectorAll('#tableBody input[type="checkbox"]').forEach(cb => cb.checked = false);
+        _0xcartDispatch();
+    };
+
+    window._0xcartRemove = function(key) {
+        _0xcart.delete(key);
+        _0xcartItems.delete(key);
+        const cb = document.querySelector(`#tableBody input[data-key="${CSS.escape(key)}"]`);
+        if (cb) cb.checked = false;
+        _0xcartDispatch();
+    };
 
     function _0xload(c) {
         return new Promise((resolve) => {
@@ -96,18 +123,40 @@
         if (!body) return;
         body.innerHTML = '';
         if (d.length === 0) {
-            body.innerHTML = '<tr><td colspan="5" class="no-result">キーワードに一致する譜面がありません</td></tr>';
+            body.innerHTML = '<tr><td colspan="6" class="no-result">キーワードに一致する譜面がありません</td></tr>';
             return;
         }
         d.forEach(item => {
+            const key = _0xcartKey(item);
             const tr = document.createElement('tr');
+
+            const tdCb = document.createElement('td');
+            tdCb.style.cssText = 'text-align:center; width:40px;';
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.style.cssText = 'width:16px; height:16px; cursor:pointer; accent-color:#3498db;';
+            cb.dataset.key = key;
+            cb.checked = _0xcart.has(key);
+            cb.addEventListener('change', () => {
+                if (cb.checked) {
+                    _0xcart.add(key);
+                    _0xcartItems.set(key, Object.assign({ _key: key }, item));
+                } else {
+                    _0xcart.delete(key);
+                    _0xcartItems.delete(key);
+                }
+                _0xcartDispatch();
+            });
+            tdCb.appendChild(cb);
+            tr.appendChild(tdCb);
+
             const tdS = document.createElement('td');
             const span = document.createElement('span');
             span.className = 'badge-sheet';
             span.textContent = item.sName;
             tdS.appendChild(span);
             tr.appendChild(tdS);
-            
+
             for (let i = 0; i < 4; i++) {
                 const td = document.createElement('td');
                 td.textContent = item.cells[i] || '';
