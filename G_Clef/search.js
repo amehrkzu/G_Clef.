@@ -195,6 +195,13 @@
             cb.style.cssText = 'width:16px; height:16px; cursor:pointer; accent-color:#3498db;';
             cb.dataset.key = key;
             cb.checked = _0xcart.has(key);
+            const stock = (item.cells[2] || '').trim();
+            const outOfStock = stock === '' || stock === '0';
+            if (outOfStock) {
+                cb.disabled = true;
+                cb.style.cursor = 'not-allowed';
+                tr.classList.add('out-of-stock');
+            }
             cb.addEventListener('change', () => {
                 if (cb.checked) {
                     tr.classList.remove('row-pop');
@@ -218,6 +225,7 @@
 
             tr.addEventListener('click', (e) => {
                 if (e.target === cb) return;
+                if (cb.disabled) return;
                 cb.checked = !cb.checked;
                 cb.dispatchEvent(new Event('change'));
             });
