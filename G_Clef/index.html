@@ -59,13 +59,19 @@
             letter-spacing: 0.12em;
             color: var(--ink);
             opacity: 0.7;
-            transition: opacity 0.2s, color 0.2s;
+            display: inline-block;
+            transition: opacity 0.2s, color 0.2s, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
             font-family: 'Cinzel', serif;
         }
         .navbar-links a:hover,
+        .navbar-links a:focus-visible,
         .navbar-links a.active {
             opacity: 1;
             color: var(--blue-accent);
+        }
+        .navbar-links a:hover,
+        .navbar-links a:focus-visible {
+            transform: scale(1.18);
         }
 
         /* ===== CONTAINER ===== */
@@ -394,6 +400,46 @@
             font-family: 'Cinzel', serif;
             letter-spacing: 0.08em;
         }
+        .cart-request-btn {
+            width: 100%; padding: 10px;
+            background: var(--cream);
+            color: var(--ink);
+            border: 1px solid rgba(201, 168, 76, 0.5);
+            border-radius: 2px;
+            font-size: 12px; font-family: 'Cinzel', serif;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: background 0.2s;
+        }
+        .cart-request-btn:hover { background: rgba(201, 168, 76, 0.18); }
+        .cart-request-area {
+            margin-bottom: 10px;
+        }
+        .cart-request-text {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid rgba(201, 168, 76, 0.4);
+            border-radius: 2px;
+            background: var(--white);
+            color: var(--ink);
+            font-family: 'Noto Serif JP', serif;
+            font-size: 13px;
+            line-height: 1.9;
+            resize: vertical;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .cart-copy-btn {
+            width: 100%; padding: 10px;
+            background: var(--blue-accent); color: #fff;
+            border: none; border-radius: 2px;
+            font-size: 12px; font-family: 'Cinzel', serif;
+            letter-spacing: 0.1em;
+            cursor: pointer; transition: background 0.2s;
+        }
+        .cart-copy-btn:hover { background: #1a5c8a; }
+        .cart-copy-btn.copied { background: #27ae60; }
         .cart-clear-btn {
             width: 100%; padding: 10px;
             background: var(--ink); color: var(--gold-light);
@@ -403,6 +449,69 @@
             cursor: pointer; transition: opacity 0.2s;
         }
         .cart-clear-btn:hover { opacity: 0.8; }
+
+        /* Copy toast */
+        .copy-toast-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(26, 26, 46, 0.45);
+            z-index: 9998;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .copy-toast-overlay.show { opacity: 1; pointer-events: auto; }
+        .copy-toast {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0.88);
+            background: var(--white);
+            border: 1px solid rgba(201, 168, 76, 0.4);
+            border-radius: 4px;
+            padding: 36px 40px 28px;
+            max-width: min(460px, 90vw);
+            text-align: center;
+            box-shadow: 0 8px 40px rgba(26, 26, 46, 0.2);
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .copy-toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); pointer-events: auto; }
+        .copy-toast-deco {
+            color: var(--gold);
+            font-size: 13px;
+            letter-spacing: 0.3em;
+            margin-bottom: 14px;
+        }
+        .copy-toast-title {
+            font-family: 'Cinzel', serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--ink);
+            letter-spacing: 0.1em;
+            margin-bottom: 16px;
+        }
+        .copy-toast-msg {
+            font-family: 'Noto Serif JP', serif;
+            font-size: 13px;
+            line-height: 2;
+            color: rgba(26, 26, 46, 0.7);
+            margin-bottom: 24px;
+        }
+        .copy-toast-close {
+            padding: 9px 28px;
+            background: var(--ink);
+            color: var(--gold-light);
+            border: none;
+            border-radius: 2px;
+            font-family: 'Cinzel', serif;
+            font-size: 12px;
+            letter-spacing: 0.12em;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .copy-toast-close:hover { opacity: 0.8; }
     </style>
 </head>
 <body oncontextmenu="return false;" onselectstart="return false;" onkeydown="if(event.keyCode==123) return false;">
@@ -448,6 +557,15 @@
 
 <script src="search.js"></script>
 
+<!-- Copy Toast -->
+<div class="copy-toast-overlay" id="copyToastOverlay"></div>
+<div class="copy-toast" id="copyToast">
+    <p class="copy-toast-deco">✦ ✦ ✦</p>
+    <p class="copy-toast-title">ありがとうございます！</p>
+    <p class="copy-toast-msg">X（旧Twitter）のDM・リプライ、<br>またはゲーム内Tellにて<br>ご連絡お待ちしております！</p>
+    <button class="copy-toast-close" id="copyToastClose">閉じる</button>
+</div>
+
 <!-- Cart Button -->
 <button class="cart-btn" id="cartBtn">🎵 カート <span class="cart-badge" id="cartBadge">0</span></button>
 
@@ -468,20 +586,79 @@
             <span class="cart-price-value" id="cartPriceValue"></span>
         </div>
         <p class="cart-price-note" id="cartPriceNote"></p>
+        <button class="cart-request-btn" id="cartRequestBtn" style="display:none;">依頼テキスト作成</button>
+        <div class="cart-request-area" id="cartRequestArea" style="display:none;">
+            <textarea class="cart-request-text" id="cartRequestText" readonly rows="5"></textarea>
+            <button class="cart-copy-btn" id="cartCopyBtn">コピー</button>
+        </div>
         <button class="cart-clear-btn" id="cartClearBtn">すべてクリア</button>
     </div>
 </div>
 
 <script>
 (function() {
-    const cartBtn       = document.getElementById('cartBtn');
-    const cartBadge     = document.getElementById('cartBadge');
-    const cartOverlay   = document.getElementById('cartOverlay');
-    const cartPanel     = document.getElementById('cartPanel');
-    const cartCloseBtn  = document.getElementById('cartCloseBtn');
-    const cartBody      = document.getElementById('cartBody');
-    const cartCountText = document.getElementById('cartCountText');
-    const cartClearBtn  = document.getElementById('cartClearBtn');
+    const cartBtn        = document.getElementById('cartBtn');
+    const cartBadge      = document.getElementById('cartBadge');
+    const cartOverlay    = document.getElementById('cartOverlay');
+    const cartPanel      = document.getElementById('cartPanel');
+    const cartCloseBtn   = document.getElementById('cartCloseBtn');
+    const cartBody       = document.getElementById('cartBody');
+    const cartCountText  = document.getElementById('cartCountText');
+    const cartClearBtn   = document.getElementById('cartClearBtn');
+    const cartRequestBtn = document.getElementById('cartRequestBtn');
+    const cartRequestArea= document.getElementById('cartRequestArea');
+    const cartRequestText= document.getElementById('cartRequestText');
+    const cartCopyBtn    = document.getElementById('cartCopyBtn');
+
+    let _currentItems = [];
+    let _currentPrice = 0;
+
+    function buildRequestText() {
+        const lines = _currentItems.map(item =>
+            `・${item.sName}／${item.cells[0]}`
+        );
+        lines.push(`＿合計${_currentPrice.toLocaleString()}Gil`);
+        return lines.join('\n');
+    }
+
+    cartRequestBtn.addEventListener('click', () => {
+        const open = cartRequestArea.style.display !== 'none';
+        if (open) {
+            cartRequestArea.style.display = 'none';
+            cartRequestBtn.textContent = '依頼テキスト作成';
+        } else {
+            cartRequestText.value = buildRequestText();
+            cartRequestArea.style.display = 'block';
+            cartRequestBtn.textContent = '閉じる';
+        }
+    });
+
+    const copyToast        = document.getElementById('copyToast');
+    const copyToastOverlay = document.getElementById('copyToastOverlay');
+    const copyToastClose   = document.getElementById('copyToastClose');
+
+    function showCopyToast() {
+        copyToastOverlay.classList.add('show');
+        copyToast.classList.add('show');
+    }
+    function hideCopyToast() {
+        copyToastOverlay.classList.remove('show');
+        copyToast.classList.remove('show');
+    }
+    copyToastClose.addEventListener('click', hideCopyToast);
+    copyToastOverlay.addEventListener('click', hideCopyToast);
+
+    cartCopyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(cartRequestText.value).then(() => {
+            cartCopyBtn.textContent = 'コピーしました！';
+            cartCopyBtn.classList.add('copied');
+            setTimeout(() => {
+                cartCopyBtn.textContent = 'コピー';
+                cartCopyBtn.classList.remove('copied');
+            }, 2000);
+            showCopyToast();
+        });
+    });
 
     function calcPrice(count) {
         return Math.floor(count / 2) * 5000 + (count % 2) * 3000;
@@ -497,6 +674,9 @@
 
     window.addEventListener('cartUpdate', (e) => {
         const { count, items } = e.detail;
+        _currentItems = items;
+        _currentPrice = calcPrice(count);
+
         cartBadge.textContent = count;
         cartCountText.textContent = count > 0 ? `${count} 枚選択中` : '';
 
@@ -504,17 +684,23 @@
         const priceValue = document.getElementById('cartPriceValue');
         const priceNote  = document.getElementById('cartPriceNote');
         if (count > 0) {
-            const total = calcPrice(count);
             priceBox.style.display = 'flex';
-            priceValue.textContent = total.toLocaleString() + ' Gil';
+            priceValue.textContent = _currentPrice.toLocaleString() + ' Gil';
             const pairs = Math.floor(count / 2), singles = count % 2;
             const parts = [];
             if (pairs)   parts.push(`${pairs}セット × 5,000`);
             if (singles) parts.push(`${singles}枚 × 3,000`);
             priceNote.textContent = parts.join(' + ');
+            cartRequestBtn.style.display = 'block';
+            if (cartRequestArea.style.display !== 'none') {
+                cartRequestText.value = buildRequestText();
+            }
         } else {
             priceBox.style.display = 'none';
             priceNote.textContent = '';
+            cartRequestBtn.style.display = 'none';
+            cartRequestArea.style.display = 'none';
+            cartRequestBtn.textContent = '依頼テキスト作成';
         }
 
         cartBody.innerHTML = '';
