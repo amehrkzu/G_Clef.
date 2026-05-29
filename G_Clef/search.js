@@ -18,6 +18,44 @@
     let _0xdata = [];
     let _0xcart = new Set();
     let _0xcartItems = new Map();
+    let _0xfilter = new Set();
+
+    function _0xapplyFilter() {
+        const inp = document.getElementById('searchInput');
+        const val = inp ? inp.value.toLowerCase().trim() : '';
+        let result = _0xdata;
+        if (_0xfilter.size > 0) {
+            result = result.filter(item => _0xfilter.has(item.sName));
+        }
+        if (val) {
+            result = result.filter(item =>
+                item.cells.some(c => c && c.toLowerCase().includes(val)) ||
+                item.sName.toLowerCase().includes(val)
+            );
+        }
+        _0xrender(result);
+    }
+
+    function _0xbuildFilterBtns() {
+        const area = document.getElementById('filterArea');
+        if (!area) return;
+        _0xcfg.forEach(c => {
+            const btn = document.createElement('button');
+            btn.className = 'filter-btn';
+            btn.textContent = c.name;
+            btn.addEventListener('click', () => {
+                if (_0xfilter.has(c.name)) {
+                    _0xfilter.delete(c.name);
+                    btn.classList.remove('active');
+                } else {
+                    _0xfilter.add(c.name);
+                    btn.classList.add('active');
+                }
+                _0xapplyFilter();
+            });
+            area.appendChild(btn);
+        });
+    }
 
     function _0xcartKey(item) {
         return item.sName + '||' + (item.cells[0] || '') + '||' + (item.cells[1] || '');
@@ -100,21 +138,11 @@
         const status = document.getElementById('loadStatus');
         if (status) status.style.display = 'none';
         
-        _0xrender(_0xdata);
+        _0xbuildFilterBtns();
+        _0xapplyFilter();
 
         if (inp) {
-            inp.addEventListener('input', (e) => {
-                const val = e.target.value.toLowerCase().trim();
-                if (val === "") {
-                    _0xrender(_0xdata);
-                    return;
-                }
-                const filtered = _0xdata.filter(item => {
-                    return item.cells.some(c => c && c.toLowerCase().includes(val)) || 
-                           item.sName.toLowerCase().includes(val);
-                });
-                _0xrender(filtered);
-            });
+            inp.addEventListener('input', _0xapplyFilter);
         }
     }
 
@@ -139,6 +167,13 @@
             cb.checked = _0xcart.has(key);
             cb.addEventListener('change', () => {
                 if (cb.checked) {
+                    tr.classList.remove('row-pop');
+                    void tr.offsetWidth;
+                    tr.classList.add('row-pop');
+                    setTimeout(() => tr.classList.remove('row-pop'), 420);
+                }
+
+                if (cb.checked) {
                     _0xcart.add(key);
                     _0xcartItems.set(key, Object.assign({ _key: key }, item));
                 } else {
@@ -149,6 +184,12 @@
             });
             tdCb.appendChild(cb);
             tr.appendChild(tdCb);
+
+            tr.addEventListener('click', (e) => {
+                if (e.target === cb) return;
+                cb.checked = !cb.checked;
+                cb.dispatchEvent(new Event('change'));
+            });
 
             const tdS = document.createElement('td');
             const span = document.createElement('span');
