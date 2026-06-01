@@ -31,50 +31,76 @@
         #splash {
             position: fixed;
             top: 0; left: 0;
-            width: 100vw;
-            height: 100vh;
+            width: 100vw; height: 100vh;
             z-index: 99999;
-            background: radial-gradient(circle 40vmax at center, transparent 98%, var(--cream) 100%);
             cursor: pointer;
-            transition: opacity 0.9s ease;
+            overflow: hidden;
+            transition: opacity 0.4s ease;
             will-change: opacity;
         }
         #splash.hidden { opacity: 0; pointer-events: none; }
+        #splash::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 55%);
+            pointer-events: none;
+            z-index: 2;
+        }
+        #splash-door {
+            position: absolute;
+            inset: 0;
+            background-image: url('Door.jpg');
+            background-size: cover;
+            background-position: center;
+            transform-origin: 58% 50%;
+            transform: scale(1);
+            z-index: 1;
+        }
+        #splash-door.approaching {
+            animation: doorApproach 1.5s linear forwards;
+        }
+        @keyframes doorApproach {
+            0%   { transform: scale(1)    translate(0px,   0px)   rotate(0deg);    }
+            12%  { transform: scale(1.25) translate(-5px, -12px)  rotate(-0.4deg); }
+            25%  { transform: scale(1.5)  translate(0px,   0px)   rotate(0deg);    }
+            37%  { transform: scale(1.72) translate(4px,  -7px)   rotate(0.3deg);  }
+            50%  { transform: scale(1.88) translate(0px,   0px)   rotate(0deg);    }
+            62%  { transform: scale(2.0)  translate(-2px, -4px)   rotate(-0.2deg); }
+            75%  { transform: scale(2.1)  translate(0px,   0px)   rotate(0deg);    }
+            87%  { transform: scale(2.17) translate(1px,  -2px)   rotate(0.1deg);  }
+            100% { transform: scale(2.2)  translate(0px,   0px)   rotate(0deg);    }
+        }
         body.splash-active .navbar,
         body.splash-active .hero-text,
         body.splash-active .scroll-hint,
         body.splash-active .content-area,
-        body.splash-active footer {
+        body.splash-active footer,
+        body.splash-active .record-bg {
             opacity: 0;
             transition: none !important;
         }
         body.splash-active .record-bg {
-            opacity: 1;
-            transition: none !important;
             animation-play-state: paused;
         }
         .splash-hint {
-            position: fixed;
-            top: 50%;
+            position: absolute;
+            bottom: 18%;
             left: 50%;
-            transform: translate(-50%, -50%);
+            transform: translateX(-50%);
             font-family: 'Cinzel', serif;
-            font-size: clamp(11px, 1.4vw, 16px);
-            letter-spacing: 0.45em;
+            font-size: clamp(13px, 1.6vw, 20px);
+            letter-spacing: 0.55em;
             color: #ffffff;
-            text-shadow: 0 2px 14px rgba(0,0,0,0.8);
+            text-shadow: 0 2px 18px rgba(0,0,0,0.95);
             white-space: nowrap;
             pointer-events: none;
-            animation: splashPulse 2.2s ease-in-out infinite;
-        }
-        @keyframes splashPoyoon {
-            0%   { transform: translate(-50%, -50%) scale(1); }
-            40%  { transform: translate(-50%, -50%) scale(0.88); }
-            72%  { transform: translate(-50%, -50%) scale(1.05); }
-            100% { transform: translate(-50%, -50%) scale(1); }
+            z-index: 3;
+            opacity: 0;
+            transition: opacity 0.35s ease;
         }
         @keyframes splashPulse {
-            0%, 100% { opacity: 0.5; }
+            0%, 100% { opacity: 0.45; }
             50%       { opacity: 1; }
         }
 
@@ -514,7 +540,8 @@
 
 <!-- SPLASH -->
 <div id="splash">
-    <p class="splash-hint">CLICK TO START</p>
+    <div id="splash-door"></div>
+    <p class="splash-hint" id="splash-hint">CLICK</p>
 </div>
 
 <!-- NAVBAR -->
@@ -654,23 +681,78 @@
 
     if (sessionStorage.getItem('splashSeen')) {
         splash.style.display = 'none';
-    } else {
-        document.body.classList.add('splash-active');
-        document.body.style.overflow = 'hidden';
-        splash.addEventListener('click', () => {
-            const rec = document.querySelector('.record-bg');
-            rec.style.animation = 'splashPoyoon 0.55s cubic-bezier(0.34, 1.56, 0.64, 1)';
-            setTimeout(() => { rec.style.animation = ''; }, 560);
-
-            splash.classList.add('hidden');
-            document.body.style.overflow = '';
-            sessionStorage.setItem('splashSeen', '1');
-            setTimeout(() => {
-                document.body.classList.remove('splash-active');
-                setTimeout(() => splash.remove(), 500);
-            }, 900);
-        });
+        return;
     }
+
+    document.body.classList.add('splash-active');
+    document.body.style.overflow = 'hidden';
+
+    const door = document.getElementById('splash-door');
+    const hint = document.getElementById('splash-hint');
+    let state = 0; // 0:待機, 1:ズーム中, 2:ドア前, 3:終了
+
+    function startPulse() {
+        hint.style.transition = 'none';
+        hint.style.animation = 'splashPulse 2s ease-in-out infinite';
+    }
+    function hideHint() {
+        hint.style.animation = 'none';
+        hint.style.transition = 'opacity 0.25s ease';
+        hint.style.opacity = '0';
+    }
+
+    // ヒント表示までクリック無効
+    splash.style.pointerEvents = 'none';
+    splash.style.cursor = 'default';
+    setTimeout(() => {
+        splash.style.pointerEvents = '';
+        splash.style.cursor = '';
+        startPulse();
+    }, 1000);
+
+    splash.addEventListener('click', () => {
+        if (state === 0) {
+            // ── 1クリック目：ドアへ近寄る ──
+            state = 1;
+            hideHint();
+
+            door.classList.add('approaching');
+            door.addEventListener('animationend', () => {
+                // ズーム完了：位置を固定
+                door.style.animation = 'none';
+                door.style.transform = 'scale(2.2)';
+
+                // "K N O C K" を表示
+                state = 2;
+                hint.textContent = 'KNOCK';
+                hint.style.opacity = '';
+                setTimeout(startPulse, 50);
+            }, { once: true });
+
+        } else if (state === 2) {
+            // ── 2クリック目：ノックしてページへ ──
+            state = 3;
+            hideHint();
+
+            // ノック（手前にぐっと出る）アニメーション
+            const ks = document.createElement('style');
+            ks.textContent = '@keyframes _knock{0%{transform:scale(2.2)}35%{transform:scale(2.34)}65%{transform:scale(2.26)}100%{transform:scale(2.3)}}';
+            document.head.appendChild(ks);
+            door.offsetHeight;
+            door.style.animation = '_knock 0.38s cubic-bezier(0.34,1.56,0.64,1) forwards';
+
+            setTimeout(() => {
+                splash.classList.add('hidden');
+                document.body.style.overflow = '';
+                sessionStorage.setItem('splashSeen', '1');
+                setTimeout(() => {
+                    document.body.classList.remove('splash-active');
+                    setTimeout(() => splash.remove(), 500);
+                }, 400);
+            }, 300);
+        }
+        // state 1（ズーム中）は無視
+    });
 })();
 </script>
 
