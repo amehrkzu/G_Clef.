@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>暗黒騎士 スキル解説</title>
+  <style>
+    :root {
+      --bg:      #0a0a14;
+      --surface: #141422;
+      --border:  #2a2a40;
+      --accent:  #9b111e;
+      --gold:    #c9a84c;
+      --text:    #dde0ea;
+      --muted:   #7a7a9a;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Yu Gothic', sans-serif;
+      line-height: 1.7;
+      padding: 2rem 1rem 4rem;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    header h1 { font-size: 1.4rem; color: var(--gold); }
+    header p  { font-size: .8rem; color: var(--muted); margin-top: .3rem; }
+
+    /* ── SKILL CARD ── */
+    .skill-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+      border-left: 4px solid var(--accent);
+    }
+    .skill-card.type-invincible { border-left-color: #9966cc; }
+    .skill-card.type-buff       { border-left-color: #4488cc; }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: .75rem;
+    }
+    .skill-name {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: var(--text);
+    }
+    .skill-cd {
+      font-size: .78rem;
+      color: var(--muted);
+    }
+
+    .skill-desc {
+      font-size: .88rem;
+      color: #aab0c0;
+    }
+    .skill-desc strong {
+      color: var(--text);
+    }
+    .skill-desc .note {
+      display: block;
+      margin-top: .6rem;
+      padding: .5rem .75rem;
+      background: rgba(255,255,255,.04);
+      border-left: 2px solid var(--gold);
+      border-radius: 0 6px 6px 0;
+      color: var(--muted);
+      font-size: .82rem;
+    }
+    .skill-desc .note strong { color: var(--gold); }
+
+    /* ── STATE FLOW ── */
+    .state-flow {
+      display: flex;
+      flex-direction: column;
+      gap: .5rem;
+      margin-top: .75rem;
+    }
+    .state-row {
+      display: flex;
+      align-items: flex-start;
+      gap: .75rem;
+    }
+    .state-arrow {
+      color: var(--muted);
+      flex-shrink: 0;
+      padding-top: .1rem;
+    }
+    .state-box {
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .5rem .85rem;
+      font-size: .82rem;
+      flex: 1;
+    }
+    .state-box .state-name {
+      font-weight: bold;
+      font-size: .85rem;
+      margin-bottom: .2rem;
+    }
+    .state-box .state-dur {
+      font-size: .72rem;
+      color: var(--muted);
+      margin-left: .4rem;
+    }
+    .state-box p { color: #aab0c0; margin-top: .15rem; }
+    .state-box.ld   { border-color: #6a3a3a; }
+    .state-box.wd   { border-color: #8b4a1a; }
+    .state-box.dr   { border-color: #4a6a2a; }
+    .state-box.dead { border-color: #3a3a5a; opacity: .7; }
+    .state-name.ld   { color: #e07070; }
+    .state-name.wd   { color: #e09040; }
+    .state-name.dr   { color: #80cc60; }
+    .state-name.dead { color: var(--muted); }
+
+    /* ── FLOWCHART ── */
+    .fc {
+      margin-top: 1.25rem;
+      font-size: .8rem;
+    }
+    .fc-row {
+      display: flex;
+      align-items: flex-start;
+      gap: .5rem;
+    }
+    .fc-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+    .fc-node {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .45rem .85rem;
+      text-align: center;
+      background: rgba(255,255,255,.04);
+      min-width: 130px;
+    }
+    .fc-node .label { font-weight: bold; }
+    .fc-node .sub   { font-size: .72rem; color: var(--muted); margin-top: .1rem; }
+    .fc-node.start  { border-color: var(--accent);  background: rgba(155,17,30,.15); }
+    .fc-node.state1 { border-color: #e07070; }
+    .fc-node.state2 { border-color: #e09040; }
+    .fc-node.state3 { border-color: #80cc60; }
+    .fc-node.bad    { border-color: #555570; opacity: .75; }
+    .label.state1   { color: #e07070; }
+    .label.state2   { color: #e09040; }
+    .label.state3   { color: #80cc60; }
+    .label.bad      { color: var(--muted); }
+
+    .fc-arrow-down {
+      width: 2px;
+      background: var(--border);
+      flex-shrink: 0;
+      position: relative;
+      align-self: stretch;
+      min-height: 20px;
+    }
+    .fc-arrow-down::after {
+      content: '▼';
+      position: absolute;
+      bottom: -1px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: .6rem;
+      color: var(--muted);
+    }
+    .fc-vline {
+      width: 2px;
+      min-height: 24px;
+      background: var(--border);
+    }
+    .fc-branch {
+      display: flex;
+      align-items: flex-start;
+      gap: 0;
+      width: 100%;
+    }
+    .fc-branch-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+    }
+    .fc-hline {
+      height: 2px;
+      background: var(--border);
+      width: 100%;
+    }
+    .fc-cond {
+      font-size: .74rem;
+      color: var(--muted);
+      margin: .15rem 0;
+    }
+    .fc-cond.yes { color: #80cc60; }
+    .fc-cond.no  { color: #e07070; }
+    .fc-detail {
+      margin-top: .6rem;
+      padding: .45rem .75rem;
+      background: rgba(255,255,255,.03);
+      border-left: 2px solid var(--border);
+      border-radius: 0 6px 6px 0;
+      color: var(--muted);
+      font-size: .78rem;
+      line-height: 1.6;
+    }
+    .fc-detail strong { color: var(--text); }
+
+    /* ── GAME TEXT ── */
+    .game-text-label {
+      font-size: .7rem;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: .1rem .45rem;
+      display: inline-block;
+      margin-bottom: .4rem;
+    }
+    .game-text {
+      background: rgba(0,0,0,.3);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: .65rem .9rem;
+      font-size: .8rem;
+      color: var(--muted);
+      line-height: 1.7;
+      margin-bottom: 1rem;
+    }
+    .game-text.highlight {
+      background: rgba(201,168,76,.07);
+      border-color: var(--gold);
+      color: #ccd0dd;
+      font-size: .85rem;
+      box-shadow: 0 0 12px rgba(201,168,76,.15);
+    }
+    .game-text-label.highlight {
+      color: var(--gold);
+      border-color: var(--gold);
+    }
+
+    /* ── SECTION HEADING ── */
+    .section-heading {
+      font-size: .8rem;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: .4rem;
+      margin: 2rem 0 1rem;
+      letter-spacing: .05em;
+    }
+
+    /* ── UPGRADE BADGE ── */
+    .upgrade-from {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      margin-bottom: .75rem;
+      font-size: .78rem;
+      color: var(--muted);
+    }
+    .upgrade-from .base {
+      background: rgba(255,255,255,.05);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: .1rem .5rem;
+    }
+    .upgrade-from .arrow { color: var(--gold); }
+    .upgrade-from .evolved {
+      color: var(--gold);
+      font-weight: bold;
+    }
+    .badge-acquired {
+      display: inline-block;
+      font-size: .68rem;
+      background: rgba(68,170,119,.2);
+      color: #66ee99;
+      border: 1px solid rgba(68,170,119,.4);
+      border-radius: 4px;
+      padding: .1rem .45rem;
+      margin-left: .4rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>⚔️ 暗黒騎士 スキル解説</h1>
+  <p>FF14 ／ 主要スキル効果まとめ</p>
+</header>
+
+<div class="skill-card type-invincible">
+  <div class="card-header">
+    <span class="skill-name">リビングデッド</span>
+    <span class="skill-cd">CD 300秒</span>
+  </div>
+  <div class="skill-desc">
+    <span class="game-text-label">ゲーム内テキスト</span>
+    <div class="game-text">
+      自身に「リビングデッド」を付与する。効果時間：10秒<br>
+      効果時間中に戦闘不能に至るダメージを受けた場合、戦闘不能にはならずにＨＰ1の状態となり「ウォーキングデッド」に変化する。効果時間：10秒<br>
+      ウォーキングデッド効果：すべての攻撃に対してＨＰが1より減ることがない状態。さらに、自身のウェポンスキルおよび魔法による攻撃が命中すると自身のＨＰを回復する。回復力：1500<br>
+      効果時間中に受けた回復効果が自身の最大ＨＰの100％分に達すると、「デッドリバース」に変化する。デッドリバースの効果時間は、変化した時点でのウォーキングデッドの効果時間を引き継ぐ。<br>
+      十分な回復効果を受けられなかった場合はデッドリバースに変化せず、効果時間経過時に自身は戦闘不能になる。<br>
+      デッドリバース効果：すべての攻撃に対してＨＰが1より減ることがない状態。<br>
+      ただし、いずれの効果も一部の攻撃には無効化される。
+    </div>
+
+    <!-- フローチャート -->
+    <div class="fc">
+
+      <!-- 発動 -->
+      <div class="fc-col">
+        <div class="fc-node start">
+          <div class="label">リビングデッド 使用</div>
+        </div>
+        <div class="fc-vline"></div>
+
+        <!-- リビングデッド状態 -->
+        <div class="fc-node state1">
+          <div class="label state1">リビングデッド</div>
+          <div class="sub">10秒間 バフ付与</div>
+        </div>
+        <div class="fc-vline"></div>
+
+        <!-- 分岐①：致死ダメージを受けたか -->
+        <div class="fc-node" style="border-style:dashed; min-width:160px">
+          <div class="label">致死ダメージを受けた？</div>
+        </div>
+      </div>
+
+      <!-- 分岐ライン -->
+      <div class="fc-branch" style="margin-top:0">
+        <!-- YES 側 -->
+        <div class="fc-branch-col">
+          <div class="fc-hline"></div>
+          <div class="fc-cond yes">YES</div>
+          <div class="fc-vline"></div>
+          <div class="fc-node state2">
+            <div class="label state2">ウォーキングデッド</div>
+            <div class="sub">HP1 で 10秒間</div>
+          </div>
+          <div class="fc-detail">
+            ・HPが1より減らない<br>
+            ・自分の攻撃がヒットするたびに HP 回復（回復力 1500）<br>
+            ・ヒーラーの回復も有効
+          </div>
+          <div class="fc-vline"></div>
+
+          <!-- 分岐②：100%回復できたか -->
+          <div class="fc-node" style="border-style:dashed; min-width:160px">
+            <div class="label">受けた回復量が<br>最大HPの 100% に達した？</div>
+          </div>
+
+          <div class="fc-branch">
+            <!-- YES → デッドリバース -->
+            <div class="fc-branch-col">
+              <div class="fc-hline"></div>
+              <div class="fc-cond yes">YES</div>
+              <div class="fc-vline"></div>
+              <div class="fc-node state3">
+                <div class="label state3">デッドリバース</div>
+                <div class="sub">残り時間を引き継ぎ</div>
+              </div>
+              <div class="fc-detail">HPが1より減らない状態が継続</div>
+            </div>
+            <!-- NO → 戦闘不能 -->
+            <div class="fc-branch-col">
+              <div class="fc-hline"></div>
+              <div class="fc-cond no">NO</div>
+              <div class="fc-vline"></div>
+              <div class="fc-node bad">
+                <div class="label bad">時間切れ → 戦闘不能</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- NO 側 -->
+        <div class="fc-branch-col">
+          <div class="fc-hline"></div>
+          <div class="fc-cond no">NO（バフが切れただけ）</div>
+          <div class="fc-vline"></div>
+          <div class="fc-node bad">
+            <div class="label bad">何も起きず終了</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="fc-detail" style="margin-top:.75rem">
+        ⚠️ 一部の攻撃はウォーキングデッド・デッドリバース効果を<strong>無効化</strong>する
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="skill-card type-buff">
+  <div class="card-header">
+    <span class="skill-name">ダークマインド</span>
+    <span class="skill-cd">CD 60秒</span>
+  </div>
+  <div class="skill-desc">
+    <span class="game-text-label">ゲーム内テキスト</span>
+    <div class="game-text">
+      一定時間、自身の被魔法ダメージを20％軽減させる。被物理ダメージを10％軽減する。<br>
+      効果時間：10秒
+    </div>
+    <p style="font-size:.84rem; color:var(--text); margin:.6rem 0;">魔法ダメージの場合は雑に打つだけで強い</p>
+    <span class="note"><strong>注意：</strong>敵が物理攻撃ばかりだったら、他バフの併用も視野にいれること</span>
+  </div>
+</div>
+
+<div class="skill-card">
+  <div class="card-header">
+    <span class="skill-name">暗黒の剣 / 暗黒の波動</span>
+    <span class="skill-cd">アビリティ（リキャスト共有）</span>
+  </div>
+  <div class="skill-desc">
+    <div style="display:flex; gap:.75rem; flex-wrap:wrap; margin-bottom:.85rem">
+      <div style="flex:1; min-width:180px">
+        <span class="game-text-label">ゲーム内テキスト：暗黒の剣</span>
+        <div class="game-text" style="margin-bottom:0">
+          対象に無属性魔法攻撃。<br>
+          威力：300
+        </div>
+      </div>
+      <div style="flex:1; min-width:180px">
+        <span class="game-text-label">ゲーム内テキスト：暗黒の波動</span>
+        <div class="game-text" style="margin-bottom:0">
+          対象に向かって無属性前方直線範囲魔法攻撃。<br>
+          威力：100
+        </div>
+      </div>
+    </div>
+
+    <span class="game-text-label highlight">共通効果：暗黒バフ</span>
+    <div class="game-text highlight">
+      追加効果：自身に「暗黒」を付与する<br>
+      効果時間：30秒<br>
+      暗黒効果：自身の与ダメージを10％上昇させる<br>
+      既に「暗黒」が付与されている場合は、その効果時間を30秒延長する。最大60秒まで延長することができる。
+    </div>
+    <span class="note"><strong>注意：</strong>暗黒なら絶対に切らさないこと！</span>
+  </div>
+</div>
+
+<div class="skill-card type-buff">
+  <div class="card-header">
+    <span class="skill-name">シャドウウォール</span>
+    <span class="skill-cd">CD 120秒</span>
+  </div>
+  <div class="skill-desc">
+    <div class="upgrade-from">
+      <span class="base">シャドウウォール</span>
+      <span class="arrow">→ 進化</span>
+      <span class="evolved">シャドウヴィジル</span>
+    </div>
+    <span class="game-text-label">ゲーム内テキスト：シャドウウォール</span>
+    <div class="game-text">
+      一定時間、自身の被ダメージを30％軽減させる。<br>
+      効果時間：15秒
+    </div>
+
+    <div style="text-align:center; color:var(--gold); font-size:1.2rem; margin:.25rem 0;">↓</div>
+    <span class="game-text-label">ゲーム内テキスト：シャドウヴィジル（進化後）</span>
+    <div class="game-text">
+      一定時間、自身の被ダメージを40％軽減させる。<br>
+      効果時間：15秒<br>
+      追加効果：自身に「シャドウヴィジル［被］」を付与する。<br>
+      効果時間：20秒<br>
+      シャドウヴィジル［被］効果：ＨＰが50％を下回るか効果時間が経過すると、回復効果が発動する。<br>
+      回復力：1200
+    </div>
+    <span class="note"><strong>注意：</strong>リキャストタイムの長い、30%カットバフ</span>
+  </div>
+</div>
+
+<div class="section-heading">今後習得するスキル</div>
+
+<div class="skill-card type-buff">
+  <div class="card-header">
+    <span class="skill-name">ブラックナイト</span>
+    <span class="skill-cd">Lv.70　CD 15秒</span>
+  </div>
+  <div class="skill-desc">
+    <span class="game-text-label">ゲーム内テキスト</span>
+    <div class="game-text">
+      自身またはパーティメンバーひとりを対象として、一定量のダメージを防ぐバリアを張る。<br>
+      このバリアは対象の最大ＨＰの25％分のダメージを軽減する。<br>
+      効果時間：7秒<br>
+      バリアがダメージを完全に吸収して消滅すると、暗黒騎士自身に「ダークアーツ」を付与する。<br>
+      ダークアーツ効果：ＭＰの代わりにダークアーツを消費して「漆黒の波動」および「漆黒の剣」を発動できる。
+    </div>
+
+    <div class="fc">
+      <div class="fc-col">
+        <div class="fc-node start">
+          <div class="label">ブラックナイト 使用</div>
+        </div>
+        <div class="fc-vline"></div>
+        <div class="fc-node state1">
+          <div class="label state1">バリア付与</div>
+          <div class="sub">最大HPの25%分　7秒間</div>
+        </div>
+        <div class="fc-vline"></div>
+        <div class="fc-node" style="border-style:dashed; min-width:160px">
+          <div class="label">バリアが完全に吸収された？</div>
+        </div>
+      </div>
+
+      <div class="fc-branch">
+        <div class="fc-branch-col">
+          <div class="fc-hline"></div>
+          <div class="fc-cond yes">YES</div>
+          <div class="fc-vline"></div>
+          <div class="fc-node state3">
+            <div class="label state3">ダークアーツ 付与</div>
+          </div>
+          <div class="fc-detail">漆黒の剣 / 漆黒の波動を<strong>MP消費なし</strong>で発動できる</div>
+        </div>
+        <div class="fc-branch-col">
+          <div class="fc-hline"></div>
+          <div class="fc-cond no">NO（時間切れ）</div>
+          <div class="fc-vline"></div>
+          <div class="fc-node bad">
+            <div class="label bad">何も起きず終了</div>
+          </div>
+        </div>
+      </div>
+      <span class="note" style="margin-top:.75rem; display:block"><strong>注意：</strong>ダークアーツは使用しない限りずっと消えない</span>
+      <span class="note" style="margin-top:.5rem; display:block"><strong>注意：</strong>ブラックナイトが割れない場合は漆黒の剣などにMPを回そう！</span>
+    </div>
+  </div>
+</div>
+
+<div class="skill-card type-buff">
+  <div class="card-header">
+    <span class="skill-name">オブレーション</span>
+    <span class="skill-cd">Lv.82　CD 60秒　チャージ×2</span>
+  </div>
+  <div class="skill-desc">
+    <span class="game-text-label">ゲーム内テキスト</span>
+    <div class="game-text">
+      自身またはパーティメンバーひとりを対象とする。<br>
+      対象の被ダメージを10％軽減する。<br>
+      効果時間：10秒<br>
+      最大チャージ数：2
+    </div>
+    <p style="font-size:.84rem; color:var(--text); margin:.6rem 0;">他人へ渡せる単バフが２つあるのは暗黒だけ</p>
+    <p style="font-size:.84rem; color:var(--text); margin:.6rem 0;">ダークマインドとの併用にも使用可</p>
+  </div>
+</div>
+
+</body>
+</html>
