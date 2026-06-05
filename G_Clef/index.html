@@ -454,6 +454,34 @@
             cursor: pointer; transition: opacity 0.2s;
         }
         .cart-clear-btn:hover { opacity: 0.8; }
+        .cart-method-select {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        .cart-method-btn {
+            flex: 1;
+            padding: 8px 6px;
+            border: 1px solid rgba(201, 168, 76, 0.5);
+            border-radius: 2px;
+            background: var(--cream);
+            color: var(--ink);
+            font-family: 'Cinzel', serif;
+            font-size: 11px;
+            letter-spacing: 0.06em;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s, border-color 0.2s;
+            text-align: center;
+        }
+        .cart-method-btn.active {
+            background: var(--ink);
+            color: var(--gold-light);
+            border-color: var(--ink);
+        }
+        .cart-method-btn:hover:not(.active) {
+            background: rgba(201, 168, 76, 0.18);
+            border-color: var(--gold);
+        }
 
         footer {
             position: fixed;
@@ -761,9 +789,13 @@
             <span class="cart-price-value" id="cartPriceValue"></span>
         </div>
         <p class="cart-price-note" id="cartPriceNote"></p>
+        <div class="cart-method-select" id="cartMethodSelect" style="display:none;">
+            <button class="cart-method-btn active" data-method="x">𝕏 DM / リプライ</button>
+            <button class="cart-method-btn" data-method="tell">ゲーム内 Tell</button>
+        </div>
         <button class="cart-request-btn" id="cartRequestBtn" style="display:none;">注文票テキスト作成</button>
         <div class="cart-request-area" id="cartRequestArea" style="display:none;">
-            <textarea class="cart-request-text" id="cartRequestText" readonly rows="9"></textarea>
+            <textarea class="cart-request-text" id="cartRequestText" readonly rows="2"></textarea>
             <button class="cart-copy-btn" id="cartCopyBtn">コピー</button>
         </div>
         <button class="cart-clear-btn" id="cartClearBtn">すべてクリア</button>
@@ -787,12 +819,30 @@
 
     let _currentItems = [];
     let _currentPrice = 0;
+    let _method = 'x';
+
+    const cartMethodSelect = document.getElementById('cartMethodSelect');
+    cartMethodSelect.querySelectorAll('.cart-method-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            cartMethodSelect.querySelectorAll('.cart-method-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            _method = btn.dataset.method;
+            if (cartRequestArea.style.display !== 'none') {
+                cartRequestText.value = buildRequestText();
+            }
+        });
+    });
 
     function buildRequestText() {
-        const count  = _currentItems.length;
-        const unit   = 3000;
+        const count    = _currentItems.length;
+        const unit     = 3000;
         const subtotal = count * unit;
         const discount = Math.floor(count / 2) * 1000;
+
+        if (_method === 'tell') {
+            const items = _currentItems.map(item => `・${item.cells[0]}／${item.sName}`).join(' ');
+            return `【注文票】${items} 合計${_currentPrice.toLocaleString()}Gil`;
+        }
 
         const lines = ['【注文票】'];
         _currentItems.forEach(item => {
@@ -849,8 +899,8 @@
         return Math.floor(count / 2) * 5000 + (count % 2) * 3000;
     }
 
-    function openCart()  { cartOverlay.style.display = 'block'; cartPanel.classList.add('open'); }
-    function closeCart() { cartOverlay.style.display = 'none';  cartPanel.classList.remove('open'); }
+    function openCart()  { cartOverlay.style.display = 'block'; cartPanel.classList.add('open'); document.body.style.overflow = 'hidden'; }
+    function closeCart() { cartOverlay.style.display = 'none';  cartPanel.classList.remove('open'); document.body.style.overflow = ''; }
 
     cartBtn.addEventListener('click', openCart);
     cartOverlay.addEventListener('click', closeCart);
@@ -876,6 +926,7 @@
             if (pairs)   parts.push(`${pairs}セット × 5,000`);
             if (singles) parts.push(`${singles}枚 × 3,000`);
             priceNote.textContent = parts.join(' + ');
+            cartMethodSelect.style.display = 'flex';
             cartRequestBtn.style.display = 'block';
             if (cartRequestArea.style.display !== 'none') {
                 cartRequestText.value = buildRequestText();
@@ -883,6 +934,7 @@
         } else {
             priceBox.style.display = 'none';
             priceNote.textContent = '';
+            cartMethodSelect.style.display = 'none';
             cartRequestBtn.style.display = 'none';
             cartRequestArea.style.display = 'none';
             cartRequestBtn.textContent = '注文票テキスト作成';

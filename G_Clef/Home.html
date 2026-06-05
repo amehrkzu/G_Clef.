@@ -35,6 +35,7 @@
             z-index: 99999;
             cursor: pointer;
             overflow: hidden;
+            background: #1a1a2e;
             transition: opacity 0.4s ease;
             will-change: opacity;
         }
@@ -53,15 +54,17 @@
             background-image: url('Door.jpg');
             background-size: cover;
             background-position: center;
-            transform-origin: 58% 50%;
-            transform: scale(1);
+            transform-origin: calc(50% - 3px) 50%;
+            transform: scale(0.9);
             z-index: 1;
+            mask-image: radial-gradient(ellipse at center, black 55%, transparent 85%);
+            -webkit-mask-image: radial-gradient(ellipse at center, black 55%, transparent 85%);
         }
         #splash-door.approaching {
             animation: doorApproach 1.5s linear forwards;
         }
         @keyframes doorApproach {
-            0%   { transform: scale(1)    translate(0px,   0px)   rotate(0deg);    }
+            0%   { transform: scale(0.9)  translate(0px,   0px)   rotate(0deg);    }
             12%  { transform: scale(1.25) translate(-5px, -12px)  rotate(-0.4deg); }
             25%  { transform: scale(1.5)  translate(0px,   0px)   rotate(0deg);    }
             37%  { transform: scale(1.72) translate(4px,  -7px)   rotate(0.3deg);  }
