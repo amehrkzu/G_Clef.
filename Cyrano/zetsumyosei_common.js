@@ -100,6 +100,101 @@ function debuffAssignments(thDebuff, dpsDebuff, phase) {
   ];
 }
 
+function computeKb2Pre(thKbSrc, dpsKbSrc) {
+  const pos = {};
+  pos[thKbSrc]  = [130, 260];
+  pos[dpsKbSrc] = [230, 100];
+  const thOff  = [[-6,-6],[4,0],[-6,6]];
+  const dpsOff = [[-6,-6],[4,0],[-6,6]];
+  TH_ALL.filter(r=>r!==thKbSrc).forEach((r,i)  => { pos[r] = [145+thOff[i][0],  240+thOff[i][1]]; });
+  DPS_ALL.filter(r=>r!==dpsKbSrc).forEach((r,i) => { pos[r] = [215+dpsOff[i][0], 120+dpsOff[i][1]]; });
+  return pos;
+}
+
+function computeKb2Post(thKbSrc, dpsKbSrc) {
+  const pos = {};
+  pos[thKbSrc]  = [176, 268];
+  pos[dpsKbSrc] = [176, 108];
+  const thTargets  = TH_ALL.filter(r=>r!==thKbSrc);
+  const dpsTargets = DPS_ALL.filter(r=>r!==dpsKbSrc);
+  const off = [[-14,-8],[-4,-8],[6,-8]];
+  thTargets.forEach((r,i)  => { pos[r] = [180+off[i][0], 100+off[i][1]]; });
+  dpsTargets.forEach((r,i) => { pos[r] = [180+off[i][0], 260+off[i][1]]; });
+  return pos;
+}
+
+function kb2Assignments(thKbSrc, dpsKbSrc, phase) {
+  const thTargets  = TH_ALL.filter(r=>r!==thKbSrc);
+  const dpsTargets = DPS_ALL.filter(r=>r!==dpsKbSrc);
+  if (phase === 0) return [
+    { chips:[thKbSrc.toUpperCase()],                types:[CHIP_TYPE[thKbSrc]],                dest:'グラビガ1西側で吹き飛ばし' },
+    { chips:thTargets.map(r=>r.toUpperCase()),       types:thTargets.map(r=>CHIP_TYPE[r]),       dest:'グラビガ2方向に集合（KB待機）' },
+    { chips:[dpsKbSrc.toUpperCase()],               types:[CHIP_TYPE[dpsKbSrc]],               dest:'グラビガ2東側で吹き飛ばし' },
+    { chips:dpsTargets.map(r=>r.toUpperCase()),      types:dpsTargets.map(r=>CHIP_TYPE[r]),      dest:'グラビガ1方向に集合（KB待機）' },
+  ];
+  return [
+    { chips:[thKbSrc.toUpperCase()],                                                           types:[CHIP_TYPE[thKbSrc]],                dest:'グラビガ1（南）に着地' },
+    { chips:[dpsKbSrc.toUpperCase()],                                                          types:[CHIP_TYPE[dpsKbSrc]],               dest:'グラビガ2（北）に着地' },
+    { chips:thTargets.map(r=>r.toUpperCase()),       types:thTargets.map(r=>CHIP_TYPE[r]),       dest:'グラビガ2（北）に着地' },
+    { chips:dpsTargets.map(r=>r.toUpperCase()),      types:dpsTargets.map(r=>CHIP_TYPE[r]),      dest:'グラビガ1（南）に着地' },
+  ];
+}
+
+function computeHanmen2(attackSide) {
+  const cx = attackSide === 'west' ? 222 : 138;
+  return {
+    mt:[cx-12,176], st:[cx-4,176], h1:[cx+4,176], h2:[cx+12,176],
+    d1:[cx-12,186], d2:[cx-4, 186], d3:[cx+4,186], d4:[cx+12,186]
+  };
+}
+
+function computeHanmen(attackSide) {
+  const dx  = attackSide === 'west' ? 11 : -11;
+  const base = computeRuinga();
+  const pos  = {};
+  ROLES.forEach(r => { pos[r] = [base[r][0] + dx, base[r][1]]; });
+  return pos;
+}
+
+function computeRuinga() {
+  return {
+    mt:[174,118], st:[180,203], h1:[180,112], h2:[186,118],
+    d1:[170,128], d2:[177,128], d3:[183,128], d4:[190,128]
+  };
+}
+
+function ruingaAssignments() {
+  return [
+    { chips:['ST'], types:['t'], dest:'グラビデと中央の間' },
+    { chips:['MT','H1','H2','D1','D2','D3','D4'], types:['t','h','h','m','m','r','r'], dest:'Aと中央の間' },
+  ];
+}
+
+function computeGravigaSpread2(statue3ThDir) {
+  const nwRoles = statue3ThDir === 'NW' ? ['mt','st','h1','h2'] : ['d1','d2','d3','d4'];
+  const neRoles = statue3ThDir === 'NW' ? ['d1','d2','d3','d4'] : ['mt','st','h1','h2'];
+  const pos = {};
+  const nwCluster = [[170,175],[185,175],[170,185],[185,185]];
+  nwRoles.forEach((r,i) => { pos[r] = nwCluster[i]; });
+  const neSpots = [[110,180],[250,180],[95,100],[265,100]];
+  neRoles.forEach((r,i) => { pos[r] = neSpots[i]; });
+  return pos;
+}
+
+function gravigaSpreadAssignments2(statue3ThDir) {
+  const nwGroup = statue3ThDir === 'NW' ? ['MT','ST','H1','H2'] : ['D1','D2','D3','D4'];
+  const nwTypes = statue3ThDir === 'NW' ? ['t','t','h','h'] : ['m','m','r','r'];
+  const neGroup = statue3ThDir === 'NW' ? ['D1','D2','D3','D4'] : ['MT','ST','H1','H2'];
+  const neTypes = statue3ThDir === 'NW' ? ['m','m','r','r'] : ['t','t','h','h'];
+  return [
+    { chips: nwGroup, types: nwTypes, dest: 'NW線 → 中央' },
+    { chips: [neGroup[0]], types: [neTypes[0]], dest: 'NE線 → Y軸中央・D〜中央（D寄り）' },
+    { chips: [neGroup[1]], types: [neTypes[1]], dest: 'NE線 → Y軸中央・中央〜B（B寄り）' },
+    { chips: [neGroup[2]], types: [neTypes[2]], dest: 'NE線 → グラビガ西側　1外周寄り' },
+    { chips: [neGroup[3]], types: [neTypes[3]], dest: 'NE線 → グラビガ東側　2外周寄り' },
+  ];
+}
+
 function computeGravigaSpread(statue2ThDir) {
   const nwRoles = statue2ThDir === 'NW' ? ['mt','st','h1','h2'] : ['d1','d2','d3','d4'];
   const neRoles = statue2ThDir === 'NW' ? ['d1','d2','d3','d4'] : ['mt','st','h1','h2'];
@@ -165,25 +260,80 @@ function computeNazotoki(fanDir, lineDir, lineTrue, fanTrue, prevPos) {
 }
 
 /* ═══════════════════════════════════════════════════════
+   ずびずばテレポ デバフ
+   ═══════════════════════════════════════════════════════ */
+const ZUBIZUBA_PAIRS = [
+  ['↑','↑'], ['↓','↓'], ['→','→'], ['←','←'],
+  ['↑','→'], ['↑','←'], ['↓','→'], ['↓','←'],
+];
+
+function zubizubaDebuffAssign() {
+  const shuffled = [...ZUBIZUBA_PAIRS];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  const debuffs = {}, pairs = {};
+  ROLES.forEach((r, i) => {
+    let [a, b] = shuffled[i];
+    if (a !== b && Math.random() < 0.5) [a, b] = [b, a];
+    pairs[r] = [a, b];
+    debuffs[r] = `<span style="display:inline-flex;gap:2px;align-items:center"><span class="debuff-tag debuff-arrow">${a}</span><span class="debuff-tag debuff-arrow">${b}</span></span>`;
+  });
+  return { debuffs, pairs };
+}
+
+const ZUBIZUBA1_POS = {
+  '↑↑': [276, 273], '↓↓': [ 84,  81], '→→': [ 84, 273], '←←': [276,  81],
+  '←↑': [114,  81], '↑←': [114, 111],
+  '→↑': [246, 111], '↑→': [276, 111],
+  '→↓': [246, 273], '↓→': [246, 243],
+  '↓←': [ 84, 243], '←↓': [114, 243],
+};
+
+function computeZubizuba1(pairs) {
+  const pos = {};
+  ROLES.forEach(r => {
+    const [a, b] = pairs[r];
+    pos[r] = [...(ZUBIZUBA1_POS[`${a}${b}`] || [180, 180])];
+  });
+  return pos;
+}
+
+function computeZubizuba2(pairs) {
+  const pos = {};
+  ROLES.forEach(r => {
+    const [a, b] = pairs[r];
+    pos[r] = [...(ZUBIZUBA1_POS[`${b}${a}`] || [180, 180])];
+  });
+  return pos;
+}
+
+/* ═══════════════════════════════════════════════════════
    アニメーション
    ═══════════════════════════════════════════════════════ */
 let animId = null;
 const current = {};
 let kbLinesMap = {};
-let gravigaActive = false;
-let gravigaFixed  = false;
+const gravigaLayers = {
+  graviga1: { shown: false, moving: false, roles: [] },
+  graviga2: { shown: false, moving: false, roles: [] },
+};
 
 function applyPos(role, x, y) {
-  document.getElementById(`p-${role}`).setAttribute('transform',`translate(${x.toFixed(2)},${y.toFixed(2)})`);
+  const el = document.getElementById(`p-${role}`);
+  if (el) el.setAttribute('transform',`translate(${x.toFixed(2)},${y.toFixed(2)})`);
   current[role] = [x,y];
   if (kbLinesMap[role] !== undefined) {
-    const el = document.getElementById(`kb-line-${kbLinesMap[role]}`);
-    if (el) { el.setAttribute('x2', x.toFixed(2)); el.setAttribute('y2', y.toFixed(2)); }
+    const kel = document.getElementById(`kb-line-${kbLinesMap[role]}`);
+    if (kel) { kel.setAttribute('x2', x.toFixed(2)); kel.setAttribute('y2', y.toFixed(2)); }
   }
-  if (gravigaActive && !gravigaFixed) {
-    const el = document.getElementById(`graviga-${role}`);
-    if (el) { el.setAttribute('cx', x.toFixed(2)); el.setAttribute('cy', y.toFixed(2)); }
-  }
+  Object.entries(gravigaLayers).forEach(([k, L]) => {
+    if (!L.moving || !L.roles.includes(role)) return;
+    const prefix = k === 'graviga1' ? 'graviga' : 'graviga2';
+    const gel = document.getElementById(`${prefix}-${role}`);
+    if (gel) { gel.setAttribute('cx', x.toFixed(2)); gel.setAttribute('cy', y.toFixed(2)); }
+  });
 }
 function easeInOut(t) { return t<0.5?2*t*t:-1+(4-2*t)*t; }
 function animateTo(target, duration=850) {
@@ -204,7 +354,8 @@ function animateTo(target, duration=850) {
    ═══════════════════════════════════════════════════════ */
 function renderBands(type) {
   ['AB','AD','AB-R','AD-R'].forEach(t => {
-    document.getElementById(`bands-${t}`).setAttribute('display', t===type ? 'block' : 'none');
+    const el = document.getElementById(`bands-${t}`);
+    if (el) el.setAttribute('display', t===type ? 'block' : 'none');
   });
 }
 
@@ -212,7 +363,8 @@ function renderStep(tl, idx) {
   const step = tl[idx];
   animateTo(step.positions);
   ['NE','SW','NW','SE'].forEach(s => {
-    document.getElementById(`aoe-${s}`).setAttribute('display', (step.aoe||[]).includes(s)?'block':'none');
+    const el = document.getElementById(`aoe-${s}`);
+    if (el) el.setAttribute('display', (step.aoe||[]).includes(s)?'block':'none');
   });
   renderBands(step.bands||null);
   document.querySelectorAll('.cf-tower').forEach((el,i) => {
@@ -225,11 +377,12 @@ function renderStep(tl, idx) {
   document.getElementById('step-counter').textContent  = `${idx+1} / ${tl.length}`;
   document.getElementById('nav-prev').disabled = idx===0;
   document.getElementById('nav-next').disabled = idx===tl.length-1;
-  ['tobashi','blizzfire','beam','debuff','nazotoki','statue2'].forEach(id => {
+  ['tobashi','blizzfire','beam','debuff','nazotoki','statue2','hanmen','statue3','hanmen2','kb2'].forEach(id => {
     const el = document.getElementById(`cg-${id}`);
     if (el) el.classList.toggle('active', step.mechId===id);
   });
-  document.getElementById('assignments').innerHTML =
+  const assignEl = document.getElementById('assignments');
+  if (assignEl) assignEl.innerHTML =
     (step.assignments||[]).map(a=>`
       <div class="assign-row">
         <div class="chips">${a.chips.map((c,i)=>`<span class="chip chip-${a.types[i]}">${c}</span>`).join('')}</div>
@@ -237,20 +390,36 @@ function renderStep(tl, idx) {
         <span class="dest">${a.dest}</span>
       </div>`).join('');
 
-  gravigaFixed  = !!step.gravigaFixed;
-  gravigaActive = !!step.graviga && !gravigaFixed;
-  ROLES.forEach(r => {
-    const el = document.getElementById(`graviga-${r}`);
-    if (!el) return;
-    if (step.graviga) {
+  Object.values(gravigaLayers).forEach(L => { L.shown = false; L.moving = false; L.roles = []; });
+  for (let i = 0; i <= idx; i++) {
+    const s = tl[i];
+    if (s.clearGraviga) {
+      Object.values(gravigaLayers).forEach(L => { L.shown = false; L.roles = []; });
+    }
+    if (s.graviga && gravigaLayers[s.mechId]) {
+      const Ls = gravigaLayers[s.mechId];
+      Ls.shown = true;
+      Ls.roles = s.gravigaRoles || ROLES;
+    }
+  }
+  if (step.graviga && gravigaLayers[step.mechId]) {
+    const L = gravigaLayers[step.mechId];
+    L.moving = true;
+    const prefix = step.mechId === 'graviga1' ? 'graviga' : 'graviga2';
+    ROLES.forEach(r => {
+      if (!L.roles.includes(r)) return;
+      const el = document.getElementById(`${prefix}-${r}`);
+      if (!el) return;
       const [cx, cy] = current[r] || [180, 180];
       el.setAttribute('cx', cx); el.setAttribute('cy', cy);
-      el.setAttribute('display', 'block');
-    } else if (gravigaFixed) {
-      el.setAttribute('display', 'block');
-    } else {
-      el.setAttribute('display', 'none');
-    }
+    });
+  }
+  Object.entries(gravigaLayers).forEach(([k, L]) => {
+    const prefix = k === 'graviga1' ? 'graviga' : 'graviga2';
+    ROLES.forEach(r => {
+      const el = document.getElementById(`${prefix}-${r}`);
+      if (el) el.setAttribute('display', L.shown && L.roles.includes(r) ? 'block' : 'none');
+    });
   });
 
   kbLinesMap = {};
@@ -264,6 +433,42 @@ function renderStep(tl, idx) {
       const [cx, cy] = current[role] || [180, 180];
       el.setAttribute('x1', x1); el.setAttribute('y1', y1);
       el.setAttribute('x2', cx.toFixed(2)); el.setAttribute('y2', cy.toFixed(2));
+      el.setAttribute('display', 'block');
+    } else {
+      el.setAttribute('display', 'none');
+    }
+  }
+
+  const debuffs = {};
+  for (let i = 0; i <= idx; i++) {
+    const s = tl[i];
+    if (s.addDebuffs) Object.assign(debuffs, s.addDebuffs);
+    if (s.removeDebuffs) s.removeDebuffs.forEach(r => delete debuffs[r]);
+  }
+  ROLES.forEach(r => {
+    const el = document.getElementById(`pld-${r}`);
+    if (el) el.innerHTML = debuffs[r] || '';
+  });
+
+  const allFieldArrows = [];
+  for (let i = 0; i <= idx; i++) {
+    const s = tl[i];
+    if (s.fieldArrows) {
+      s.fieldArrows.forEach(fa => {
+        allFieldArrows.push({ ...fa, pos: s.positions[fa.role] });
+      });
+    }
+  }
+
+  for (let i = 0; i < 16; i++) {
+    const el = document.getElementById(`fa-${i}`);
+    if (!el) continue;
+    const data = allFieldArrows[i];
+    if (data) {
+      const [x, y] = data.pos;
+      el.setAttribute('x', x);
+      el.setAttribute('y', y + 7);
+      el.textContent = data.arrow;
       el.setAttribute('display', 'block');
     } else {
       el.setAttribute('display', 'none');
