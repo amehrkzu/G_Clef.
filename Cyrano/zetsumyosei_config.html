@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>絶妖星乱舞 ─ 散会図</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="zetsumyosei_common.css">
+  <style>
+    html, body { display: flex; flex-direction: column; align-items: center; }
+
+    .app {
+      width: 100%; max-width: 520px;
+      padding: 0 20px 40px;
+      display: flex; flex-direction: column; align-items: center; gap: 14px;
+    }
+
+    .conditions {
+      width: 100%; margin-top: 16px;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 14px;
+      display: flex; flex-wrap: wrap; gap: 10px;
+    }
+    .cond-group {
+      display: flex; flex-direction: column; gap: 4px;
+      flex: 1; min-width: 100px;
+      opacity: 0.38; transition: opacity 0.25s;
+    }
+    .cond-group.active { opacity: 1; }
+    .cond-label  { font-size: 0.64rem; color: var(--text-dim); letter-spacing: 0.1em; }
+    .cond-chips  { display: flex; flex-wrap: wrap; gap: 4px; }
+    .cond-chip {
+      padding: 2px 7px; border-radius: 4px;
+      font-size: 0.72rem; font-weight: 600;
+      background: rgba(201,168,76,0.12);
+      border: 1px solid rgba(201,168,76,0.3);
+      color: var(--gold-light);
+    }
+
+    .roll-btn {
+      padding: 10px 28px;
+      background: rgba(201,168,76,0.1); border: 1px solid var(--gold);
+      border-radius: 6px; color: var(--gold-light);
+      font-family: 'Noto Serif JP', serif; font-size: 0.88rem;
+      letter-spacing: 0.15em; cursor: pointer;
+      transition: background 0.18s, box-shadow 0.18s;
+    }
+    .roll-btn:hover {
+      background: rgba(201,168,76,0.2);
+      box-shadow: 0 0 16px rgba(201,168,76,0.25);
+    }
+  </style>
+</head>
+<body>
+
+<header><h1>絶妖星乱舞　散会図</h1></header>
+
+<div class="app">
+
+  <div class="conditions" id="conditions">
+    <div class="cond-group" id="cg-tobashi">
+      <div class="cond-label">吹き飛ばし</div>
+      <div class="cond-chips" id="cc-tobashi"></div>
+    </div>
+    <div class="cond-group" id="cg-blizzfire">
+      <div class="cond-label">ブリザガ/ファイガ</div>
+      <div class="cond-chips" id="cc-blizzfire"></div>
+    </div>
+    <div class="cond-group" id="cg-beam">
+      <div class="cond-label">ビーム・塔踏み</div>
+      <div class="cond-chips" id="cc-beam"></div>
+    </div>
+    <div class="cond-group" id="cg-debuff">
+      <div class="cond-label">デバフ頭割り</div>
+      <div class="cond-chips" id="cc-debuff"></div>
+    </div>
+    <div class="cond-group" id="cg-nazotoki">
+      <div class="cond-label">なぞなぞマジック</div>
+      <div class="cond-chips" id="cc-nazotoki"></div>
+    </div>
+    <div class="cond-group" id="cg-statue2">
+      <div class="cond-label">神々の像（２回目）扇</div>
+      <div class="cond-chips" id="cc-statue2"></div>
+    </div>
+  </div>
+
+  <div class="mech-label">
+    <div class="mech-name"  id="mech-name">─</div>
+    <div class="mech-phase" id="mech-phase">─</div>
+  </div>
+
+  <div class="arena-wrap">
+    <svg class="arena" viewBox="0 0 360 360" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="cf-floor" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stop-color="#1e2a44"/>
+          <stop offset="100%" stop-color="#0d1020"/>
+        </radialGradient>
+        <filter id="cf-glow">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <clipPath id="arena-clip">
+          <circle cx="180" cy="180" r="155"/>
+        </clipPath>
+      </defs>
+
+      <circle cx="180" cy="180" r="155" fill="url(#cf-floor)" stroke="#3a4a6a" stroke-width="1.5"/>
+
+      <path id="aoe-NE" display="none" d="M 180,180 L 180,25 A 155,155 0 0,1 335,180 Z" fill="rgba(210,50,50,0.22)" stroke="rgba(210,50,50,0.4)" stroke-width="1"/>
+      <path id="aoe-SW" display="none" d="M 180,180 L 180,335 A 155,155 0 0,1 25,180 Z"  fill="rgba(210,50,50,0.22)" stroke="rgba(210,50,50,0.4)" stroke-width="1"/>
+      <path id="aoe-NW" display="none" d="M 180,180 L 25,180 A 155,155 0 0,1 180,25 Z"   fill="rgba(210,50,50,0.22)" stroke="rgba(210,50,50,0.4)" stroke-width="1"/>
+      <path id="aoe-SE" display="none" d="M 180,180 L 335,180 A 155,155 0 0,1 180,335 Z" fill="rgba(210,50,50,0.22)" stroke="rgba(210,50,50,0.4)" stroke-width="1"/>
+
+      <g id="bands-AD" display="none" clip-path="url(#arena-clip)">
+        <rect x="-100" y="100" width="560" height="80" transform="rotate(-45 180 180)" fill="rgba(210,50,50,0.22)" stroke="rgba(210,50,50,0.4)" stroke-width="1"/>
+        <rect x="-100" y="255" width="560" height="80" transform="rotate(-45 180 180)" fill="rgba(210,50,50,0.22)" stroke="rgba(210,50,50,0.4)" stroke-width="1"/>
+      </g>
+      <g id="bands-AB" display="none" clip-path="url(#arena-clip)">
+        <rect x="-100" y="100" width="560" height="80" transform="rotate(45 180 180)" fill="rgba(210,50,50,0.22)" stroke="rgba(210,50,50,0.4)" stroke-width="1"/>
+        <rect x="-100" y="255" width="560" height="80" transform="rotate(45 180 180)" fill="rgba(210,50,50,0.22)" stroke="rgba(210,50,50,0.4)" stroke-width="1"/>
+      </g>
+      <g id="bands-AD-R" display="none" clip-path="url(#arena-clip)">
+        <rect x="-100" y="25"  width="560" height="80" transform="rotate(-45 180 180)" fill="rgba(210,50,50,0.22)" stroke="rgba(210,50,50,0.4)" stroke-width="1"/>
+        <rect x="-100" y="180" width="560" height="80" transform="rotate(-45 180 180)" fill="rgba(210,50,50,0.22)" stroke="rgba(210,50,50,0.4)" stroke-width="1"/>
+      </g>
+      <g id="bands-AB-R" display="none" clip-path="url(#arena-clip)">
+        <rect x="-100" y="25"  width="560" height="80" transform="rotate(45 180 180)" fill="rgba(210,50,50,0.22)" stroke="rgba(210,50,50,0.4)" stroke-width="1"/>
+        <rect x="-100" y="180" width="560" height="80" transform="rotate(45 180 180)" fill="rgba(210,50,50,0.22)" stroke="rgba(210,50,50,0.4)" stroke-width="1"/>
+      </g>
+
+      <line x1="180" y1="25"  x2="180" y2="335" stroke="#2a3a5a" stroke-width="1" stroke-dasharray="4,4"/>
+      <line x1="25"  y1="180" x2="335" y2="180" stroke="#2a3a5a" stroke-width="1" stroke-dasharray="4,4"/>
+      <line x1="70"  y1="70"  x2="290" y2="290" stroke="#1e2a44" stroke-width="1" stroke-dasharray="3,5"/>
+      <line x1="290" y1="70"  x2="70"  y2="290" stroke="#1e2a44" stroke-width="1" stroke-dasharray="3,5"/>
+      <circle cx="180" cy="180" r="100" fill="none" stroke="#2a3a5a" stroke-width="1"/>
+      <circle cx="180" cy="180" r="5"   fill="#c9a84c" opacity="0.5"/>
+      <circle cx="180" cy="180" r="2"   fill="#fff"/>
+
+      <circle class="cf-tower" display="none" r="18" fill="rgba(201,168,76,0.07)" stroke="#c9a84c" stroke-width="1.8" stroke-dasharray="5,3"/>
+      <circle class="cf-tower" display="none" r="18" fill="rgba(201,168,76,0.07)" stroke="#c9a84c" stroke-width="1.8" stroke-dasharray="5,3"/>
+      <circle class="cf-tower" display="none" r="18" fill="rgba(201,168,76,0.07)" stroke="#c9a84c" stroke-width="1.8" stroke-dasharray="5,3"/>
+      <circle class="cf-tower" display="none" r="18" fill="rgba(201,168,76,0.07)" stroke="#c9a84c" stroke-width="1.8" stroke-dasharray="5,3"/>
+
+      <text x="180" y="69"  text-anchor="middle" fill="#ff5555" font-size="13" font-weight="bold">A</text>
+      <text x="99"  y="103" text-anchor="middle" fill="#ff5555" font-size="13" font-weight="bold">1</text>
+      <text x="261" y="103" text-anchor="middle" fill="#ffdd00" font-size="13" font-weight="bold">2</text>
+      <text x="65"  y="184" text-anchor="middle" fill="#cc77ff" font-size="13" font-weight="bold">D</text>
+      <text x="295" y="184" text-anchor="middle" fill="#ffdd00" font-size="13" font-weight="bold">B</text>
+      <text x="180" y="299" text-anchor="middle" fill="#4499ff" font-size="13" font-weight="bold">C</text>
+      <text x="99"  y="265" text-anchor="middle" fill="#cc77ff" font-size="13" font-weight="bold">4</text>
+      <text x="261" y="265" text-anchor="middle" fill="#4499ff" font-size="13" font-weight="bold">3</text>
+
+      <circle id="graviga-mt" display="none" r="40" fill="rgba(180,60,230,0.18)" stroke="rgba(180,60,230,0.65)" stroke-width="1.5"/>
+      <circle id="graviga-st" display="none" r="40" fill="rgba(180,60,230,0.18)" stroke="rgba(180,60,230,0.65)" stroke-width="1.5"/>
+      <circle id="graviga-h1" display="none" r="40" fill="rgba(180,60,230,0.18)" stroke="rgba(180,60,230,0.65)" stroke-width="1.5"/>
+      <circle id="graviga-h2" display="none" r="40" fill="rgba(180,60,230,0.18)" stroke="rgba(180,60,230,0.65)" stroke-width="1.5"/>
+      <circle id="graviga-d1" display="none" r="40" fill="rgba(180,60,230,0.18)" stroke="rgba(180,60,230,0.65)" stroke-width="1.5"/>
+      <circle id="graviga-d2" display="none" r="40" fill="rgba(180,60,230,0.18)" stroke="rgba(180,60,230,0.65)" stroke-width="1.5"/>
+      <circle id="graviga-d3" display="none" r="40" fill="rgba(180,60,230,0.18)" stroke="rgba(180,60,230,0.65)" stroke-width="1.5"/>
+      <circle id="graviga-d4" display="none" r="40" fill="rgba(180,60,230,0.18)" stroke="rgba(180,60,230,0.65)" stroke-width="1.5"/>
+
+      <line id="kb-line-0" display="none" stroke="white" stroke-width="2.5" stroke-opacity="0.7" stroke-linecap="round"/>
+      <line id="kb-line-1" display="none" stroke="white" stroke-width="2.5" stroke-opacity="0.7" stroke-linecap="round"/>
+      <line id="kb-line-2" display="none" stroke="white" stroke-width="2.5" stroke-opacity="0.7" stroke-linecap="round"/>
+      <line id="kb-line-3" display="none" stroke="white" stroke-width="2.5" stroke-opacity="0.7" stroke-linecap="round"/>
+      <line id="kb-line-4" display="none" stroke="white" stroke-width="2.5" stroke-opacity="0.7" stroke-linecap="round"/>
+      <line id="kb-line-5" display="none" stroke="white" stroke-width="2.5" stroke-opacity="0.7" stroke-linecap="round"/>
+      <line id="kb-line-6" display="none" stroke="white" stroke-width="2.5" stroke-opacity="0.7" stroke-linecap="round"/>
+      <line id="kb-line-7" display="none" stroke="white" stroke-width="2.5" stroke-opacity="0.7" stroke-linecap="round"/>
+
+      <g id="p-mt" filter="url(#cf-glow)"><circle r="11" fill="#1a3a6a" stroke="#4a90d9" stroke-width="1.8"/><text y="3.5" text-anchor="middle" fill="#4a90d9" font-size="7" font-weight="bold">MT</text></g>
+      <g id="p-st" filter="url(#cf-glow)"><circle r="11" fill="#1a3a6a" stroke="#4a90d9" stroke-width="1.8"/><text y="3.5" text-anchor="middle" fill="#4a90d9" font-size="7" font-weight="bold">ST</text></g>
+      <g id="p-h1" filter="url(#cf-glow)"><circle r="11" fill="#1a4030" stroke="#4caf7a" stroke-width="1.8"/><text y="3.5" text-anchor="middle" fill="#4caf7a" font-size="7" font-weight="bold">H1</text></g>
+      <g id="p-h2" filter="url(#cf-glow)"><circle r="11" fill="#1a4030" stroke="#4caf7a" stroke-width="1.8"/><text y="3.5" text-anchor="middle" fill="#4caf7a" font-size="7" font-weight="bold">H2</text></g>
+      <g id="p-d1" filter="url(#cf-glow)"><circle r="11" fill="#3a1010" stroke="#e05252" stroke-width="1.8"/><text y="3.5" text-anchor="middle" fill="#e05252" font-size="7" font-weight="bold">D1</text></g>
+      <g id="p-d2" filter="url(#cf-glow)"><circle r="11" fill="#3a1010" stroke="#e05252" stroke-width="1.8"/><text y="3.5" text-anchor="middle" fill="#e05252" font-size="7" font-weight="bold">D2</text></g>
+      <g id="p-d3" filter="url(#cf-glow)"><circle r="11" fill="#3a2010" stroke="#d4884e" stroke-width="1.8"/><text y="3.5" text-anchor="middle" fill="#d4884e" font-size="7" font-weight="bold">D3</text></g>
+      <g id="p-d4" filter="url(#cf-glow)"><circle r="11" fill="#3a2010" stroke="#d4884e" stroke-width="1.8"/><text y="3.5" text-anchor="middle" fill="#d4884e" font-size="7" font-weight="bold">D4</text></g>
+    </svg>
+  </div>
+
+  <div class="nav-row">
+    <button class="nav-btn" id="nav-prev">◀</button>
+    <span class="step-counter" id="step-counter">1 / 8</span>
+    <button class="nav-btn" id="nav-next">▶</button>
+  </div>
+
+  <button class="roll-btn" id="roll-btn">🎲 再抽選</button>
+
+  <div class="assignments" id="assignments"></div>
+  <div class="attack-note" id="attack-note"></div>
+  <div class="hint">← → キーでステップ移動</div>
+</div>
+
+<footer>FF XIV ─ 絶妖星乱舞　散会図</footer>
+
+<script src="zetsumyosei_common.js"></script>
+<script>
+const LINE_DIR_LABEL = { 'AB':'AB平行', 'AB-R':'AB平行（反転）', 'AD':'AD平行', 'AD-R':'AD平行（反転）' };
+
+function chip(text) {
+  return `<span class="cond-chip">${text}</span>`;
+}
+
+function rollAndBuild() {
+  const tobashiLine  = rnd(['th','dps']);
+  const blizzAoe     = rnd(['ne-sw','nw-se']);
+  const blizzResolve = rnd(['stack','spread']);
+  const thBeam       = pick2(TH_ORDER);
+  const dpsBeam      = pick2(DPS_ORDER);
+  const thDebuff     = rnd(TH_ALL);
+  const dpsDebuff    = rnd(DPS_ALL);
+  const fanDir       = rnd(['NW-SE','NE-SW']);
+  const lineDir      = rnd(['AB','AB-R','AD','AD-R']);
+  const lineTrue     = rnd([true, false]);
+  const fanTrue      = rnd([true, false]);
+  const statue2ThDir   = rnd(['NW','NE']);
+  const statue2FanAoe  = rnd(['NE-SW','NW-SE']);
+  const statue2AoeList = statue2FanAoe === 'NE-SW' ? ['NE','SW'] : ['NW','SE'];
+
+  const towerPos  = [...thBeam,...dpsBeam].map(r=>BEAM_LINE[r]);
+  const blizzData = BLIZZFIRE[`${blizzAoe}_${blizzResolve}`];
+  const [dp1,dp2] = computeDebuff(thDebuff, dpsDebuff);
+  const fanAoe    = fanDir === 'NW-SE' ? ['NW','SE'] : ['NE','SW'];
+
+  const timeline = [
+    { mechId:'default', mechName:'開始前', name:'初期位置',
+      positions:{ mt:[180,125], st:[178,225], h1:[163,225], h2:[197,225],
+                  d1:[154,248], d2:[172,248], d3:[188,248], d4:[206,248] },
+      assignments:[] },
+    { mechId:'tobashi',   mechName:'神々の像（１回目）', ...TOBASHI[tobashiLine][0],
+      kbLines: (tobashiLine==='th' ? ['mt','st','h1','h2'] : ['d1','d2','d3','d4']).map(r=>({role:r,x1:180,y1:0})) },
+    { mechId:'tobashi',   mechName:'吹き飛ばし',       ...TOBASHI[tobashiLine][1], aoe:blizzData.aoe },
+    { mechId:'blizzfire', mechName:'ブリザガ/ファイガ', name:(blizzResolve==='stack'?'頭割り':'散会'), positions:blizzData.positions, aoe:blizzData.aoe, assignments:blizzData.assignments },
+    { mechId:'beam',      mechName:'ビーム・塔踏み',   name:'横並び', positions:{...BEAM_LINE}, towers:[], assignments:[{ chips:['H2','H1','ST','MT','D1','D2','D3','D4'], types:['h','h','t','t','m','m','r','r'], dest:'横一列に並ぶ' }] },
+    { mechId:'beam',      mechName:'ビーム・塔踏み',   name:'塔出現', positions:{...BEAM_LINE}, towers:towerPos, assignments:[{ chips:['H2','H1','ST','MT','D1','D2','D3','D4'], types:['h','h','t','t','m','m','r','r'], dest:'塔の位置を確認' }] },
+    { mechId:'beam',      mechName:'ビーム・塔踏み',   name:'塔踏み', positions:computeBeam(thBeam,dpsBeam), towers:towerPos, assignments:beamAssignments(thBeam,dpsBeam) },
+    { mechId:'debuff',    mechName:'デバフ頭割り',     name:'集合', positions:dp1, assignments:debuffAssignments(thDebuff,dpsDebuff,0) },
+    { mechId:'debuff',    mechName:'デバフ頭割り',     name:'KB後', positions:dp2, assignments:debuffAssignments(thDebuff,dpsDebuff,1) },
+    { mechId:'nazotoki',  mechName:'なぞなぞマジック', name:'処理中',
+      aoe:fanAoe, bands:lineDir,
+      positions:computeNazotoki(fanDir, lineDir, lineTrue, fanTrue, dp2),
+      assignments:[{ chips:['全員'], types:['t'], dest:'最寄り安置へ' }],
+      lineTruth:lineTrue, fanTruth:fanTrue },
+    { mechId:'default', mechName:'終了', name:'デフォルト位置',
+      positions:{ mt:[180,125], st:[178,225], h1:[163,225], h2:[197,225],
+                  d1:[154,248], d2:[172,248], d3:[188,248], d4:[206,248] },
+      assignments:[] },
+    { mechId:'hyperdrive', mechName:'ハイパードライブ後', name:'ポジション',
+      positions:{ mt:[178,225], st:[180,125], h1:[163,225], h2:[197,225],
+                  d1:[154,248], d2:[172,248], d3:[188,248], d4:[206,248] },
+      assignments:[] },
+    { mechId:'statue2', mechName:'神々の像（２回目）', name:'線出現',
+      aoe:statue2AoeList,
+      positions:{ mt:[178,225], st:[180,125], h1:[163,225], h2:[197,225],
+                  d1:[154,248], d2:[172,248], d3:[188,248], d4:[206,248] },
+      kbLines: [
+        ...['mt','st','h1','h2'].map(r=>({ role:r, x1:statue2ThDir==='NW'?110:250, y1:25 })),
+        ...['d1','d2','d3','d4'].map(r=>({ role:r, x1:statue2ThDir==='NW'?250:110, y1:25 })),
+      ],
+      assignments:[
+        { chips:['MT','ST','H1','H2'], types:['t','t','h','h'], dest:`TH/H → ${statue2ThDir}から線` },
+        { chips:['D1','D2','D3','D4'], types:['m','m','r','r'], dest:`DPS → ${statue2ThDir==='NW'?'NE':'NW'}から線` },
+      ] },
+    { mechId:'statue2', mechName:'神々の像（２回目）', name:'集合',
+      aoe:statue2AoeList,
+      positions:{ mt:[180,260], st:[180,260], h1:[180,260], h2:[180,260],
+                  d1:[180,260], d2:[180,260], d3:[180,260], d4:[180,260] },
+      kbLines: [
+        ...['mt','st','h1','h2'].map(r=>({ role:r, x1:statue2ThDir==='NW'?110:250, y1:25 })),
+        ...['d1','d2','d3','d4'].map(r=>({ role:r, x1:statue2ThDir==='NW'?250:110, y1:25 })),
+      ],
+      assignments:[{ chips:['全員'], types:['t'], dest:'C・中央間に集合' }] },
+    { mechId:'graviga1', mechName:'グラビガ１回目', name:'設置',
+      aoe:statue2AoeList,
+      positions:{ mt:[180,260], st:[180,260], h1:[180,260], h2:[180,260],
+                  d1:[180,260], d2:[180,260], d3:[180,260], d4:[180,260] },
+      graviga: true,
+      assignments:[{ chips:['全員'], types:['t'], dest:'自分の位置に円範囲設置' }] },
+    { mechId:'graviga1', mechName:'グラビガ１回目', name:'散会',
+      positions: computeGravigaSpread(statue2ThDir),
+      gravigaFixed: true,
+      assignments: gravigaSpreadAssignments(statue2ThDir) },
+  ];
+
+  document.getElementById('cc-tobashi').innerHTML   = chip(tobashiLine==='th'?'TH線':'DPS線');
+  document.getElementById('cc-blizzfire').innerHTML = chip(blizzAoe==='ne-sw'?'NE+SW':'NW+SE') + chip(blizzResolve==='stack'?'頭割り':'散会');
+  document.getElementById('cc-beam').innerHTML      = chip(`TH: ${thBeam.map(r=>r.toUpperCase()).join('・')}`) + chip(`DPS: ${dpsBeam.map(r=>r.toUpperCase()).join('・')}`);
+  document.getElementById('cc-debuff').innerHTML    = chip(`TH: ${thDebuff.toUpperCase()}`) + chip(`DPS: ${dpsDebuff.toUpperCase()}`);
+  document.getElementById('cc-nazotoki').innerHTML  = chip(fanDir==='NW-SE'?'NW+SE扇':'NE+SW扇') + chip(LINE_DIR_LABEL[lineDir]) + chip('扇：'+(fanTrue?'真':'偽')) + chip('直線：'+(lineTrue?'真':'偽'));
+  document.getElementById('cc-statue2').innerHTML   = chip(statue2FanAoe==='NE-SW'?'NE+SW扇':'NW+SE扇');
+
+  return timeline;
+}
+
+function nearest(cur, spotA, spotB) {
+  const dA = Math.hypot(cur[0]-spotA[0], cur[1]-spotA[1]);
+  const dB = Math.hypot(cur[0]-spotB[0], cur[1]-spotB[1]);
+  return dA <= dB ? spotA : spotB;
+}
+
+let timeline = [];
+let stepIdx  = 0;
+
+function roll() {
+  timeline = rollAndBuild();
+  stepIdx  = 0;
+  renderStep(timeline, stepIdx);
+}
+
+document.getElementById('nav-prev').addEventListener('click', () => {
+  if (stepIdx>0) { stepIdx--; renderStep(timeline, stepIdx); }
+});
+document.getElementById('nav-next').addEventListener('click', () => {
+  if (stepIdx<timeline.length-1) { stepIdx++; renderStep(timeline, stepIdx); }
+});
+document.getElementById('roll-btn').addEventListener('click', roll);
+document.addEventListener('keydown', e => {
+  if (e.key==='ArrowLeft')  document.getElementById('nav-prev').click();
+  if (e.key==='ArrowRight') document.getElementById('nav-next').click();
+});
+
+ROLES.forEach(r => applyPos(r, ...BEAM_LINE[r]));
+roll();
+</script>
+</body>
+</html>
