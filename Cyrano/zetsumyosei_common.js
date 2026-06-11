@@ -284,11 +284,15 @@ function zubizubaDebuffAssign() {
 }
 
 const ZUBIZUBA1_POS = {
-  '↑↑': [276, 273], '↓↓': [ 84,  81], '→→': [ 84, 273], '←←': [276,  81],
-  '←↑': [114,  81], '↑←': [114, 111],
-  '→↑': [246, 111], '↑→': [276, 111],
-  '→↓': [246, 273], '↓→': [246, 243],
-  '↓←': [ 84, 243], '←↓': [114, 243],
+  '↑↑': [265, 265], '↓↓': [95, 95], '→→': [95, 265], '←←': [265, 95],
+  '←↑': [135, 95], '↑←': [135, 135],
+  '→↑': [225, 135], '↑→': [265, 135],
+  '→↓': [225, 265], '↓→': [225, 225],
+  '↓←': [95, 225], '←↓': [135, 225],
+};
+
+const ZUBIZUBA2_POS_EXTRA = {
+  '↑↑': [265, 225], '↓↓': [95, 135], '→→': [135, 265], '←←': [225, 95],
 };
 
 function computeZubizuba1(pairs) {
@@ -304,9 +308,41 @@ function computeZubizuba2(pairs) {
   const pos = {};
   ROLES.forEach(r => {
     const [a, b] = pairs[r];
-    pos[r] = [...(ZUBIZUBA1_POS[`${b}${a}`] || [180, 180])];
+    if (a === b) {
+      pos[r] = [...(ZUBIZUBA2_POS_EXTRA[`${a}${b}`] || [180, 180])];
+    } else {
+      pos[r] = [...(ZUBIZUBA1_POS[`${b}${a}`] || [180, 180])];
+    }
   });
   return pos;
+}
+
+function computeKb3(thDebuff, dpsDebuff) {
+  const thNon  = TH_ALL.filter(r=>r!==thDebuff);
+  const dpsNon = DPS_ALL.filter(r=>r!==dpsDebuff);
+  const p1={}, p2={};
+  p1[thDebuff]  = [110,180]; thNon.forEach((r,i)=>{ p1[r]=[128,162+i*18]; });
+  p1[dpsDebuff] = [250,180]; dpsNon.forEach((r,i)=>{ p1[r]=[232,162+i*18]; });
+  p2[thDebuff]  = [110,180]; thNon.forEach((r,i)=>{ p2[r]=[278,162+i*18]; });
+  p2[dpsDebuff] = [250,180]; dpsNon.forEach((r,i)=>{ p2[r]=[82,162+i*18]; });
+  return [p1, p2];
+}
+
+function kb3Assignments(thDebuff, dpsDebuff, phase) {
+  const thNon  = TH_ALL.filter(r=>r!==thDebuff);
+  const dpsNon = DPS_ALL.filter(r=>r!==dpsDebuff);
+  if (phase===0) return [
+    { chips:[thDebuff.toUpperCase()],          types:[CHIP_TYPE[thDebuff]],       dest:'西（Dと中央の間）頭割り受け' },
+    { chips:thNon.map(r=>r.toUpperCase()),      types:thNon.map(r=>CHIP_TYPE[r]),  dest:'デバフ持ちより少し中央よりで頭割り' },
+    { chips:[dpsDebuff.toUpperCase()],          types:[CHIP_TYPE[dpsDebuff]],      dest:'東（Bと中央の間）頭割り受け' },
+    { chips:dpsNon.map(r=>r.toUpperCase()),     types:dpsNon.map(r=>CHIP_TYPE[r]), dest:'デバフ持ちより少し中央よりで頭割り' },
+  ];
+  return [
+    { chips:[thDebuff.toUpperCase()],           types:[CHIP_TYPE[thDebuff]],       dest:'西にとどまる' },
+    { chips:thNon.map(r=>r.toUpperCase()),       types:thNon.map(r=>CHIP_TYPE[r]),  dest:'Bマーカー方向へ吹き飛び' },
+    { chips:[dpsDebuff.toUpperCase()],           types:[CHIP_TYPE[dpsDebuff]],      dest:'東にとどまる' },
+    { chips:dpsNon.map(r=>r.toUpperCase()),      types:dpsNon.map(r=>CHIP_TYPE[r]), dest:'Dマーカー方向へ吹き飛び' },
+  ];
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -377,7 +413,7 @@ function renderStep(tl, idx) {
   document.getElementById('step-counter').textContent  = `${idx+1} / ${tl.length}`;
   document.getElementById('nav-prev').disabled = idx===0;
   document.getElementById('nav-next').disabled = idx===tl.length-1;
-  ['tobashi','blizzfire','beam','debuff','nazotoki','statue2','hanmen','statue3','hanmen2','kb2'].forEach(id => {
+  ['tobashi','blizzfire','beam','debuff','nazotoki','statue2','hanmen','statue3','hanmen2','kb2','kb3'].forEach(id => {
     const el = document.getElementById(`cg-${id}`);
     if (el) el.classList.toggle('active', step.mechId===id);
   });

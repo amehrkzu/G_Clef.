@@ -166,13 +166,13 @@
       </g>
 
       <text x="180" y="84"  text-anchor="middle" fill="#ff5555" font-size="13" font-weight="bold">A</text>
-      <text x="109" y="113" text-anchor="middle" fill="#ff5555" font-size="13" font-weight="bold">1</text>
-      <text x="251" y="113" text-anchor="middle" fill="#ffdd00" font-size="13" font-weight="bold">2</text>
+      <text x="115" y="115" text-anchor="middle" fill="#ff5555" font-size="13" font-weight="bold">1</text>
+      <text x="245" y="115" text-anchor="middle" fill="#ffdd00" font-size="13" font-weight="bold">2</text>
       <text x="76"  y="184" text-anchor="middle" fill="#cc77ff" font-size="13" font-weight="bold">D</text>
       <text x="284" y="184" text-anchor="middle" fill="#ffdd00" font-size="13" font-weight="bold">B</text>
       <text x="180" y="284" text-anchor="middle" fill="#4499ff" font-size="13" font-weight="bold">C</text>
-      <text x="109" y="255" text-anchor="middle" fill="#cc77ff" font-size="13" font-weight="bold">4</text>
-      <text x="251" y="255" text-anchor="middle" fill="#4499ff" font-size="13" font-weight="bold">3</text>
+      <text x="115" y="245" text-anchor="middle" fill="#cc77ff" font-size="13" font-weight="bold">4</text>
+      <text x="245" y="245" text-anchor="middle" fill="#4499ff" font-size="13" font-weight="bold">3</text>
 
       <circle id="graviga-mt" display="none" r="40" fill="rgba(180,60,230,0.18)" stroke="rgba(180,60,230,0.65)" stroke-width="1.5"/>
       <circle id="graviga-st" display="none" r="40" fill="rgba(180,60,230,0.18)" stroke="rgba(180,60,230,0.65)" stroke-width="1.5"/>
@@ -273,6 +273,10 @@
       <div class="cond-label">吹き飛ばし（２回目）</div>
       <div class="cond-chips" id="cc-kb2"></div>
     </div>
+    <div class="cond-group" id="cg-kb3">
+      <div class="cond-label">頭割り（３回目）</div>
+      <div class="cond-chips" id="cc-kb3"></div>
+    </div>
   </div>
 </div>
 
@@ -305,12 +309,15 @@ function rollAndBuild() {
   const hanmen2Side    = rnd(['west','east']);
   const thKbSrc        = rnd(TH_ALL.filter(r=>r!==thDebuff));
   const dpsKbSrc       = rnd(DPS_ALL.filter(r=>r!==dpsDebuff));
+  const thDebuff3      = rnd(TH_ALL.filter(r=>r!==thDebuff && r!==thKbSrc));
+  const dpsDebuff3     = rnd(DPS_ALL.filter(r=>r!==dpsDebuff && r!==dpsKbSrc));
   const statue2AoeList = statue2FanAoe === 'NE-SW' ? ['NE','SW'] : ['NW','SE'];
   const zubizubaResult = zubizubaDebuffAssign();
 
   const towerPos  = [...thBeam,...dpsBeam].map(r=>BEAM_LINE[r]);
   const blizzData = BLIZZFIRE[`${blizzAoe}_${blizzResolve}`];
   const [dp1,dp2] = computeDebuff(thDebuff, dpsDebuff);
+  const [dp3_1, dp3_2] = computeKb3(thDebuff3, dpsDebuff3);
   const fanAoe    = fanDir === 'NW-SE' ? ['NW','SE'] : ['NE','SW'];
 
   const timeline = [
@@ -443,6 +450,9 @@ function rollAndBuild() {
       positions: computeZubizuba2(zubizubaResult.pairs),
       fieldArrows: ROLES.map(r => ({ role: r, arrow: zubizubaResult.pairs[r][1] })),
       assignments:[] },
+    { mechId:'kb3',    mechName:'つぎつぎトラップ', name:'頭割り（3回目）', positions:dp3_1, assignments:kb3Assignments(thDebuff3, dpsDebuff3, 0) },
+    { mechId:'kb3',    mechName:'つぎつぎトラップ', name:'吹き飛ばし後', positions:dp3_2, assignments:kb3Assignments(thDebuff3, dpsDebuff3, 1),
+      removeDebuffs: [thDebuff3, dpsDebuff3] },
   ];
 
   document.getElementById('cc-tobashi').innerHTML   = chip(tobashiLine==='th'?'TH線':'DPS線');
@@ -455,6 +465,7 @@ function rollAndBuild() {
   document.getElementById('cc-statue3').innerHTML   = chip(statue3ThDir==='NW'?'TH→NW':'TH→NE');
   document.getElementById('cc-hanmen2').innerHTML   = chip(hanmen2Side==='west'?'西半面':'東半面');
   document.getElementById('cc-kb2').innerHTML       = chip(`TH: ${thKbSrc.toUpperCase()}`) + chip(`DPS: ${dpsKbSrc.toUpperCase()}`);
+  document.getElementById('cc-kb3').innerHTML       = chip(`TH: ${thDebuff3.toUpperCase()}`) + chip(`DPS: ${dpsDebuff3.toUpperCase()}`);
 
   return timeline;
 }
