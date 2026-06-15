@@ -16,6 +16,9 @@
 
       gtag('config', 'G-133R6M0EQ3');
     </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Yusei+Magic&display=swap" rel="stylesheet">
     <script>
       (() => {
         const version = String(Date.now());
@@ -27,7 +30,11 @@
       })();
     </script>
     <style>
-      /* --- バーチャルジョイスティックのスタイル --- */
+      /* 全体にフォントを適用 */
+      body, button, select, input {
+        font-family: 'Yusei Magic', sans-serif;
+      }
+
       .joystick {
         position: fixed;
         bottom: 50px;
@@ -37,7 +44,7 @@
         background: rgba(255, 255, 255, 0.1);
         border: 2px solid rgba(255, 255, 255, 0.2);
         border-radius: 50%;
-        display: none; /* ゲーム開始時にJavaScriptで表示を切り替えます */
+        display: none;
         z-index: 100;
         user-select: none;
       }
@@ -146,55 +153,37 @@
       <div class="modal-card">
         <p class="eyebrow">SELECT STRATEGY</p>
         <p class="modal-origin-note">
-          パークパクパク！幣固定用に選択肢を減らしたパクリサイトパクねぇ！
-          <br>悪のプログラマーがコードを取ってきました。Github公開してるということはそういうことです。</br>
+            パークパクパク！幣固定用に選択肢を減らしたパクリサイトパクねぇ！
+            <br>悪のプログラマーがコードを取ってきました。SNSへのアップロードは勘弁してください😭</br>
+            <br>シラノより</br>
         </p>
-        <h2 id="selectionTitle">攻略法を選択</h2>
-        <p id="selectionCopy" class="modal-copy">最初の先組・後組の決め方を選択してください。</p>
+        <h2 id="selectionTitle"  class="selection-block hidden">攻略法を選択</h2>
+        <p id="selectionCopy" class="modal-copy"></p>
         <div id="strategyButtons" class="strategy-buttons">
           <button class="strategy-button" data-strategy="yarn" aria-pressed="false">
-            <strong>ヤーン式</strong>
-            <span>MT-H1／ST-H2／D1-D3／D2-D4で判断</span>
           </button>
         </div>
         <div id="spreadSelection" class="selection-block hidden">
-          <h3>散開位置を選択</h3>
           <div id="spreadButtons" class="strategy-buttons">
             <button class="strategy-button spread-button" data-spread="piren" aria-pressed="false">
-              <strong>ぴれん式</strong>
-              <span>図に合わせた奇数・偶数回の立ち位置</span>
             </button>
           </div>
         </div>
         <div id="initialShareSelection" class="selection-block hidden">
-          <h3>1回目の頭割り処理法を選択</h3>
           <div id="initialShareButtons" class="radio-grid">
             <label class="radio-option">
               <input type="radio" name="initialShareMode" value="fixed">
-              <span>
-                <strong>左がTH、右がDPSで固定</strong>
-                <small>Tank/Healerは左塔、DPSは右塔に固定します</small>
-              </span>
             </label>
             <label class="radio-option">
               <input type="radio" name="initialShareMode" value="pair">
-              <span>
-                <strong>ペアを見て判断</strong>
-                <small>ペアが扇なら左塔、ペアが円なら右塔に入ります</small>
-              </span>
             </label>
           </div>
         </div>
         <div id="towerPrioritySelection" class="selection-block hidden">
-          <h3>偶数回の塔踏み優先判断を選択</h3>
           <p class="modal-copy">奇数回目の塔を踏んだ後に出る予兆（次の偶数回目の塔踏みの移動先）の優先ルールを選びます。<br>（塔8回目はプレイヤーが自分でbind or stopマーカーを付与して対応する塔へ移動）</p>
           <div id="towerPriorityButtons" class="radio-grid">
             <label class="radio-option">
               <input type="radio" name="towerPriorityMode" value="ktdn">
-              <span>
-                <strong>南調整</strong>
-                <small>同じ塔内で予兆が異なる場合は次の塔踏みも同じ側の塔を踏み、予兆が重複した場合は南側が次の塔踏みで反対の塔へ移動します</small>
-              </span>
             </label>
           </div>
         </div>
@@ -203,8 +192,7 @@
           <p class="modal-copy">残りの7人は自動で正解位置へ移動します。あなたの担当だけを操作してください。</p>
           <div id="roleButtons" class="role-buttons"><button class="role-button"><img src="./files/TankRole.png" alt=""><strong>MT</strong></button><button class="role-button"><img src="./files/TankRole.png" alt=""><strong>ST</strong></button><button class="role-button"><img src="./files/HealerRole.png" alt=""><strong>H1</strong></button><button class="role-button"><img src="./files/HealerRole.png" alt=""><strong>H2</strong></button><button class="role-button"><img src="./files/DPSRole.png" alt=""><strong>D1</strong></button><button class="role-button"><img src="./files/DPSRole.png" alt=""><strong>D2</strong></button><button class="role-button"><img src="./files/DPSRole.png" alt=""><strong>D3</strong></button><button class="role-button"><img src="./files/DPSRole.png" alt=""><strong>D4</strong></button></div>
           <div class="strategy-note">
-            <strong id="strategyName">りーん式 / KT式 · 1238 / 4567</strong>
-            <span id="strategyDescription"></span>
+            <span id="strategyDescription" class="selection-block hidden"></span>
           </div>
         </div>
       </div>
@@ -325,7 +313,8 @@ document.addEventListener('DOMContentLoaded', () => {
     end
   );
 });
-</script>    <script>
+</script>    
+<script>
       // DOMの読み込みが完了した後に実行
       document.addEventListener('DOMContentLoaded', () => {
         // app.jsの処理を待つために少し遅延させる

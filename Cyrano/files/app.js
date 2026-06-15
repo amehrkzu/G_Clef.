@@ -273,8 +273,6 @@ function selectStrategy(strategy) {
     button.classList.toggle("selected", selected);
     button.setAttribute("aria-pressed", String(selected));
   }
-  UI.selectionTitle.textContent = STRATEGIES[strategy].name;
-  UI.selectionCopy.textContent = "次に、塔処理時の散開位置を選択してください。";
   selectedSpread = null;
   selectedTowerPriorityMode = null;
   selectedInitialShareMode = null;
@@ -311,9 +309,6 @@ function selectInitialShareMode(mode) {
     option.classList.toggle("selected", selected);
     if (input) input.checked = selected;
   }
-  UI.selectionTitle.textContent = "担当ロールを選択";
-  UI.selectionCopy.textContent = "残りの7人は自動で正解位置へ移動します。あなたの担当だけを操作してください。";
-  UI.strategyName.textContent = `${STRATEGIES[selectedStrategy].name} / ${SPREAD_METHODS[selectedSpread].name} · 1238 / 4567`;
   updateStrategyDescription();
   UI.roleSelection.classList.remove("hidden");
 }
@@ -381,17 +376,11 @@ function selectSpread(spread) {
     UI.towerPrioritySelection.classList.add("hidden");
   }
   if (isKtdnSpread(spread)) {
-    UI.selectionTitle.textContent = "偶数回の塔踏み優先判断";
-    UI.selectionCopy.textContent = "KTDN系は、偶数回の塔踏みでの優先度判断と1回目の頭割りを続けて選べます。";
-    UI.strategyName.textContent = `${STRATEGIES[selectedStrategy].name} / ${SPREAD_METHODS[spread].name} · 1238 / 4567`;
     UI.initialShareSelection.classList.remove("hidden");
     selectInitialShareMode("fixed");
   } else {
     selectedInitialShareMode = null;
     UI.roleSelection.classList.add("hidden");
-    UI.selectionTitle.textContent = "担当ロールを選択";
-    UI.selectionCopy.textContent = "残りの7人は自動で正解位置へ移動します。あなたの担当だけを操作してください。";
-    UI.strategyName.textContent = `${STRATEGIES[selectedStrategy].name} / ${SPREAD_METHODS[spread].name} · 1238 / 4567`;
     UI.initialShareSelection.classList.add("hidden");
     UI.roleSelection.classList.remove("hidden");
     updateStrategyDescription();
@@ -403,8 +392,6 @@ function resetSelection() {
   selectedSpread = null;
   selectedTowerPriorityMode = null;
   selectedInitialShareMode = null;
-  UI.selectionTitle.textContent = "攻略法を選択";
-  UI.selectionCopy.textContent = "最初の先組・後組の決め方を選択してください。";
   UI.spreadSelection.classList.add("hidden");
   UI.towerPrioritySelection.classList.add("hidden");
   UI.initialShareSelection.classList.add("hidden");
