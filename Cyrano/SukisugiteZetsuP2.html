@@ -37,7 +37,7 @@
         background: rgba(255, 255, 255, 0.1);
         border: 2px solid rgba(255, 255, 255, 0.2);
         border-radius: 50%;
-        display: none; /* JavaScriptでゲーム開始時に表示 */
+        display: none; /* ゲーム開始時にJavaScriptで表示を切り替えます */
         z-index: 100;
         user-select: none;
       }
@@ -77,9 +77,6 @@
         }
         .controls-card {
           display: none; /* PC向けの操作説明は非表示に */
-        }
-        .joystick {
-          display: block; /* ゲーム開始時に表示されるように */
         }
       }
     </style>
@@ -223,7 +220,7 @@
     </div>
 
     <!-- バーチャルジョイスティックのHTML要素 -->
-    <div id="joystick" class="joystick" style="display: none;">
+    <div id="joystick" class="joystick">
       <div id="joystick-stick" class="joystick-stick"></div>
     </div>
 
@@ -249,22 +246,23 @@
         window.joystickDirection = { dx: 0, dy: 0 };
 
         const handleTouchStart = (e) => {
-          // ゲームが開始されていなければ何もしない
-          if (!window.state || !window.state.running) return;
-          
-          joystick.style.display = 'block';
+          // ジョイスティックの領域外、またはゲームが実行中でなければ何もしない
+          if (e.target !== joystick && e.target !== stick || !window.state || !window.state.running) {
+            return;
+          }
+
           const touch = e.touches[0];
           joystickActive = true;
-          originX = joystick.offsetLeft + 60;
-          originY = joystick.offsetTop + 60;
+          originX = touch.clientX;
+          originY = touch.clientY;
           e.preventDefault();
         };
 
         const handleTouchMove = (e) => {
           if (!joystickActive) return;
           const touch = e.touches[0];
-          let dx = touch.clientX - originX;
-          let dy = touch.clientY - originY;
+          let dx = touch.clientX - originX; // タッチ開始点からの移動量
+          let dy = touch.clientY - originY; // タッチ開始点からの移動量
           const distance = Math.hypot(dx, dy);
 
           if (distance > maxDistance) {
