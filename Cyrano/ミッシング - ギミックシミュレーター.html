@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<!-- saved from url=(0051)https://curosuke.github.io/kefka-missing-simulator/ -->
+<html lang="ja"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>ミッシング - ギミックシミュレーター</title>
+    <!-- Google tag (gtag.js) -->
+    <script async="" src="./files/js"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-133R6M0EQ3');
+    </script>
+    <script>
+      (() => {
+        const version = String(Date.now());
+        const stylesheet = document.createElement("link");
+        stylesheet.rel = "stylesheet";
+        stylesheet.href = `styles.css?v=${version}`;
+        document.head.appendChild(stylesheet);
+        window.__assetVersion = version;
+      })();
+    </script>
+    <style>
+      /* --- バーチャルジョイスティックのスタイル --- */
+      .joystick {
+        position: fixed;
+        bottom: 50px;
+        left: 50px;
+        width: 120px;
+        height: 120px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: none; /* JavaScriptでゲーム開始時に表示 */
+        z-index: 100;
+        user-select: none;
+      }
+      .joystick-stick {
+        position: absolute;
+        top: 35px;
+        left: 35px;
+        width: 50px;
+        height: 50px;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        transition: transform 0.1s;
+      }
+
+      /* --- スマートフォン向けレスポンシブ対応 --- */
+      @media (max-width: 960px) {
+        .app-shell {
+          padding: 8px;
+        }
+        .game-layout {
+          flex-direction: column;
+          align-items: center;
+        }
+        .arena-panel {
+          width: 100%;
+          max-width: 500px; /* アリーナの最大幅を制限 */
+        }
+        .side-panel {
+          width: 100%;
+          max-width: 500px;
+          flex-direction: row;
+          flex-wrap: wrap;
+          justify-content: center;
+        }
+        .card {
+          flex-grow: 1;
+        }
+        .controls-card {
+          display: none; /* PC向けの操作説明は非表示に */
+        }
+        .joystick {
+          display: block; /* ゲーム開始時に表示されるように */
+        }
+      }
+    </style>
+    <link rel="stylesheet" href="./files/styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <h1>ミッシング</h1>
+        </div>
+        <div class="status-strip">
+          <div><span>TIME</span><strong id="timeDisplay">0:00</strong></div>
+          <div><span>NEXT</span><strong id="nextDisplay">役割を選択</strong></div>
+          <div><span>HAZARD</span><strong id="stackDisplay">4</strong></div>
+        </div>
+      </header>
+
+      <section class="game-layout">
+        <div class="arena-panel">
+          <canvas id="arena" width="800" height="800" aria-label="ミッシングの戦闘フィールド"></canvas>
+          <div id="castBar" class="cast-bar hidden">
+            <span id="castName"></span>
+            <div><i id="castFill"></i></div>
+          </div>
+          <div id="banner" class="banner hidden"></div>
+        </div>
+
+        <aside class="side-panel">
+          <section class="card assignment-card">
+            <p class="card-label">YOUR ASSIGNMENT</p>
+            <div class="assignment-main">
+              <img id="roleIcon" src="./files/TankRole.png" alt="">
+              <div><strong id="roleName">未選択</strong><span id="pairName">PAIR —</span></div>
+              <b id="markBadge" class="mark-badge">—</b>
+            </div>
+            <div class="assignment-grid">
+              <div><span>組</span><strong id="groupName">—</strong></div>
+              <div><span>次の塔</span><strong id="towerAssignment">—</strong></div>
+            </div>
+          </section>
+
+          <section class="card timeline-card">
+            <div class="card-heading"><p class="card-label">TIMELINE</p><span id="roundDisplay">ROUND — / 8</span></div>
+            <ol id="timeline"><li data-time="0"><time>0:00</time><span>ミッシング / 塔出現</span></li><li data-time="10"><time>0:10</time><span>塔1回目</span></li><li data-time="20"><time>0:20</time><span>塔2回目 + 過去/未来</span></li><li data-time="30"><time>0:30</time><span>半面 + 塔3回目</span></li><li data-time="40"><time>0:40</time><span>塔4回目 + 過去/未来</span></li><li data-time="50"><time>0:50</time><span>半面 + 塔5回目</span></li><li data-time="60"><time>1:00</time><span>塔6回目 + 過去/未来</span></li><li data-time="70"><time>1:10</time><span>半面 + 塔7回目</span></li><li data-time="80"><time>1:20</time><span>塔8回目 + 過去/未来</span></li><li data-time="90"><time>1:30</time><span>最後の半面 / 終了</span></li></ol>
+          </section>
+
+          <section class="card controls-card">
+            <p class="card-label">CONTROLS</p>
+            <div class="key-row"><kbd>WASD</kbd><kbd>矢印</kbd><span>移動</span></div>
+            <div class="key-row"><kbd>SHIFT</kbd><span>スプリント</span></div>
+            <div class="key-row"><kbd>CLICK</kbd><span>クリック地点へ移動</span></div>
+            <label class="speed-control">進行速度
+              <select id="speedSelect">
+                <option value="1">1.0x</option>
+                <option value="1.5">1.5x</option>
+                <option value="2">2.0x</option>
+              </select>
+            </label>
+          </section>
+
+        </aside>
+      </section>
+    </main>
+
+    <div id="roleModal" class="modal">
+      <div class="modal-card">
+        <p class="eyebrow">SELECT STRATEGY</p>
+        <p class="modal-origin-note">
+          パークパクパク！幣固定用に選択肢を減らしたパクリサイトパクねぇ！
+          <br>悪のプログラマーがコードを取ってきました。Github公開してるということはそういうことです。</br>
+        </p>
+        <h2 id="selectionTitle">攻略法を選択</h2>
+        <p id="selectionCopy" class="modal-copy">最初の先組・後組の決め方を選択してください。</p>
+        <div id="strategyButtons" class="strategy-buttons">
+          <button class="strategy-button" data-strategy="yarn" aria-pressed="false">
+            <strong>ヤーン式</strong>
+            <span>MT-H1／ST-H2／D1-D3／D2-D4で判断</span>
+          </button>
+        </div>
+        <div id="spreadSelection" class="selection-block hidden">
+          <h3>散開位置を選択</h3>
+          <div id="spreadButtons" class="strategy-buttons">
+            <button class="strategy-button spread-button" data-spread="piren" aria-pressed="false">
+              <strong>ぴれん式</strong>
+              <span>図に合わせた奇数・偶数回の立ち位置</span>
+            </button>
+          </div>
+        </div>
+        <div id="initialShareSelection" class="selection-block hidden">
+          <h3>1回目の頭割り処理法を選択</h3>
+          <div id="initialShareButtons" class="radio-grid">
+            <label class="radio-option">
+              <input type="radio" name="initialShareMode" value="fixed">
+              <span>
+                <strong>左がTH、右がDPSで固定</strong>
+                <small>Tank/Healerは左塔、DPSは右塔に固定します</small>
+              </span>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="initialShareMode" value="pair">
+              <span>
+                <strong>ペアを見て判断</strong>
+                <small>ペアが扇なら左塔、ペアが円なら右塔に入ります</small>
+              </span>
+            </label>
+          </div>
+        </div>
+        <div id="towerPrioritySelection" class="selection-block hidden">
+          <h3>偶数回の塔踏み優先判断を選択</h3>
+          <p class="modal-copy">奇数回目の塔を踏んだ後に出る予兆（次の偶数回目の塔踏みの移動先）の優先ルールを選びます。<br>（塔8回目はプレイヤーが自分でbind or stopマーカーを付与して対応する塔へ移動）</p>
+          <div id="towerPriorityButtons" class="radio-grid">
+            <label class="radio-option">
+              <input type="radio" name="towerPriorityMode" value="ktdn">
+              <span>
+                <strong>南調整</strong>
+                <small>同じ塔内で予兆が異なる場合は次の塔踏みも同じ側の塔を踏み、予兆が重複した場合は南側が次の塔踏みで反対の塔へ移動します</small>
+              </span>
+            </label>
+          </div>
+        </div>
+        <div id="roleSelection" class="role-selection hidden">
+          <h3>担当ロールを選択</h3>
+          <p class="modal-copy">残りの7人は自動で正解位置へ移動します。あなたの担当だけを操作してください。</p>
+          <div id="roleButtons" class="role-buttons"><button class="role-button"><img src="./files/TankRole.png" alt=""><strong>MT</strong></button><button class="role-button"><img src="./files/TankRole.png" alt=""><strong>ST</strong></button><button class="role-button"><img src="./files/HealerRole.png" alt=""><strong>H1</strong></button><button class="role-button"><img src="./files/HealerRole.png" alt=""><strong>H2</strong></button><button class="role-button"><img src="./files/DPSRole.png" alt=""><strong>D1</strong></button><button class="role-button"><img src="./files/DPSRole.png" alt=""><strong>D2</strong></button><button class="role-button"><img src="./files/DPSRole.png" alt=""><strong>D3</strong></button><button class="role-button"><img src="./files/DPSRole.png" alt=""><strong>D4</strong></button></div>
+          <div class="strategy-note">
+            <strong id="strategyName">りーん式 / KT式 · 1238 / 4567</strong>
+            <span id="strategyDescription"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="resultModal" class="modal hidden">
+      <div class="modal-card result-card">
+        <p id="resultKicker" class="eyebrow">DUTY FAILED</p>
+        <h2 id="resultTitle">GAME OVER</h2>
+        <p id="resultReason" class="modal-copy"></p>
+        <button id="retryButton" class="primary-button">もう一度挑戦</button>
+      </div>
+    </div>
+
+    <!-- バーチャルジョイスティックのHTML要素 -->
+    <div id="joystick" class="joystick" style="display: none;">
+      <div id="joystick-stick" class="joystick-stick"></div>
+    </div>
+
+    <script>
+      (() => {
+        const script = document.createElement("script");
+        script.src = `app.js?v=${window.__assetVersion || Date.now()}`;
+        document.body.appendChild(script);
+      })();
+    </script>
+    <script>
+      // --- バーチャルジョイスティックのロジック ---
+      document.addEventListener('DOMContentLoaded', () => {
+        const joystick = document.getElementById('joystick');
+        const stick = document.getElementById('joystick-stick');
+        if (!joystick || !stick) return;
+
+        let joystickActive = false;
+        let originX, originY;
+        const maxDistance = 35; // スティックの最大移動範囲
+
+        // app.jsの移動ロジックに介入するためのグローバル変数
+        window.joystickDirection = { dx: 0, dy: 0 };
+
+        const handleTouchStart = (e) => {
+          // ゲームが開始されていなければ何もしない
+          if (!window.state || !window.state.running) return;
+          
+          joystick.style.display = 'block';
+          const touch = e.touches[0];
+          joystickActive = true;
+          originX = joystick.offsetLeft + 60;
+          originY = joystick.offsetTop + 60;
+          e.preventDefault();
+        };
+
+        const handleTouchMove = (e) => {
+          if (!joystickActive) return;
+          const touch = e.touches[0];
+          let dx = touch.clientX - originX;
+          let dy = touch.clientY - originY;
+          const distance = Math.hypot(dx, dy);
+
+          if (distance > maxDistance) {
+            dx = (dx / distance) * maxDistance;
+            dy = (dy / distance) * maxDistance;
+          }
+
+          stick.style.transform = `translate(${dx}px, ${dy}px)`;
+
+          // 移動方向を正規化してグローバル変数に保存
+          if (distance > 5) { // わずかな動きは無視 (デッドゾーン)
+            window.joystickDirection.dx = dx / maxDistance;
+            window.joystickDirection.dy = dy / maxDistance;
+          } else {
+            window.joystickDirection.dx = 0;
+            window.joystickDirection.dy = 0;
+          }
+          e.preventDefault();
+        };
+
+        const handleTouchEnd = (e) => {
+          if (!joystickActive) return;
+          joystickActive = false;
+          stick.style.transform = 'translate(0, 0)';
+          window.joystickDirection.dx = 0;
+          window.joystickDirection.dy = 0;
+        };
+
+        joystick.addEventListener('touchstart', handleTouchStart, { passive: false });
+        document.addEventListener('touchmove', handleTouchMove, { passive: false });
+        document.addEventListener('touchend', handleTouchEnd);
+      });
+    </script>
+    <script>
+      // DOMの読み込みが完了した後に実行
+      document.addEventListener('DOMContentLoaded', () => {
+        // app.jsの処理を待つために少し遅延させる
+        setTimeout(() => {
+          // 1. 各選択肢の要素を取得
+          const yarnButton = document.querySelector('button[data-strategy="yarn"]');
+          const pirenButton = document.querySelector('button[data-spread="piren"]');
+          const ktdnRadio = document.querySelector('input[name="towerPriorityMode"][value="ktdn"]');
+
+          // 2. ボタンをプログラムでクリックし、ラジオボタンを選択状態にする
+          if (yarnButton) yarnButton.click();
+          if (pirenButton) pirenButton.click();
+          if (ktdnRadio) ktdnRadio.checked = true;
+
+          // 3. 不要になった選択UIを非表示にする
+          document.getElementById('strategyButtons').style.display = 'none';
+          document.getElementById('spreadSelection').style.display = 'none';
+          document.getElementById('initialShareSelection').style.display = 'none';
+          document.getElementById('towerPrioritySelection').style.display = 'none';
+          document.getElementById('selectionTitle').style.display = 'none';
+          document.getElementById('selectionCopy').style.display = 'none';
+        }, 100); // 100ミリ秒の遅延
+      });
+    </script>
+    <script src="./files/app.js"></script>
+    <footer>© SQUARE ENIX</footer>
+  
+</body></html>
