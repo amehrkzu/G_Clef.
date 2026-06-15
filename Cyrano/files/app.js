@@ -533,6 +533,13 @@ function startGame(playerId, strategy = "lean", spread = "kt") {
   player.startY = player.y;
   UI.roleModal.classList.add("hidden");
   UI.resultModal.classList.add("hidden");
+
+  // スマートフォン表示の場合、仮想ジョイスティックを表示する
+  const joystick = document.getElementById('joystick');
+  if (joystick && window.matchMedia('(max-width: 960px)').matches) {
+    joystick.style.display = 'block';
+  }
+
   updateAssignment();
   requestAnimationFrame(loop);
 }
