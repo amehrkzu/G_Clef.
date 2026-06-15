@@ -47,6 +47,7 @@
         display: none;
         z-index: 100;
         user-select: none;
+        display: none;
       }
       .joystick-stick {
         position: absolute;
@@ -225,7 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const joystick = document.getElementById('joystick');
   const stick = document.getElementById('joystick-stick');
 
-  if (!joystick || !stick) return;
+  if (!joystick || !stick ) return;
 
   window.joystickDirection = {
     dx: 0,
