@@ -526,6 +526,15 @@ function startGame(playerId, strategy = "lean", spread = "kt") {
     towerPriorityMode: selectedTowerPriorityMode || defaultTowerPriorityModeForSpread(activeSpread),
     initialShareMode: selectedInitialShareMode || "pair",
   };
+  
+  window.state = state;
+
+  const joystick = document.getElementById("joystick");
+
+  if (window.innerWidth <= 960 && joystick) {
+    joystick.style.display = "block";
+  }
+  
   const player = getPlayer();
   player.x = 400;
   player.y = 650;
@@ -533,12 +542,6 @@ function startGame(playerId, strategy = "lean", spread = "kt") {
   player.startY = player.y;
   UI.roleModal.classList.add("hidden");
   UI.resultModal.classList.add("hidden");
-
-  // スマートフォン表示の場合、仮想ジョイスティックを表示する
-  const joystick = document.getElementById('joystick');
-  if (joystick && window.matchMedia('(max-width: 960px)').matches) {
-    joystick.style.display = 'block';
-  }
 
   updateAssignment();
   requestAnimationFrame(loop);
@@ -1018,10 +1021,10 @@ function movePlayers(dt) {
   if (keys.has("a") || keys.has("ArrowLeft")) dx -= 1;
   if (keys.has("d") || keys.has("ArrowRight")) dx += 1;
 
-  // ジョイスティックからの入力を追加
-  if (window.joystickDirection) {
-    dx += window.joystickDirection.dx;
-    dy += window.joystickDirection.dy;
+ // ジョイスティックからの入力を追加
+  if (window.joystickDirection && (window.joystickDirection.dx !== 0 || window.joystickDirection.dy !== 0)) {
+    dx = window.joystickDirection.dx;
+    dy = window.joystickDirection.dy;
   }
 
   if (!autoplay && (dx || dy)) {
@@ -1688,7 +1691,19 @@ window.addEventListener("keyup", (event) => {
   keys.delete(event.key.length === 1 ? event.key.toLowerCase() : event.key);
 });
 canvas.addEventListener("pointerdown", (event) => {
+  console.log('[app.js] pointerdown: クリック/タッチ移動イベントを検知しました。', `タイプ: ${event.pointerType}`);
+  // 仮想スティックが処理済みの場合、何もしない
+  if (event.defaultPrevented) {
+    return;
+  }
+
   if (!state.running) return;
+  // タッチ操作（pointerType === 'touch'）の場合は、
+  // 仮想スティックの処理に任せるため、クリック移動を無効化する
+  if (event.pointerType === 'touch') {
+    state.moveTarget = null;
+    return;
+  }
   const rect = canvas.getBoundingClientRect();
   state.moveTarget = {
     x: ((event.clientX - rect.left) / rect.width) * W,
@@ -1723,4 +1738,5 @@ if (autoplay) startGame(
   query.get("role") || "MT",
   query.get("strategy") || "lean",
   query.get("spread") || query.get("position") || "kt"
+
 );

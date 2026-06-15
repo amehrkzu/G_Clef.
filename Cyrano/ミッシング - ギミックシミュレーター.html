@@ -225,107 +225,91 @@
     </div>
 
     <script>
-      (() => {
-        const script = document.createElement("script");
-        script.src = `./files/app.js?v=${window.__assetVersion || Date.now()}`;
-        document.body.appendChild(script);
-      })();
+      function initializeJoystick() {
+        const joystick = document.getElementById('joystick');
+        const stick = document.getElementById('joystick-stick');
+        const arena = document.getElementById('arena');
+        if (!joystick || !stick || !arena) return;
+
+        let joystickActive = false;
+        let originX, originY;
+        const maxDistance = 35; // スティックの最大移動範囲
+
+        // app.jsの移動ロジックに介入するためのグローバル変数
+        window.joystickDirection = { dx: 0, dy: 0 };
+
+        const getCoords = (e) => {
+          return e.touches ? e.touches[0] : e;
+        };
+
+        const onPointerDown = (e) => {
+          // ゲーム実行中でなければ何もしない
+          if (!window.state || !window.state.running) return;
+          // マウスの場合、左クリック以外は無視
+          if (e.button && e.button !== 0) return;
+
+          e.preventDefault(); // デフォルトのクリック/タッチイベントをキャンセル
+
+          const coords = getCoords(e);
+          joystickActive = true;
+          originX = coords.clientX;
+          originY = coords.clientY;
+
+          joystick.style.left = `${originX - 60}px`;
+          joystick.style.top = `${originY - 60}px`;
+          joystick.style.display = 'block';
+
+          document.addEventListener('mousemove', onPointerMove, { passive: false });
+          document.addEventListener('touchmove', onPointerMove, { passive: false });
+          document.addEventListener('mouseup', onPointerUp, { passive: false });
+          document.addEventListener('touchend', onPointerUp, { passive: false });
+        };
+
+        const onPointerMove = (e) => {
+          if (!joystickActive) return;
+          const coords = getCoords(e);
+          let dx = coords.clientX - originX;
+          let dy = coords.clientY - originY;
+          const distance = Math.hypot(dx, dy);
+
+          if (distance > maxDistance) {
+            dx = (dx / distance) * maxDistance;
+            dy = (dy / distance) * maxDistance;
+          }
+
+          stick.style.transform = `translate(${dx}px, ${dy}px)`;
+
+          // 移動方向を app.js に伝える
+          if (distance > 5) { // わずかな動きは無視 (デッドゾーン)
+            window.joystickDirection.dx = dx / maxDistance;
+            window.joystickDirection.dy = dy / maxDistance;
+          } else {
+            window.joystickDirection.dx = 0;
+            window.joystickDirection.dy = 0;
+          }
+          e.preventDefault();
+        };
+
+        const onPointerUp = (e) => {
+          if (!joystickActive) return;
+          joystickActive = false;
+          joystick.style.display = 'none';
+          stick.style.transform = 'translate(0, 0)';
+          window.joystickDirection.dx = 0;
+          window.joystickDirection.dy = 0;
+
+          document.removeEventListener('mousemove', onPointerMove);
+          document.removeEventListener('touchmove', onPointerMove);
+          document.removeEventListener('mouseup', onPointerUp);
+          document.removeEventListener('touchend', onPointerUp);
+        };
+
+        arena.addEventListener('mousedown', onPointerDown, { passive: false });
+        arena.addEventListener('touchstart', onPointerDown, { passive: false });
+      }
+
     </script>
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-
-  const joystick = document.getElementById('joystick');
-  const stick = document.getElementById('joystick-stick');
-
-  if (!joystick || !stick) return;
-
-  window.joystickDirection = {
-    dx: 0,
-    dy: 0
-  };
-
-  let active = false;
-  let centerX = 0;
-  let centerY = 0;
-
-  const MAX_DISTANCE = 35;
-
-  function start(e) {
-
-    if (joystick.style.display === "none") return;
-
-    active = true;
-
-    const rect = joystick.getBoundingClientRect();
-
-    centerX = rect.left + rect.width / 2;
-    centerY = rect.top + rect.height / 2;
-
-    e.preventDefault();
-  }
-
-  function move(e) {
-
-    if (!active) return;
-
-    const touch = e.touches[0];
-
-    let dx = touch.clientX - centerX;
-    let dy = touch.clientY - centerY;
-
-    const distance = Math.hypot(dx, dy);
-
-    if (distance > MAX_DISTANCE) {
-      dx = dx / distance * MAX_DISTANCE;
-      dy = dy / distance * MAX_DISTANCE;
-    }
-
-    stick.style.transform =
-      `translate(${dx}px, ${dy}px)`;
-
-    window.joystickDirection.dx =
-      dx / MAX_DISTANCE;
-
-    window.joystickDirection.dy =
-      dy / MAX_DISTANCE;
-
-    e.preventDefault();
-  }
-
-  function end() {
-
-    active = false;
-
-    stick.style.transform =
-      'translate(0px,0px)';
-
-    window.joystickDirection.dx = 0;
-    window.joystickDirection.dy = 0;
-  }
-
-  joystick.addEventListener(
-    'touchstart',
-    start,
-    { passive:false }
-  );
-
-  document.addEventListener(
-    'touchmove',
-    move,
-    { passive:false }
-  );
-
-  document.addEventListener(
-    'touchend',
-    end
-  );
-
-  document.addEventListener(
-    'touchcancel',
-    end
-  );
-});
-</script>    <script>
+    <script>
       // DOMの読み込みが完了した後に実行
       document.addEventListener('DOMContentLoaded', () => {
         // app.jsの処理を待つために少し遅延させる
@@ -343,11 +327,23 @@ document.addEventListener('DOMContentLoaded', () => {
           // 3. 不要になった選択UIを非表示にする
           document.getElementById('strategyButtons').style.display = 'none';
           document.getElementById('spreadSelection').style.display = 'none';
+          document.getElementById('initialShareSelection').style.display = 'none';
           document.getElementById('towerPrioritySelection').style.display = 'none';
+          document.getElementById('selectionTitle').style.display = 'none';
+          document.getElementById('selectionCopy').style.display = 'none';
         }, 100); // 100ミリ秒の遅延
       });
     </script>
-    <!-- The app.js script is now loaded dynamically, so this static script tag is removed to avoid duplication. -->
+    <script>
+      // app.js をキャッシュ無効化しつつ、正しいパスから読み込む
+      (() => {
+        const script = document.createElement("script");
+        script.src = `./files/app.js?v=${window.__assetVersion || Date.now()}`;
+        // app.js の読み込みが完了した後に、ジョイスティックを初期化する
+        script.onload = initializeJoystick;
+        document.body.appendChild(script);
+      })();
+    </script>
     <footer>© SQUARE ENIX</footer>
   
 </body></html>
