@@ -291,9 +291,9 @@
           window.joystickDirection.dy = 0;
         };
 
-        joystick.addEventListener('touchstart', handleTouchStart, { passive: false });
-        document.addEventListener('touchmove', handleTouchMove, { passive: false });
-        document.addEventListener('touchend', handleTouchEnd);
+        joystick.addEventListener('touchstart', handleTouchStart, { passive: false }); // 操作開始
+        joystick.addEventListener('touchmove', handleTouchMove, { passive: false });  // 操作中
+        joystick.addEventListener('touchend', handleTouchEnd);                        // 操作終了
       });
     </script>
     <script>
