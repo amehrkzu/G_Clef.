@@ -11,12 +11,18 @@
   --danger: #ff667a;
 }
 
-html { scrollbar-gutter: stable; }
+html { 
+  scrollbar-gutter: stable; 
+  background-color: #111927;
+  color-scheme: dark;
+}
 * { box-sizing: border-box; }
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background-color: #111927;
+  color-scheme: dark;
   background:
     radial-gradient(circle at 42% 30%, rgba(40, 66, 106, 0.2), transparent 40%),
     linear-gradient(135deg, #090e17, #05080e);

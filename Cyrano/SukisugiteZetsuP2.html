@@ -30,7 +30,11 @@
       })();
     </script>
     <style>
-      /* 全体にフォントを適用 */
+      html, body {
+        background: rgba(255, 255, 255, 0.1);
+        margin: 0;
+      }
+
       body, button, select, input {
         font-family: 'Yusei Magic', sans-serif;
       }
@@ -64,6 +68,7 @@
       @media (max-width: 960px) {
         .app-shell {
           padding: 8px;
+          background-color: rgba(255, 255, 255, 0.1);
         }
         .game-layout {
           flex-direction: column;
@@ -333,10 +338,20 @@ document.addEventListener('DOMContentLoaded', () => {
           document.getElementById('strategyButtons').style.display = 'none';
           document.getElementById('spreadSelection').style.display = 'none';
           document.getElementById('towerPrioritySelection').style.display = 'none';
-        }, 100); // 100ミリ秒の遅延
+          document.getElementById('loading-overlay').style.display = 'none';
+        }, 250); // 100ミリ秒の遅延
       });
     </script>
     <!-- The app.js script is now loaded dynamically, so this static script tag is removed to avoid duplication. -->
     <footer>© SQUARE ENIX</footer>
   
-</body></html>
+</body>
+<div id="loading-overlay" style="
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 9999;">
+ロード中
+</div>
+
+</html>
