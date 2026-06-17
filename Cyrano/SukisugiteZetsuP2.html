@@ -340,7 +340,10 @@ document.addEventListener('DOMContentLoaded', () => {
           // 2. ボタンをプログラムでクリックし、ラジオボタンを選択状態にする
           if (yarnButton) yarnButton.click();
           if (pirenButton) pirenButton.click();
-          if (ktdnRadio) ktdnRadio.checked = true;
+          if (ktdnRadio) {
+            ktdnRadio.checked = true;
+            ktdnRadio.dispatchEvent(new Event('change', { bubbles: true }));
+          }
 
           // 3. 不要になった選択UIを非表示にする
           document.getElementById('strategyButtons').style.display = 'none';
