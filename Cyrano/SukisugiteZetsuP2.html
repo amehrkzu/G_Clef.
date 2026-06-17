@@ -41,17 +41,15 @@
 
       .joystick {
         position: fixed;
-        bottom: 50px;
-        left: 50px;
         width: 120px;
         height: 120px;
         background: rgba(255, 255, 255, 0.1);
         border: 2px solid rgba(255, 255, 255, 0.2);
         border-radius: 50%;
-        display: none;
         z-index: 100;
         user-select: none;
         display: none;
+        transform: translate(-50%, -50%);
       }
       .joystick-stick {
         position: absolute;
@@ -247,12 +245,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (joystick.style.display === "none") return;
 
+    // モーダルやボタンの上のタップは無視する
+    const target = e.target;
+    if (target.closest('.modal, button, input, select, label')) return;
+
     active = true;
 
-    const rect = joystick.getBoundingClientRect();
+    const touch = e.touches[0];
+    centerX = touch.clientX;
+    centerY = touch.clientY;
 
-    centerX = rect.left + rect.width / 2;
-    centerY = rect.top + rect.height / 2;
+    // タップした位置にジョイスティックを移動
+    joystick.style.left = centerX + 'px';
+    joystick.style.top = centerY + 'px';
+    joystick.style.bottom = 'auto';
+
+    stick.style.transform = 'translate(0px, 0px)';
 
     e.preventDefault();
   }
@@ -296,7 +304,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.joystickDirection.dy = 0;
   }
 
-  joystick.addEventListener(
+  document.addEventListener(
     'touchstart',
     start,
     { passive:false }
