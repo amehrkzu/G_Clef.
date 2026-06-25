@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <!-- saved from url=(0051)https://curosuke.github.io/kefka-missing-simulator/ -->
 <html lang="ja"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     
@@ -195,6 +195,22 @@
         <div id="roleSelection" class="role-selection hidden">
           <h3>担当ロールを選択</h3>
           <p class="modal-copy">残りの7人は自動で正解位置へ移動します。あなたの担当だけを操作してください。</p>
+          <div class="mobile-prestart-settings">
+            <label class="speed-control mobile-setting">
+              <span>進行速度</span>
+              <select id="mobileSpeedSelect">
+                <option value="1">1.0x</option>
+                <option value="1.5">1.5x</option>
+                <option value="2">2.0x</option>
+              </select>
+            </label>
+            <div class="speed-control omen-control mobile-setting">
+              <div>
+                <span>マーカー表示</span>
+              </div>
+              <button id="mobileOmenStyleToggle" class="omen-toggle__button" type="button" aria-pressed="false">色分け</button>
+            </div>
+          </div>
           <div id="roleButtons" class="role-buttons"><button class="role-button"><img src="./files/TankRole.png" alt=""><strong>MT</strong></button><button class="role-button"><img src="./files/TankRole.png" alt=""><strong>ST</strong></button><button class="role-button"><img src="./files/HealerRole.png" alt=""><strong>H1</strong></button><button class="role-button"><img src="./files/HealerRole.png" alt=""><strong>H2</strong></button><button class="role-button"><img src="./files/DPSRole.png" alt=""><strong>D1</strong></button><button class="role-button"><img src="./files/DPSRole.png" alt=""><strong>D2</strong></button><button class="role-button"><img src="./files/DPSRole.png" alt=""><strong>D3</strong></button><button class="role-button"><img src="./files/DPSRole.png" alt=""><strong>D4</strong></button></div>
             <span id="strategyDescription" class="selection-block hidden"></span>
         </div>
@@ -330,24 +346,37 @@ document.addEventListener('DOMContentLoaded', () => {
 <script>
       // DOMの読み込みが完了した後に実行
       document.addEventListener('DOMContentLoaded', () => {
-        // app.jsの処理を待つために少し遅延させる
-        setTimeout(() => {
-          // 1. 各選択肢の要素を取得
+        const bootstrap = () => {
           const yarnButton = document.querySelector('button[data-strategy="yarn"]');
           const pirenButton = document.querySelector('button[data-spread="piren"]');
           const ktdnRadio = document.querySelector('input[name="towerPriorityMode"][value="ktdn"]');
-
-          // 2. ボタンをプログラムでクリックし、ラジオボタンを選択状態にする
+          const speedSelect = document.getElementById('speedSelect');
+          const mobileSpeedSelect = document.getElementById('mobileSpeedSelect');
+          const omenStyleToggle = document.getElementById('omenStyleToggle');
+          const mobileOmenStyleToggle = document.getElementById('mobileOmenStyleToggle');
+          const applyOmen = (on) => {
+            document.documentElement.dataset.omenStyle = on ? 'badge' : 'compact';
+            const label = on ? '単色' : '色分け';
+            if (omenStyleToggle) { omenStyleToggle.textContent = label; omenStyleToggle.setAttribute('aria-pressed', String(on)); }
+            if (mobileOmenStyleToggle) { mobileOmenStyleToggle.textContent = label; mobileOmenStyleToggle.setAttribute('aria-pressed', String(on)); }
+          };
           if (yarnButton) yarnButton.click();
           if (pirenButton) pirenButton.click();
           if (ktdnRadio) ktdnRadio.checked = true;
-
-          // 3. 不要になった選択UIを非表示にする
+          if (speedSelect && mobileSpeedSelect) {
+            mobileSpeedSelect.value = speedSelect.value;
+            mobileSpeedSelect.addEventListener('change', () => { speedSelect.value = mobileSpeedSelect.value; });
+          }
+          applyOmen(true);
+          if (omenStyleToggle) omenStyleToggle.addEventListener('click', () => applyOmen(document.documentElement.dataset.omenStyle !== 'badge'));
+          if (mobileOmenStyleToggle) mobileOmenStyleToggle.addEventListener('click', () => applyOmen(document.documentElement.dataset.omenStyle !== 'badge'));
           document.getElementById('strategyButtons').style.display = 'none';
           document.getElementById('spreadSelection').style.display = 'none';
           document.getElementById('towerPrioritySelection').style.display = 'none';
           document.getElementById('loading-overlay').style.display = 'none';
-        }, 250); // 100ミリ秒の遅延
+        };
+        if (window.__appReady) bootstrap();
+        else window.addEventListener('app:ready', bootstrap, { once: true });
       });
     </script>
     <!-- The app.js script is now loaded dynamically, so this static script tag is removed to avoid duplication. -->
