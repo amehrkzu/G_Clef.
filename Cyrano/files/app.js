@@ -1570,7 +1570,6 @@ function drawTargetMarker(player) {
   if (!marker) return;
 
   const y = player.y - 62;
-  const yellowOmen = document.documentElement.dataset.omenStyle !== "compact";
   ctx.save();
   ctx.translate(player.x, y);
   ctx.lineWidth = 3;
@@ -1578,8 +1577,8 @@ function drawTargetMarker(player) {
   ctx.textBaseline = "middle";
 
   if (marker.type.startsWith("stop")) {
-    ctx.strokeStyle = yellowOmen ? "#f0c94a" : "#ff6f8b";
-    ctx.shadowColor = yellowOmen ? "rgba(255, 236, 140, 0.48)" : "rgba(255, 111, 139, 0.6)";
+    ctx.strokeStyle = "#ff6f8b";
+    ctx.shadowColor = "rgba(255, 111, 139, 0.6)";
     ctx.shadowBlur = 12;
     ctx.beginPath();
     ctx.arc(0, 0, 17, 0, Math.PI * 2);
@@ -1593,8 +1592,8 @@ function drawTargetMarker(player) {
     ctx.font = "900 13px sans-serif";
     ctx.fillText(marker.type.endsWith("1") ? "1" : "2", -12, -13);
   } else {
-    ctx.strokeStyle = yellowOmen ? "#f0c94a" : "#f0d8ff";
-    ctx.shadowColor = yellowOmen ? "rgba(255, 236, 140, 0.48)" : "rgba(215, 168, 255, 0.7)";
+    ctx.strokeStyle = "#f0d8ff";
+    ctx.shadowColor = "rgba(215, 168, 255, 0.7)";
     ctx.shadowBlur = 12;
     ctx.beginPath();
     ctx.moveTo(-4, -18);
@@ -1607,7 +1606,7 @@ function drawTargetMarker(player) {
     ctx.lineTo(8, 18);
     ctx.stroke();
     ctx.shadowBlur = 0;
-    ctx.fillStyle = yellowOmen ? "#fff7cc" : "#fff7ff";
+    ctx.fillStyle = "#fff7ff";
     ctx.font = "900 13px sans-serif";
     ctx.fillText(marker.type.endsWith("1") ? "1" : "2", 13, -11);
   }
