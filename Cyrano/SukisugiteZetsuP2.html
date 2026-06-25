@@ -362,14 +362,12 @@ document.addEventListener('DOMContentLoaded', () => {
           };
           if (yarnButton) yarnButton.click();
           if (pirenButton) pirenButton.click();
-          if (ktdnRadio) ktdnRadio.checked = true;
-          if (speedSelect && mobileSpeedSelect) {
-            mobileSpeedSelect.value = speedSelect.value;
-            mobileSpeedSelect.addEventListener('change', () => { speedSelect.value = mobileSpeedSelect.value; });
+          if (ktdnRadio) {
+            ktdnRadio.checked = true;
+            ktdnRadio.dispatchEvent(new Event('change', { bubbles: true }));
           }
-          applyOmen(true);
-          if (omenStyleToggle) omenStyleToggle.addEventListener('click', () => applyOmen(document.documentElement.dataset.omenStyle !== 'badge'));
-          if (mobileOmenStyleToggle) mobileOmenStyleToggle.addEventListener('click', () => applyOmen(document.documentElement.dataset.omenStyle !== 'badge'));
+
+          // 3. 不要になった選択UIを非表示にする
           document.getElementById('strategyButtons').style.display = 'none';
           document.getElementById('spreadSelection').style.display = 'none';
           document.getElementById('towerPrioritySelection').style.display = 'none';
