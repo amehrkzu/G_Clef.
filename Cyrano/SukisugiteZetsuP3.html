@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Yusei+Magic&display=swap" rel="stylesheet">
+
 <style>
   :root{
     /* --panel / --line / --muted / --cyan / --gold / --danger は files/styles.css 側で定義済み */
@@ -28,9 +29,10 @@
   header .eyebrow{
     color:var(--cyan);
     letter-spacing:.18em;
-    font-family: 'Yusei Magic', sans-serif;
     font-size:11px;
     font-weight:800;
+    font-family: 'Yusei Magic', sans-serif;
+
   }
   header h1{
     font-size:clamp(1.5rem,4vw,2.3rem);
@@ -293,8 +295,9 @@
           <br><br>
           結論として、安置は以下の手順で求められる：
           <div class="formula">
-            ① サイコロ1の位置 ＝ 最初のケフカ出現位置の対角（反対側）<br>
-            ② そこから、ケフカの回転方向と<b>逆回り</b>に1マスずつ進みながら 2, 3, 4 … 8 を順番に配置する
+            ① 最初のケフカ出現位置の対角（反対側のマーカー）を起点にする<br>
+            ② そこから、ケフカの回転方向と<b>逆回り</b>に1歩進んだ「隙間」がサイコロ1の安置<br>
+            ③ さらに同じ方向に1マスずつ進みながら 2, 3, 4 … 8 を順番に配置する
           </div>
           このツールでは「最初のケフカの出現位置」と「回転方向」だけを与えるので、上記の手順を使って安置（サイコロ1〜8の立ち位置）を全て埋めてみてください。
         </div>
@@ -349,8 +352,9 @@
 
 <script>
 (function(){
-  const POS_LABELS = ["A","1","B","2","C","3","D","4"];
+  const POS_LABELS = ["A","2","B","3","C","4","D","1"];
   const GROUP_COLORS = ["#e2483f", "#e8c34a", "#4aa8e0", "#a855f7"]; // A/1=赤, B/2=黄, C/3=青, D/4=紫
+  const LABEL_GROUP = { "A":0, "1":0, "B":1, "2":1, "C":2, "3":2, "D":3, "4":3 };
   const ODD_COLOR = "#4aa8e0";  // 奇数 = 青
   const EVEN_COLOR = "#e2483f"; // 偶数 = 赤
   // 1〜4は基本パターン、5〜8は「基本パターンの組み合わせ」(参考画像の配置を再現)
@@ -388,9 +392,12 @@
   let checked = false;
 
   function computeAnswer(p1, d){
+    const oppositeIndex = (p1 + 4) % 8;
+    // 時計回り出現の場合は「対角の1つ反時計回り側の隙間」から始まる
+    const firstGap = (d === 1) ? ((oppositeIndex - 1 + 8) % 8) : oppositeIndex;
     const map = {};
     for(let n=1;n<=8;n++){
-      let pos = ((p1 + 4 - (n-1)*d) % 8 + 8) % 8;
+      let pos = ((firstGap - (n-1)*d) % 8 + 8) % 8;
       map[pos] = n;
     }
     return map;
@@ -533,7 +540,7 @@
     for(let i=0;i<8;i++){
       const p = ptFor(i, WAYMARK_R);
       const g = el('g', {});
-      const groupColor = GROUP_COLORS[Math.floor(i/2)];
+      const groupColor = GROUP_COLORS[LABEL_GROUP[POS_LABELS[i]]];
 
       const dot = el('circle', {cx:p.x, cy:p.y, r:6, class:"waymark-dot", style:`fill:${groupColor}; stroke:${groupColor};`});
       g.appendChild(dot);
