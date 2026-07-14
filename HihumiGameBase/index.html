@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>MiniEngine v2 - Unity風HTML製ゲームエンジン</title>
+<style>
+  :root{
+    --bg: #14161a;
+    --panel: #1c1f26;
+    --panel-border: #2b2f3a;
+    --accent: #5ee3a5;
+    --text: #e6e8ec;
+    --text-dim: #8b93a3;
+    --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  }
+  *{ box-sizing: border-box; }
+  body{
+    margin:0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:28px 16px 60px;
+  }
+  h1{ font-size:20px; margin:0 0 4px; }
+  .sub{ color:var(--text-dim); font-size:13px; margin-bottom:20px; }
+  .layout{  display:flex; gap:20px; align-items:flex-start; flex-wrap:wrap; justify-content:center; }
+  .panel{
+    width:340px;
+    background: var(--panel);
+    border:1px solid var(--panel-border);
+    border-radius:10px;
+    padding:16px 18px;
+    font-size:13px;
+    line-height:1.7;
+  }
+  .panel h2{
+    font-size:13px; text-transform:uppercase; letter-spacing:0.08em;
+    color: var(--accent); margin:0 0 10px; border-bottom:1px solid var(--panel-border);
+    padding-bottom:8px;
+  }
+  .panel h2:not(:first-child){ margin-top:18px; }
+  code{
+    font-family: var(--mono); background:#11131a; border:1px solid var(--panel-border);
+    padding:1px 6px; border-radius:4px; color: var(--accent); font-size:12px;
+  }
+  .kbd{ font-family: var(--mono); background:#11131a; border:1px solid var(--panel-border);
+    padding:1px 6px; border-radius:4px; color: var(--text); font-size:12px; }
+  #game-container{ line-height:0; }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <div id="game-container"></div>
+  <script src="loader.js"></script>
+</div>
+
+</body>
+</html>

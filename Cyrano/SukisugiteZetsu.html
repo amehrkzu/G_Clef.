@@ -283,14 +283,8 @@
 <footer>FF XIV ─ 絶妖星乱舞　散会図</footer>
 
 <script src="SukisugiteZetsu.js"></script>
+<script src="SukisugiteZetsuTimeline.js"></script>
 <script>
-const LINE_DIR_LABEL = { 'AB':'AB平行', 'AB-R':'AB平行（反転）', 'AD':'AD平行', 'AD-R':'AD平行（反転）' };
-
-function chip(text) {
-  return `<span class="cond-chip">${text}</span>`;
-}
-
-function rollAndBuild() {
   const tobashiLine  = rnd(['th','dps']);
   const blizzAoe     = rnd(['ne-sw','nw-se']);
   const blizzResolve = rnd(['stack','spread']);
