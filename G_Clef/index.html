@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FF14 譜面在庫一覧 | G Clef.</title>
-    <link rel="icon" type="image/jpeg" href="icon.jpg">
+    <title>譜面屋「G Clef.」へようこそ</title>
+    <link rel="icon" type="image/jpeg" href="images/icon.jpg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+JP:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
@@ -19,11 +19,93 @@
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
+        html { scrollbar-gutter: stable; }
+
         body {
             font-family: 'Noto Serif JP', serif;
             background-color: var(--cream);
             color: var(--ink);
             overflow-x: hidden;
+        }
+
+        /* ===== SPLASH ===== */
+        #splash {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: 99999;
+            cursor: pointer;
+            overflow: hidden;
+            background: #1a1a2e;
+            transition: opacity 0.4s ease;
+            will-change: opacity;
+        }
+        #splash.hidden { opacity: 0; pointer-events: none; }
+        #splash::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 55%);
+            pointer-events: none;
+            z-index: 2;
+        }
+        #splash-door {
+            position: absolute;
+            inset: 0;
+            background-image: url('images/Door.jpg');
+            background-size: cover;
+            background-position: center;
+            transform-origin: calc(50% - 3px) 50%;
+            transform: scale(0.9);
+            z-index: 1;
+            mask-image: radial-gradient(ellipse at center, black 55%, transparent 85%);
+            -webkit-mask-image: radial-gradient(ellipse at center, black 55%, transparent 85%);
+        }
+        #splash-door.approaching {
+            animation: doorApproach 1.5s linear forwards;
+        }
+        @keyframes doorApproach {
+            0%   { transform: scale(0.9)  translate(0px,   0px)   rotate(0deg);    }
+            12%  { transform: scale(1.25) translate(-5px, -12px)  rotate(-0.4deg); }
+            25%  { transform: scale(1.5)  translate(0px,   0px)   rotate(0deg);    }
+            37%  { transform: scale(1.72) translate(4px,  -7px)   rotate(0.3deg);  }
+            50%  { transform: scale(1.88) translate(0px,   0px)   rotate(0deg);    }
+            62%  { transform: scale(2.0)  translate(-2px, -4px)   rotate(-0.2deg); }
+            75%  { transform: scale(2.1)  translate(0px,   0px)   rotate(0deg);    }
+            87%  { transform: scale(2.17) translate(1px,  -2px)   rotate(0.1deg);  }
+            100% { transform: scale(2.2)  translate(0px,   0px)   rotate(0deg);    }
+        }
+        body.splash-active .navbar,
+        body.splash-active .hero-text,
+        body.splash-active .scroll-hint,
+        body.splash-active .content-area,
+        body.splash-active footer,
+        body.splash-active .record-bg {
+            opacity: 0;
+            transition: none !important;
+        }
+        body.splash-active .record-bg {
+            animation-play-state: paused;
+        }
+        .splash-hint {
+            position: absolute;
+            bottom: 18%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Cinzel', serif;
+            font-size: clamp(13px, 1.6vw, 20px);
+            letter-spacing: 0.55em;
+            color: #ffffff;
+            text-shadow: 0 2px 18px rgba(0,0,0,0.95);
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 3;
+            opacity: 0;
+            transition: opacity 0.35s ease;
+        }
+        @keyframes splashPulse {
+            0%, 100% { opacity: 0.45; }
+            50%       { opacity: 1; }
         }
 
         /* ===== NAVBAR ===== */
@@ -75,17 +157,162 @@
             transform: scale(1.18);
         }
 
-        /* ===== CONTAINER ===== */
-        .container {
-            max-width: 1060px;
-            margin: 0 auto;
-            padding: 100px 40px 120px;
+        /* ===== HERO ===== */
+        .hero {
             position: relative;
-            z-index: 1;
+            z-index: 50;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background:
+                radial-gradient(ellipse at 50% 50%, rgba(201, 168, 76, 0.35) 0%, transparent 60%),
+                radial-gradient(ellipse at 85% 10%, rgba(201, 168, 76, 0.2) 0%, transparent 45%),
+                linear-gradient(160deg, #fefaf3 0%, var(--cream) 40%, #ddd0be 100%);
         }
 
-        /* ===== PAGE HEADER ===== */
-        .page-label {
+        /* レコード背景 */
+        @keyframes spin {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to   { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        .record-bg {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 80vmax;
+            height: 80vmax;
+            background-image: url('images/Record.png');
+            background-size: cover;
+            background-position: center;
+            border-radius: 50%;
+            animation: spin 40s linear infinite;
+            opacity: 0.65;
+            pointer-events: none;
+            transition: opacity 1.2s ease;
+        }
+
+        /* ヒーローテキスト（背景なし） */
+        .hero-text {
+            position: relative;
+            z-index: 10;
+            width: min(460px, 85vw);
+            padding: 56px 40px 44px 40px;
+            text-align: center;
+        }
+        .hero-text::before {
+            content: '';
+            position: absolute;
+            top: 22%;
+            bottom: 34%;
+            left: calc(-50vw + 50%);
+            right: calc(-50vw + 50%);
+            background: rgba(245, 240, 232, 0.78);
+            z-index: -1;
+        }
+        .arch-deco {
+            font-size: 11px;
+            letter-spacing: 0.4em;
+            color: #ffffff;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+            font-family: 'Cinzel', serif;
+            text-shadow: 0 1px 8px rgba(245, 240, 232, 0.9);
+        }
+        .arch-divider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+            color: var(--gold);
+        }
+        .arch-divider::before,
+        .arch-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--gold);
+            opacity: 0.6;
+        }
+        .arch-title {
+            font-family: 'Noto Serif JP', serif;
+            font-size: clamp(28px, 6vw, 42px);
+            font-weight: 700;
+            color: var(--ink);
+            letter-spacing: 0.08em;
+            line-height: 1.2;
+            margin: 4px 0 12px;
+        }
+        .arch-subtitle {
+            font-size: 13px;
+            letter-spacing: 0.15em;
+            color: rgba(26, 26, 46, 0.55);
+            margin-bottom: 20px;
+        }
+        .arch-owner {
+            font-size: 12px;
+            color: rgba(26, 26, 46, 0.5);
+            letter-spacing: 0.2em;
+        }
+        .btn-hero {
+            display: inline-block;
+            margin-top: 22px;
+            padding: 12px 32px;
+            background: var(--blue-accent);
+            color: #fff;
+            text-decoration: none;
+            font-size: 13px;
+            letter-spacing: 0.12em;
+            font-family: 'Cinzel', serif;
+            border-radius: 2px;
+            transition: background 0.2s, transform 0.2s;
+            box-shadow: 0 4px 14px rgba(36, 113, 163, 0.35);
+        }
+        .btn-hero:hover {
+            background: #1a5c8a;
+            transform: translateY(-1px);
+        }
+
+        /* スクロール誘導 */
+        .scroll-hint {
+            position: absolute;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            z-index: 10;
+            color: rgba(26, 26, 46, 0.45);
+            font-size: 11px;
+            letter-spacing: 0.2em;
+            font-family: 'Cinzel', serif;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(6px); }
+        }
+        .scroll-hint span {
+            animation: bounce 1.6s ease-in-out infinite;
+        }
+
+        /* ===== CONTENT AREA ===== */
+        .content-area {
+            background: rgba(255, 255, 255, 0.75);
+            position: relative;
+            z-index: 20;
+        }
+
+        /* セクション共通 */
+        .section-wrap {
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 72px 40px;
+        }
+
+        .section-label {
             font-family: 'Cinzel', serif;
             font-size: 11px;
             letter-spacing: 0.4em;
@@ -93,397 +320,225 @@
             text-transform: uppercase;
             margin-bottom: 8px;
         }
-        h1 {
+        .section-title {
             font-family: 'Cinzel', serif;
-            font-size: 26px;
+            font-size: 28px;
             font-weight: 700;
             color: var(--ink);
-            margin-bottom: 20px;
+            margin-bottom: 40px;
             padding-bottom: 16px;
             border-bottom: 1px solid rgba(201, 168, 76, 0.4);
         }
-        .status {
-            font-size: 13px;
-            color: rgba(26, 26, 46, 0.5);
-            margin-bottom: 24px;
-            letter-spacing: 0.05em;
-        }
 
-        /* ===== SEARCH ===== */
-        .search-area {
-            display: flex;
-            margin-bottom: 28px;
+        /* ===== CAROUSEL ===== */
+        .carousel {
+            position: relative;
+            margin-bottom: 8px;
         }
-        .search-box {
-            flex: 1;
-            padding: 14px 20px;
-            border: 1px solid rgba(201, 168, 76, 0.5);
-            border-radius: 3px;
-            font-size: 15px;
-            font-family: 'Noto Serif JP', serif;
+        .carousel-viewport {
+            overflow: hidden;
+            border-radius: 6px;
+            border: 1px solid rgba(201, 168, 76, 0.3);
+            box-shadow: 0 6px 28px rgba(26, 26, 46, 0.12);
+        }
+        .carousel-track {
+            display: flex;
+            transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .carousel-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 36px;
+            height: 36px;
             background: var(--white);
             color: var(--ink);
-            transition: border-color 0.3s, box-shadow 0.3s;
-        }
-        .search-box::placeholder { color: rgba(26, 26, 46, 0.35); }
-        .search-box:focus {
-            border-color: var(--blue-accent);
-            box-shadow: 0 0 0 3px rgba(36, 113, 163, 0.12);
-            outline: none;
-        }
-        .search-box:disabled { opacity: 0.5; }
-
-        /* ===== LOADING ===== */
-        .loading {
-            text-align: center;
-            padding: 60px;
+            border: 1px solid rgba(201, 168, 76, 0.5);
+            border-radius: 50%;
             font-size: 14px;
-            color: var(--blue-accent);
-            font-family: 'Cinzel', serif;
-            letter-spacing: 0.2em;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, border-color 0.2s, transform 0.2s;
+            z-index: 20;
+            box-shadow: 0 2px 10px rgba(26, 26, 46, 0.18);
+        }
+        .carousel-btn:hover {
+            background: rgba(201, 168, 76, 0.15);
+            border-color: var(--gold);
+        }
+        .carousel-prev { left: -40px; }
+        .carousel-next { right: -40px; }
+        .carousel-dots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 12px;
+            margin-bottom: 20px;
+        }
+        .carousel-dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: rgba(201, 168, 76, 0.35);
+            cursor: pointer;
+            border: none;
+            padding: 0;
+            transition: background 0.25s, transform 0.25s;
+        }
+        .carousel-dot.active {
+            background: var(--gold);
+            transform: scale(1.3);
+            box-shadow: 0 0 6px rgba(201, 168, 76, 0.7);
         }
 
-        /* ===== TABLE ===== */
-        table {
+        /* お知らせバナー */
+        .notice-banner {
+            flex: 0 0 100%;
             width: 100%;
-            border-collapse: collapse;
+            display: flex;
+            flex-direction: column;
+        }
+        .notice-banner-head {
+            background: linear-gradient(120deg, var(--ink) 0%, #2a2a46 100%);
+            border-left: 3px solid var(--gold);
+            padding: 16px 28px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .notice-banner-head h3 {
+            font-family: 'Cinzel', serif;
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--gold-light);
+            letter-spacing: 0.1em;
+            margin: 0;
+            flex: 1;
+        }
+        .notice-banner-tag {
+            font-family: 'Cinzel', serif;
+            font-size: 10px;
+            letter-spacing: 0.18em;
+            color: var(--ink);
+            background: var(--gold);
+            padding: 3px 10px;
+            border-radius: 2px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .notice-banner-body {
             background: var(--white);
-            border-radius: 3px;
-            overflow: hidden;
-            box-shadow: 0 2px 16px rgba(26, 26, 46, 0.07);
+            padding: 26px 28px;
+            flex: 1;
         }
-        th, td {
-            padding: 12px 14px;
-            text-align: left;
-            border-bottom: 1px solid rgba(201, 168, 76, 0.18);
+        .notice-banner-body p {
+            font-size: 14px;
+            line-height: 1.9;
+            color: #444;
         }
-        th {
+        .notice-loading,
+        .notice-empty {
+            text-align: center;
+            padding: 40px 28px;
+            font-family: 'Cinzel', serif;
+            font-size: 12px;
+            letter-spacing: 0.15em;
+            color: rgba(26, 26, 46, 0.4);
+        }
+
+        /* セットリスト */
+        .set-price {
+            display: inline-block;
             background: var(--ink);
             color: var(--gold-light);
-            font-family: 'Cinzel', serif;
-            font-size: 11px;
-            font-weight: 600;
-            letter-spacing: 0.12em;
+            padding: 4px 14px;
+            border-radius: 2px;
+            font-size: 14px;
+            font-weight: 700;
+            margin: 10px 0;
+            letter-spacing: 0.05em;
         }
-        td {
-            font-size: 13px;
-            color: var(--ink);
-        }
-        tr:nth-child(even) {
-            background-color: rgba(245, 240, 232, 0.6);
-        }
-        tr:hover {
-            background-color: rgba(201, 168, 76, 0.1);
-        }
-        #tableBody tr { cursor: pointer; }
-        tr.out-of-stock td { opacity: 0.35; }
-        tr.out-of-stock { cursor: default !important; }
-        tr.out-of-stock:hover { background-color: transparent !important; }
-
-        /* Filter buttons */
-        .filter-area {
+        .set-songs {
+            list-style: none;
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
-            margin-bottom: 20px;
+            margin: 12px 0;
         }
-        .filter-btn {
-            padding: 6px 14px;
-            border-radius: 20px;
-            border: 1px solid rgba(201, 168, 76, 0.5);
-            background: var(--white);
-            color: var(--ink);
-            font-family: 'Cinzel', serif;
-            font-size: 11px;
-            letter-spacing: 0.08em;
-            cursor: pointer;
-            transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.15s;
-        }
-        .filter-btn:hover {
-            background: rgba(201, 168, 76, 0.12);
-            border-color: var(--gold);
-        }
-        .filter-btn.active {
-            background: var(--ink);
-            color: var(--gold-light);
-            border-color: var(--ink);
-        }
-        .filter-btn:active { transform: scale(0.95); }
-        /* Sparkles */
-        @keyframes sparkleFly {
-            0%   { transform: translate(0, 0) scale(1) rotate(0deg);    opacity: 1; }
-            100% { transform: translate(var(--dx), var(--dy)) scale(0) rotate(220deg); opacity: 0; }
-        }
-        .sparkle-particle {
-            position: fixed;
-            pointer-events: none;
-            z-index: 9999;
-            line-height: 1;
-            user-select: none;
-            animation: sparkleFly var(--dur) var(--delay) cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
-        }
-
-        @keyframes rowPop {
-            0%   { transform: scale(1); }
-            45%  { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-        tr.row-pop td { animation: rowPop 0.42s cubic-bezier(0.34, 1.56, 0.64, 1); }
-
-        /* ===== BADGE ===== */
-        .badge-sheet {
-            display: inline-block;
-            padding: 3px 10px;
-            border-radius: 20px;
+        .set-songs li {
             background: rgba(201, 168, 76, 0.15);
-            border: 1px solid rgba(201, 168, 76, 0.45);
+            border: 1px solid rgba(201, 168, 76, 0.4);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
             color: var(--ink);
-            font-size: 11px;
-            font-family: 'Cinzel', serif;
-            letter-spacing: 0.03em;
-            white-space: nowrap;
         }
 
-        .no-result {
-            text-align: center;
-            padding: 60px;
-            color: rgba(26, 26, 46, 0.35);
-            font-size: 13px;
-            letter-spacing: 0.2em;
-            font-family: 'Cinzel', serif;
+        /* 通常セクションのカードグリッド */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
         }
-
-        /* ===== CART ===== */
-        .cart-btn {
-            position: fixed;
-            bottom: 72px;
-            right: 28px;
-            z-index: 500;
-            background: var(--ink);
-            color: var(--gold-light);
-            border: none;
-            border-radius: 50px;
-            padding: 12px 22px;
-            font-size: 13px;
-            font-family: 'Cinzel', serif;
-            letter-spacing: 0.1em;
-            cursor: pointer;
-            box-shadow: 0 4px 16px rgba(26, 26, 46, 0.3);
+        @media (max-width: 640px) {
+            .cards-grid { grid-template-columns: 1fr; }
+        }
+        .card {
+            background: var(--cream);
+            border: 1px solid rgba(201, 168, 76, 0.25);
+            border-radius: 4px;
+            padding: 24px 22px;
+        }
+        .card h3 {
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            color: var(--ink);
+            margin-bottom: 10px;
             display: flex;
             align-items: center;
             gap: 8px;
-            transition: background 0.2s, transform 0.2s;
         }
-        .cart-btn:hover { background: #2c3e50; transform: translateY(-2px); }
-        .cart-badge {
-            background: #c0392b;
-            color: #fff;
-            border-radius: 50%;
-            min-width: 22px;
-            height: 22px;
+        .card h3::before {
+            content: '♪';
+            color: var(--blue-accent);
             font-size: 12px;
-            font-weight: bold;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0 4px;
-            font-family: sans-serif;
         }
-        .cart-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(26, 26, 46, 0.5);
-            z-index: 800;
-        }
-        .cart-panel {
-            position: fixed;
-            top: 0; right: 0; bottom: 0;
-            width: min(420px, 92vw);
-            background: var(--cream);
-            z-index: 900;
-            display: flex;
-            flex-direction: column;
-            box-shadow: -4px 0 32px rgba(26, 26, 46, 0.2);
-            transform: translateX(100%);
-            transition: transform 0.28s ease-in;
-        }
-        .cart-panel.open {
-            transform: translateX(0);
-            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        .cart-panel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 28px;
-            border-bottom: 1px solid rgba(201, 168, 76, 0.3);
-            background: var(--ink);
-            color: var(--gold-light);
-            flex-shrink: 0;
-        }
-        .cart-panel-header h2 {
-            font-family: 'Cinzel', serif;
-            font-size: 13px;
-            font-weight: 600;
-            letter-spacing: 0.2em;
-            margin: 0;
-        }
-        .cart-close-btn {
-            background: none; border: none; color: var(--gold-light);
-            font-size: 18px; cursor: pointer; line-height: 1; padding: 0;
-            opacity: 0.7; transition: opacity 0.2s;
-        }
-        .cart-close-btn:hover { opacity: 1; }
-        .cart-body { flex: 1; overflow-y: auto; padding: 8px 0; }
-        .cart-empty {
-            text-align: center;
-            color: rgba(26, 26, 46, 0.35);
-            padding: 60px 28px;
-            font-size: 13px;
-            font-family: 'Cinzel', serif;
-            letter-spacing: 0.12em;
-        }
-        .cart-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 14px 28px;
-            border-bottom: 1px solid rgba(201, 168, 76, 0.18);
-            font-size: 13px;
-        }
-        .cart-item-title {
-            flex: 1; min-width: 0;
-            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-            color: var(--ink);
-        }
-        .cart-item-remove {
-            background: none; border: none; color: rgba(26, 26, 46, 0.25);
-            cursor: pointer; font-size: 14px; flex-shrink: 0;
-            padding: 2px 4px; transition: color 0.2s;
-        }
-        .cart-item-remove:hover { color: #c0392b; }
-        .cart-footer {
-            padding: 20px 28px;
-            border-top: 1px solid rgba(201, 168, 76, 0.3);
-            flex-shrink: 0;
-        }
-        .cart-count-text {
-            font-size: 12px;
-            color: rgba(26, 26, 46, 0.45);
-            margin-bottom: 12px;
-            text-align: center;
-            font-family: 'Cinzel', serif;
-            letter-spacing: 0.12em;
-        }
-        .cart-price-box {
-            background: var(--ink);
-            color: var(--gold-light);
-            border-radius: 2px;
-            padding: 14px 20px;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-        }
-        .cart-price-label {
-            font-family: 'Cinzel', serif;
-            font-size: 11px;
-            letter-spacing: 0.15em;
-            opacity: 0.75;
-        }
-        .cart-price-value {
-            font-family: 'Cinzel', serif;
-            font-size: 20px;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-        }
-        .cart-price-note {
-            font-size: 11px;
-            color: rgba(26, 26, 46, 0.4);
-            text-align: center;
-            margin-bottom: 12px;
-            font-family: 'Cinzel', serif;
-            letter-spacing: 0.08em;
-        }
-        .cart-request-btn {
-            width: 100%; padding: 10px;
-            background: var(--cream);
-            color: var(--ink);
-            border: 1px solid rgba(201, 168, 76, 0.5);
-            border-radius: 2px;
-            font-size: 12px; font-family: 'Cinzel', serif;
-            letter-spacing: 0.1em;
-            cursor: pointer;
-            margin-bottom: 10px;
-            transition: background 0.2s;
-        }
-        .cart-request-btn:hover { background: rgba(201, 168, 76, 0.18); }
-        .cart-request-area {
-            margin-bottom: 10px;
-        }
-        .cart-request-text {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid rgba(201, 168, 76, 0.4);
-            border-radius: 2px;
-            background: var(--white);
-            color: var(--ink);
-            font-family: 'Noto Serif JP', serif;
+        .card p, .card li {
             font-size: 13px;
             line-height: 1.9;
-            resize: vertical;
-            margin-bottom: 8px;
-            display: block;
+            color: #555;
         }
-        .cart-copy-btn {
-            width: 100%; padding: 10px;
-            background: var(--blue-accent); color: #fff;
-            border: none; border-radius: 2px;
-            font-size: 12px; font-family: 'Cinzel', serif;
-            letter-spacing: 0.1em;
-            cursor: pointer; transition: background 0.2s;
+        .card ul {
+            padding-left: 16px;
         }
-        .cart-copy-btn:hover { background: #1a5c8a; }
-        .cart-copy-btn.copied { background: #27ae60; }
-        .cart-clear-btn {
-            width: 100%; padding: 10px;
-            background: var(--ink); color: var(--gold-light);
-            border: none; border-radius: 2px;
-            font-size: 12px; font-family: 'Cinzel', serif;
-            letter-spacing: 0.12em;
-            cursor: pointer; transition: opacity 0.2s;
-        }
-        .cart-clear-btn:hover { opacity: 0.8; }
-        .cart-method-select {
-            display: flex;
-            gap: 6px;
-            margin-bottom: 10px;
-        }
-        .cart-method-btn {
-            flex: 1;
-            padding: 8px 6px;
-            border: 1px solid rgba(201, 168, 76, 0.5);
-            border-radius: 2px;
-            background: var(--cream);
-            color: var(--ink);
-            font-family: 'Cinzel', serif;
-            font-size: 11px;
-            letter-spacing: 0.06em;
-            cursor: pointer;
-            transition: background 0.2s, color 0.2s, border-color 0.2s;
-            text-align: center;
-        }
-        .cart-method-btn.active {
+        .price-tag {
+            display: inline-block;
             background: var(--ink);
             color: var(--gold-light);
-            border-color: var(--ink);
+            padding: 2px 10px;
+            border-radius: 2px;
+            font-size: 13px;
+            font-weight: 700;
+            margin: 2px 0;
         }
-        .cart-method-btn:hover:not(.active) {
-            background: rgba(201, 168, 76, 0.18);
-            border-color: var(--gold);
+        .caution {
+            font-size: 12px;
+            color: #888;
+            margin-top: 8px;
+            line-height: 1.7;
         }
 
+        /* 区切り線 */
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(201, 168, 76, 0.4), transparent);
+            margin: 0;
+        }
+
+        /* フッター */
         footer {
             position: fixed;
             bottom: 0; left: 0; right: 0;
@@ -506,142 +561,223 @@
             transition: opacity 0.2s;
         }
         footer a:hover { opacity: 1; }
-        .copy-toast-link {
-            display: inline-block;
-            margin-top: 16px;
-            padding: 8px 20px;
-            border: 1px solid rgba(201, 168, 76, 0.5);
-            border-radius: 2px;
-            color: var(--blue-accent);
-            text-decoration: none;
-            font-family: 'Cinzel', serif;
-            font-size: 11px;
-            letter-spacing: 0.12em;
-            transition: background 0.2s, color 0.2s;
-        }
-        .copy-toast-link:hover {
-            background: var(--ink);
-            color: var(--gold-light);
-            border-color: var(--ink);
-        }
 
-        /* Copy toast */
-        .copy-toast-overlay {
+        /* ===== BG DECOR ===== */
+        .bg-decor {
             position: fixed;
-            inset: 0;
-            background: rgba(26, 26, 46, 0.45);
-            z-index: 9998;
-            opacity: 0;
+            bottom: 60px;
+            right: 0;
+            width: clamp(180px, 25vw, 320px);
+            height: auto;
+            z-index: 15;
+            opacity: 0.6;
             pointer-events: none;
-            transition: opacity 0.3s;
+            user-select: none;
         }
-        .copy-toast-overlay.show { opacity: 1; pointer-events: auto; }
-        .copy-toast {
-            position: fixed;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%) scale(0.88);
-            background: var(--white);
-            border: 1px solid rgba(201, 168, 76, 0.4);
-            border-radius: 4px;
-            padding: 48px 20px 40px;
-            max-width: min(520px, 90vw);
-            text-align: center;
-            box-shadow: 0 8px 40px rgba(26, 26, 46, 0.2);
-            z-index: 9999;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        .copy-toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); pointer-events: auto; }
-        .copy-toast-deco {
-            color: var(--gold);
-            font-size: 13px;
-            letter-spacing: 0.3em;
-            margin-bottom: 14px;
-        }
-        .copy-toast-title {
-            font-family: 'Cinzel', serif;
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--ink);
-            letter-spacing: 0.1em;
-            margin-bottom: 16px;
-        }
-        .copy-toast-msg {
-            font-family: 'Noto Serif JP', serif;
-            font-size: 13px;
-            line-height: 2;
-            color: rgba(26, 26, 46, 0.7);
-            margin-bottom: 24px;
-            word-break: keep-all;
-            overflow-wrap: break-word;
-        }
-        .copy-toast-close {
-            padding: 9px 28px;
-            background: var(--ink);
-            color: var(--gold-light);
-            border: none;
-            border-radius: 2px;
-            font-family: 'Cinzel', serif;
-            font-size: 12px;
-            letter-spacing: 0.12em;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-        .copy-toast-close:hover { opacity: 0.8; }
     </style>
 </head>
 <body oncontextmenu="return false;" onselectstart="return false;" onkeydown="if(event.keyCode==123) return false;">
 
+<img src="images/backGround.jpg" class="bg-decor" alt="">
+
+<!-- SPLASH -->
+<div id="splash">
+    <div id="splash-door"></div>
+    <p class="splash-hint" id="splash-hint">CLICK</p>
+</div>
+
 <!-- NAVBAR -->
 <nav class="navbar">
-    <a href="Home.html" class="navbar-logo">G Clef.</a>
+    <a href="index.html" class="navbar-logo">G Clef.</a>
     <ul class="navbar-links">
-        <li><a href="Home.html">TOP</a></li>
-        <li><a href="Home.html#info">お知らせ</a></li>
-        <li><a href="Home.html#system">システム</a></li>
-        <li><a href="Home.html#price">金額</a></li>
-        <li><a href="index.html" class="active">注文票作成</a></li>
+        <li><a href="index.html" class="active">TOP</a></li>
+        <li><a href="#info">お知らせ</a></li>
+        <li><a href="#system">システム</a></li>
+        <li><a href="#price">金額</a></li>
+        <li><a href="order.html">注文票作成</a></li>
     </ul>
 </nav>
 
-<div class="container">
-    <p class="page-label">Inventory Search</p>
-    <h1>FF14 注文票作成</h1>
-    <div class="status" id="loadStatus">スプレッドシートからデータを読み込み中...</div>
+<!-- HERO -->
+<section class="hero">
+    <div class="record-bg"></div>
 
-    <div class="search-area">
-        <input type="text" id="searchInput" class="search-box" placeholder="譜面名、カテゴリ、入手方法などで検索..." disabled>
+    <div class="hero-text">
+        <p class="arch-deco">Welcome to Music Shop</p>
+        <div class="arch-divider">✦</div>
+        <h1 class="arch-title">G Clef.</h1>
+        <p class="arch-subtitle">ORCHESTRION SHEET SHOP</p>
+        <div class="arch-divider">✦</div>
+        <a href="order.html" class="btn-hero">🎼 注文票作成</a>
     </div>
-    <div class="filter-area" id="filterArea"></div>
 
-    <table id="resultTable" style="display: none;">
-        <thead>
-            <tr>
-                <th style="width: 40px;"></th>
-                <th style="width: 15%;">カテゴリ</th>
-                <th>タイトル</th>
-                <th>取得箇所</th>
-                <th>在庫</th>
-                <th>マケボ出品数</th>
-            </tr>
-        </thead>
-        <tbody id="tableBody">
-        </tbody>
-    </table>
-    <div id="loadingView" class="loading">データを取得しています...</div>
+    <div class="scroll-hint">
+        SCROLL
+        <span>▼</span>
+    </div>
+</section>
+
+<!-- CONTENT -->
+<div class="content-area">
+
+    <!-- お知らせ -->
+    <div class="section-wrap" id="info">
+        <p class="section-label">News</p>
+        <h2 class="section-title">お知らせ</h2>
+
+        <div class="carousel" id="noticeCarousel">
+            <div class="carousel-viewport">
+                <div class="carousel-track" id="noticeTrack">
+                    <div class="notice-banner">
+                        <div class="notice-banner-body notice-loading">読み込んでいます...</div>
+                    </div>
+                </div>
+            </div>
+            <button class="carousel-btn carousel-prev" id="noticePrev">◀</button>
+            <button class="carousel-btn carousel-next" id="noticeNext">▶</button>
+        </div>
+        <div class="carousel-dots" id="noticeDots"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- システム & 金額 -->
+    <div class="section-wrap" id="system">
+        <p class="section-label">System & Price</p>
+        <h2 class="section-title">システム・金額</h2>
+
+        <div class="cards-grid">
+            <div class="card">
+                <h3>ご注文方法</h3>
+                <p>気になる譜面がございましたらお気軽にお申しつけください。<br>
+                X(旧Twitter)のDM・リプライ、またはゲーム内Tellにてご対応致します。</p>
+            </div>
+            <div class="card" id="price">
+                <h3>均一価格</h3>
+                <ul>
+                    <li>1枚：<span class="price-tag">3,000ギル</span></li>
+                    <li>2枚セット：<span class="price-tag">5,000ギル</span></li>
+                </ul>
+                <p class="caution">💡 5枚の場合 = 13,000ギル（5,000×2 + 3,000）</p>
+            </div>
+            <div class="card">
+                <h3>古びた譜面の書き起こし</h3>
+                <p>「古びた譜面」をお持ち込み頂ければ製作を請け負います。マイスターのみ製作可能な譜面も受付可。材料費は不要です。</p>
+                <p><span class="price-tag">3,000ギル</span> でお作りします。</p>
+            </div>
+            <div class="card">
+                <h3>譜面の入手代行</h3>
+                <p>EX属性（本人のみ入手可能）を除き、未所持譜面の入手代行もご相談いただけます。</p>
+                <p class="caution">※未開放コンテンツの場合、長期のお時間を頂く場合があります。</p>
+            </div>
+            <div class="card">
+                <h3>譜面の買い取り</h3>
+                <p>古びた譜面・修得済みの譜面など、トレード可能なものでしたら買い取りします！</p>
+                <p><span class="price-tag">1枚 1,000ギル</span> 均一</p>
+                <p class="caution">⚠️ マケボの方が高値になる場合もありますので要検討を。</p>
+            </div>
+            <div class="card">
+                <h3>在庫一覧・ネタバレについて</h3>
+                <p>一覧ページではコンテンツ名を<strong>一切隠していません</strong>。ネタバレが気になる方は直接お問い合わせください。</p>
+                <p class="caution">※在庫は不定期に変動します。更新が追いつかない場合もあります。</p>
+            </div>
+        </div>
+    </div>
+
 </div>
 
+<!-- FOOTER -->
 <footer>
     <p>譜面屋「G Clef.」&nbsp;|&nbsp;店主：Pii Arulaq&nbsp;|&nbsp;<a href="https://x.com/ff14_pii" target="_blank" rel="noopener">𝕏 @ff14_pii</a></p>
     <p style="margin-top:6px;">(C) SQUARE ENIX CO.</p>
 </footer>
 
-<script src="search.js"></script>
+<script>
+(function () {
+    const splash = document.getElementById('splash');
+
+    if (sessionStorage.getItem('splashSeen')) {
+        splash.style.display = 'none';
+        return;
+    }
+
+    document.body.classList.add('splash-active');
+    document.body.style.overflow = 'hidden';
+
+    const door = document.getElementById('splash-door');
+    const hint = document.getElementById('splash-hint');
+    let state = 0; // 0:待機, 1:ズーム中, 2:ドア前, 3:終了
+
+    function startPulse() {
+        hint.style.transition = 'none';
+        hint.style.animation = 'splashPulse 2s ease-in-out infinite';
+    }
+    function hideHint() {
+        hint.style.animation = 'none';
+        hint.style.transition = 'opacity 0.25s ease';
+        hint.style.opacity = '0';
+    }
+
+    // ヒント表示までクリック無効
+    splash.style.pointerEvents = 'none';
+    splash.style.cursor = 'default';
+    setTimeout(() => {
+        splash.style.pointerEvents = '';
+        splash.style.cursor = '';
+        startPulse();
+    }, 1000);
+
+    splash.addEventListener('click', () => {
+        if (state === 0) {
+            // ── 1クリック目：ドアへ近寄る ──
+            state = 1;
+            hideHint();
+
+            door.classList.add('approaching');
+            door.addEventListener('animationend', () => {
+                // ズーム完了：位置を固定
+                door.style.animation = 'none';
+                door.style.transform = 'scale(2.2)';
+
+                // "K N O C K" を表示
+                state = 2;
+                hint.textContent = 'KNOCK';
+                hint.style.opacity = '';
+                setTimeout(startPulse, 50);
+            }, { once: true });
+
+        } else if (state === 2) {
+            // ── 2クリック目：ノックしてページへ ──
+            state = 3;
+            hideHint();
+
+            // ノック（手前にぐっと出る）アニメーション
+            const ks = document.createElement('style');
+            ks.textContent = '@keyframes _knock{0%{transform:scale(2.2)}35%{transform:scale(2.34)}65%{transform:scale(2.26)}100%{transform:scale(2.3)}}';
+            document.head.appendChild(ks);
+            door.offsetHeight;
+            door.style.animation = '_knock 0.38s cubic-bezier(0.34,1.56,0.64,1) forwards';
+
+            setTimeout(() => {
+                splash.classList.add('hidden');
+                document.body.style.overflow = '';
+                sessionStorage.setItem('splashSeen', '1');
+                setTimeout(() => {
+                    document.body.classList.remove('splash-active');
+                    setTimeout(() => splash.remove(), 500);
+                }, 400);
+            }, 300);
+        }
+        // state 1（ズーム中）は無視
+    });
+})();
+</script>
+
+<script src="js/notices.js"></script>
 <script>
 (function () {
     const canvas = document.createElement('canvas');
-    canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:0.15;';
+    canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:15;pointer-events:none;opacity:0.4;';
     document.body.prepend(canvas);
     const ctx = canvas.getContext('2d');
     const G = 9, GAP = 90, SPEED = 0.5;
@@ -698,286 +834,5 @@
     draw();
 })();
 </script>
-<script>
-(function () {
-    const canvas = document.getElementById('scoreCanvas');
-    const ctx = canvas.getContext('2d');
-    const G = 7, SPEED = 0.6;
-    let W, H, notes, offset = 0;
-
-    function build() {
-        W = canvas.width  = canvas.offsetWidth;
-        H = canvas.height = canvas.offsetHeight;
-        notes = [];
-        const loopW = W + 500;
-        for (let x = 40; x < loopW; x += 26 + Math.random() * 34)
-            notes.push({ x, pitch: Math.floor(Math.random() * 10), eighth: Math.random() < 0.35 });
-    }
-
-    function st() { return (H - G * 4) / 2; }
-
-    function draw() {
-        ctx.clearRect(0, 0, W, H);
-        offset += SPEED;
-        const loopW = W + 500;
-
-        ctx.strokeStyle = '#1a1a2e'; ctx.lineWidth = 0.8;
-        for (let i = 0; i < 5; i++) {
-            ctx.beginPath(); ctx.moveTo(0, st() + i * G); ctx.lineTo(W, st() + i * G); ctx.stroke();
-        }
-        const bw = 128;
-        ctx.lineWidth = 0.9;
-        for (let x = ((-(offset % bw)) + bw) % bw; x < W; x += bw) {
-            ctx.beginPath(); ctx.moveTo(x, st()); ctx.lineTo(x, st() + G * 4); ctx.stroke();
-        }
-
-        notes.forEach(n => {
-            let x = n.x - (offset % loopW);
-            if (x < -15) x += loopW;
-            if (x > W + 15) return;
-            const y = st() + G * 4 - n.pitch * G / 2;
-            const up = n.pitch < 5, sx = x + (up ? 3 : -3);
-            ctx.fillStyle = ctx.strokeStyle = '#c9a84c'; ctx.lineWidth = 1.2;
-            ctx.save(); ctx.translate(x, y); ctx.rotate(-0.2);
-            ctx.beginPath(); ctx.ellipse(0, 0, 4, 2.8, 0, 0, Math.PI * 2); ctx.fill();
-            ctx.restore();
-            ctx.beginPath(); ctx.moveTo(sx, y); ctx.lineTo(sx, up ? y - 18 : y + 18); ctx.stroke();
-            if (n.eighth) {
-                const ey = up ? y - 18 : y + 18, d = up ? 1 : -1;
-                ctx.beginPath(); ctx.moveTo(sx, ey);
-                ctx.bezierCurveTo(sx + 10, ey + d * 4, sx + 10, ey + d * 10, sx + 4, ey + d * 12);
-                ctx.stroke();
-            }
-        });
-        requestAnimationFrame(draw);
-    }
-
-    build();
-    window.addEventListener('resize', build);
-    draw();
-})();
-</script>
-
-
-<!-- Copy Toast -->
-<div class="copy-toast-overlay" id="copyToastOverlay"></div>
-<div class="copy-toast" id="copyToast">
-    <p class="copy-toast-deco">✦ ✦ ✦</p>
-    <p class="copy-toast-title">ありがとうございます！</p>
-    <p class="copy-toast-msg">X（旧Twitter）のDM・リプライ、またはゲーム内Tellにてご連絡お待ちしております！</p>
-    <a href="https://x.com/ff14_pii" target="_blank" rel="noopener" class="copy-toast-link">𝕏 @ff14_pii</a>
-    <br><br>
-    <button class="copy-toast-close" id="copyToastClose">閉じる</button>
-</div>
-
-<!-- Cart Button -->
-<button class="cart-btn" id="cartBtn">🎵 カート <span class="cart-badge" id="cartBadge">0</span></button>
-
-<!-- Cart Overlay & Panel -->
-<div class="cart-overlay" id="cartOverlay"></div>
-<div class="cart-panel" id="cartPanel">
-    <div class="cart-panel-header">
-        <h2>選択中の譜面</h2>
-        <button class="cart-close-btn" id="cartCloseBtn">✕</button>
-    </div>
-    <div class="cart-body" id="cartBody">
-        <div class="cart-empty">譜面が選択されていません</div>
-    </div>
-    <div class="cart-footer">
-        <p class="cart-count-text" id="cartCountText"></p>
-        <div class="cart-price-box" id="cartPriceBox" style="display:none;">
-            <span class="cart-price-label">お支払い合計</span>
-            <span class="cart-price-value" id="cartPriceValue"></span>
-        </div>
-        <p class="cart-price-note" id="cartPriceNote"></p>
-        <div class="cart-method-select" id="cartMethodSelect" style="display:none;">
-            <button class="cart-method-btn active" data-method="x">𝕏 DM / リプライ</button>
-            <button class="cart-method-btn" data-method="tell">ゲーム内 Tell</button>
-        </div>
-        <button class="cart-request-btn" id="cartRequestBtn" style="display:none;">注文票テキスト作成</button>
-        <div class="cart-request-area" id="cartRequestArea" style="display:none;">
-            <textarea class="cart-request-text" id="cartRequestText" readonly rows="2"></textarea>
-            <button class="cart-copy-btn" id="cartCopyBtn">コピー</button>
-        </div>
-        <button class="cart-clear-btn" id="cartClearBtn">すべてクリア</button>
-    </div>
-</div>
-
-<script>
-(function() {
-    const cartBtn        = document.getElementById('cartBtn');
-    const cartBadge      = document.getElementById('cartBadge');
-    const cartOverlay    = document.getElementById('cartOverlay');
-    const cartPanel      = document.getElementById('cartPanel');
-    const cartCloseBtn   = document.getElementById('cartCloseBtn');
-    const cartBody       = document.getElementById('cartBody');
-    const cartCountText  = document.getElementById('cartCountText');
-    const cartClearBtn   = document.getElementById('cartClearBtn');
-    const cartRequestBtn = document.getElementById('cartRequestBtn');
-    const cartRequestArea= document.getElementById('cartRequestArea');
-    const cartRequestText= document.getElementById('cartRequestText');
-    const cartCopyBtn    = document.getElementById('cartCopyBtn');
-
-    let _currentItems = [];
-    let _currentPrice = 0;
-    let _method = 'x';
-
-    const cartMethodSelect = document.getElementById('cartMethodSelect');
-    cartMethodSelect.querySelectorAll('.cart-method-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            cartMethodSelect.querySelectorAll('.cart-method-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            _method = btn.dataset.method;
-            if (cartRequestArea.style.display !== 'none') {
-                cartRequestText.value = buildRequestText();
-            }
-        });
-    });
-
-    function buildRequestText() {
-        const count    = _currentItems.length;
-        const unit     = 3000;
-        const subtotal = count * unit;
-        const discount = Math.floor(count / 2) * 1000;
-
-        if (_method === 'tell') {
-            const items = _currentItems.map(item => `・${item.cells[0]}／${item.sName}`).join(' ');
-            return `【注文票】${items} 合計${_currentPrice.toLocaleString()}Gil`;
-        }
-
-        const lines = ['【注文票】'];
-        _currentItems.forEach(item => {
-            lines.push(`・${item.cells[0]}／${item.sName}`);
-        });
-        lines.push('');
-        lines.push(`　　　金額　-${subtotal.toLocaleString()}Gil`);
-        lines.push(`　値引き額　-${discount.toLocaleString()}Gil`);
-        lines.push('＿＿＿＿＿＿＿＿＿＿＿＿');
-        lines.push(`　合計金額　-${_currentPrice.toLocaleString()}Gil`);
-        return lines.join('\n');
-    }
-
-    cartRequestBtn.addEventListener('click', () => {
-        const open = cartRequestArea.style.display !== 'none';
-        if (open) {
-            cartRequestArea.style.display = 'none';
-            cartRequestBtn.textContent = '注文票テキスト作成';
-        } else {
-            cartRequestText.value = buildRequestText();
-            cartRequestArea.style.display = 'block';
-            cartRequestBtn.textContent = '閉じる';
-        }
-    });
-
-    const copyToast        = document.getElementById('copyToast');
-    const copyToastOverlay = document.getElementById('copyToastOverlay');
-    const copyToastClose   = document.getElementById('copyToastClose');
-
-    function showCopyToast() {
-        copyToastOverlay.classList.add('show');
-        copyToast.classList.add('show');
-    }
-    function hideCopyToast() {
-        copyToastOverlay.classList.remove('show');
-        copyToast.classList.remove('show');
-    }
-    copyToastClose.addEventListener('click', hideCopyToast);
-    copyToastOverlay.addEventListener('click', hideCopyToast);
-
-    cartCopyBtn.addEventListener('click', () => {
-        navigator.clipboard.writeText(cartRequestText.value).then(() => {
-            cartCopyBtn.textContent = 'コピーしました！';
-            cartCopyBtn.classList.add('copied');
-            setTimeout(() => {
-                cartCopyBtn.textContent = 'コピー';
-                cartCopyBtn.classList.remove('copied');
-            }, 2000);
-            showCopyToast();
-        });
-    });
-
-    function calcPrice(count) {
-        return Math.floor(count / 2) * 5000 + (count % 2) * 3000;
-    }
-
-    function openCart()  { cartOverlay.style.display = 'block'; cartPanel.classList.add('open'); document.body.style.overflow = 'hidden'; }
-    function closeCart() { cartOverlay.style.display = 'none';  cartPanel.classList.remove('open'); document.body.style.overflow = ''; }
-
-    cartBtn.addEventListener('click', openCart);
-    cartOverlay.addEventListener('click', closeCart);
-    cartCloseBtn.addEventListener('click', closeCart);
-    cartClearBtn.addEventListener('click', () => { if (window._0xcartClear) window._0xcartClear(); });
-
-    window.addEventListener('cartUpdate', (e) => {
-        const { count, items } = e.detail;
-        _currentItems = items;
-        _currentPrice = calcPrice(count);
-
-        cartBadge.textContent = count;
-        cartCountText.textContent = count > 0 ? `${count} 枚選択中` : '';
-
-        const priceBox   = document.getElementById('cartPriceBox');
-        const priceValue = document.getElementById('cartPriceValue');
-        const priceNote  = document.getElementById('cartPriceNote');
-        if (count > 0) {
-            priceBox.style.display = 'flex';
-            priceValue.textContent = _currentPrice.toLocaleString() + ' Gil';
-            const pairs = Math.floor(count / 2), singles = count % 2;
-            const parts = [];
-            if (pairs)   parts.push(`${pairs}セット × 5,000`);
-            if (singles) parts.push(`${singles}枚 × 3,000`);
-            priceNote.textContent = parts.join(' + ');
-            cartMethodSelect.style.display = 'flex';
-            cartRequestBtn.style.display = 'block';
-            if (cartRequestArea.style.display !== 'none') {
-                cartRequestText.value = buildRequestText();
-            }
-        } else {
-            priceBox.style.display = 'none';
-            priceNote.textContent = '';
-            cartMethodSelect.style.display = 'none';
-            cartRequestBtn.style.display = 'none';
-            cartRequestArea.style.display = 'none';
-            cartRequestBtn.textContent = '注文票テキスト作成';
-        }
-
-        cartBody.innerHTML = '';
-
-        if (count === 0) {
-            cartBody.innerHTML = '<div class="cart-empty">譜面が選択されていません</div>';
-            return;
-        }
-
-        items.forEach(item => {
-            const div = document.createElement('div');
-            div.className = 'cart-item';
-
-            const badge = document.createElement('span');
-            badge.className = 'badge-sheet';
-            badge.style.flexShrink = '0';
-            badge.textContent = item.sName;
-
-            const title = document.createElement('span');
-            title.className = 'cart-item-title';
-            title.textContent = item.cells[0] || '';
-            title.title = item.cells[0] || '';
-
-            const removeBtn = document.createElement('button');
-            removeBtn.className = 'cart-item-remove';
-            removeBtn.textContent = '✕';
-            removeBtn.title = '削除';
-            removeBtn.addEventListener('click', () => {
-                if (window._0xcartRemove) window._0xcartRemove(item._key);
-            });
-
-            div.appendChild(badge);
-            div.appendChild(title);
-            div.appendChild(removeBtn);
-            cartBody.appendChild(div);
-        });
-    });
-})();
-</script>
-
 </body>
 </html>
