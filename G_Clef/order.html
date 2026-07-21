@@ -144,13 +144,20 @@
         }
 
         /* ===== TABLE ===== */
+        .table-scroll {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border-radius: 3px;
+            box-shadow: 0 2px 16px rgba(26, 26, 46, 0.07);
+        }
         table {
             width: 100%;
+            min-width: 560px;
             border-collapse: collapse;
             background: var(--white);
             border-radius: 3px;
             overflow: hidden;
-            box-shadow: 0 2px 16px rgba(26, 26, 46, 0.07);
         }
         th, td {
             padding: 12px 14px;
@@ -589,6 +596,35 @@
             transition: opacity 0.2s;
         }
         .copy-toast-close:hover { opacity: 0.8; }
+
+        /* ===== MOBILE ===== */
+        @media (max-width: 640px) {
+            .navbar { padding: 0 16px; }
+            .navbar-logo { font-size: 17px; }
+            .navbar-links { gap: 10px; }
+            .navbar-links a { font-size: 10px; letter-spacing: 0.05em; }
+
+            .container { padding: 84px 16px 110px; }
+            h1 { font-size: 20px; margin-bottom: 14px; padding-bottom: 12px; }
+            .page-label { font-size: 10px; }
+            .status { font-size: 12px; }
+
+            .search-box { font-size: 14px; padding: 12px 14px; }
+            .filter-btn { font-size: 10px; padding: 5px 10px; }
+
+            th, td { padding: 8px 8px; font-size: 12px; }
+            th { font-size: 10px; }
+            .badge-sheet { font-size: 10px; padding: 2px 8px; }
+
+            .cart-btn { padding: 10px 16px; font-size: 12px; bottom: 64px; right: 16px; }
+
+            footer { padding: 10px 16px; }
+            footer p { white-space: normal; font-size: 10px; line-height: 1.6; }
+
+            .cart-panel-header { padding: 16px 20px; }
+            .cart-item { padding: 12px 20px; }
+            .cart-footer { padding: 16px 20px; }
+        }
     </style>
 </head>
 <body oncontextmenu="return false;" onselectstart="return false;" onkeydown="if(event.keyCode==123) return false;">
@@ -615,6 +651,7 @@
     </div>
     <div class="filter-area" id="filterArea"></div>
 
+    <div class="table-scroll">
     <table id="resultTable" style="display: none;">
         <thead>
             <tr>
@@ -629,6 +666,7 @@
         <tbody id="tableBody">
         </tbody>
     </table>
+    </div>
     <div id="loadingView" class="loading">データを取得しています...</div>
 </div>
 
