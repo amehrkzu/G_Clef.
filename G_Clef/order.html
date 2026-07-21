@@ -462,6 +462,18 @@
             cursor: pointer; transition: opacity 0.2s;
         }
         .cart-clear-btn:hover { opacity: 0.8; }
+        .cart-bottom-close {
+            display: none;
+            width: 100%; padding: 10px;
+            background: none;
+            color: rgba(26, 26, 46, 0.5);
+            border: 1px solid rgba(26, 26, 46, 0.15);
+            border-radius: 2px;
+            font-size: 12px; font-family: 'Cinzel', serif;
+            letter-spacing: 0.12em;
+            cursor: pointer;
+            margin-top: 10px;
+        }
         .cart-method-select {
             display: flex;
             gap: 6px;
@@ -624,6 +636,7 @@
             .cart-panel-header { padding: 16px 20px; }
             .cart-item { padding: 12px 20px; }
             .cart-footer { padding: 16px 20px; }
+            .cart-bottom-close { display: block; }
         }
     </style>
 </head>
@@ -838,6 +851,7 @@
             <button class="cart-copy-btn" id="cartCopyBtn">コピー</button>
         </div>
         <button class="cart-clear-btn" id="cartClearBtn">すべてクリア</button>
+        <button class="cart-bottom-close" id="cartBottomClose">✕ 閉じる</button>
     </div>
 </div>
 
@@ -848,6 +862,7 @@
     const cartOverlay    = document.getElementById('cartOverlay');
     const cartPanel      = document.getElementById('cartPanel');
     const cartCloseBtn   = document.getElementById('cartCloseBtn');
+    const cartBottomClose= document.getElementById('cartBottomClose');
     const cartBody       = document.getElementById('cartBody');
     const cartCountText  = document.getElementById('cartCountText');
     const cartClearBtn   = document.getElementById('cartClearBtn');
@@ -944,6 +959,7 @@
     cartBtn.addEventListener('click', openCart);
     cartOverlay.addEventListener('click', closeCart);
     cartCloseBtn.addEventListener('click', closeCart);
+    cartBottomClose.addEventListener('click', closeCart);
     cartClearBtn.addEventListener('click', () => { if (window._0xcartClear) window._0xcartClear(); });
 
     window.addEventListener('cartUpdate', (e) => {
