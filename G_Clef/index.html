@@ -135,7 +135,12 @@
             display: flex;
             gap: 36px;
             list-style: none;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
         }
+        .navbar-links::-webkit-scrollbar { display: none; }
         .navbar-links a {
             text-decoration: none;
             font-size: 13px;
@@ -143,6 +148,8 @@
             color: var(--ink);
             opacity: 0.7;
             display: inline-block;
+            white-space: nowrap;
+            flex-shrink: 0;
             transition: opacity 0.2s, color 0.2s, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
             font-family: 'Cinzel', serif;
         }
@@ -484,6 +491,10 @@
         }
         @media (max-width: 640px) {
             .cards-grid { grid-template-columns: 1fr; }
+            .navbar { padding: 0 16px; }
+            .navbar-logo { font-size: 17px; }
+            .navbar-links { gap: 10px; }
+            .navbar-links a { font-size: 10px; letter-spacing: 0.05em; }
         }
         .card {
             background: var(--cream);
