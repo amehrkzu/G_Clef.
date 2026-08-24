@@ -475,7 +475,7 @@
   <div class="modal">
     <h2>Tシャツ着用イメージ <span class="x" data-close>×</span></h2>
     <div class="mbody">
-      <div class="tee-stage"><canvas id="teeCanvas" width="380" height="400"></canvas></div>
+      <div class="tee-stage"><canvas id="teeCanvas" width="460" height="480"></canvas></div>
       <div class="tee-colors" id="teeColors"></div>
       <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px">
         <input type="color" id="teeCustomColor" value="#ffffff">
@@ -1576,17 +1576,18 @@ function drawTee(){
   x.strokeStyle='rgba(0,0,0,.25)';x.lineWidth=2;
   x.beginPath();
   const cx=c.width/2;
-  x.moveTo(cx-75,100);              // 左肩
-  x.lineTo(cx-125,145);            // 左袖先
-  x.lineTo(cx-100,178);
-  x.lineTo(cx-78,155);
-  x.lineTo(cx-88,350);            // 左裾（少し広がる）
-  x.lineTo(cx+88,350);           // 右裾
-  x.lineTo(cx+78,155);
-  x.lineTo(cx+100,178);
-  x.lineTo(cx+125,145);           // 右袖先
-  x.lineTo(cx+75,100);            // 右肩
-  x.quadraticCurveTo(cx,135,cx-75,100); // 襟
+  const shoulderY=80, underarmY=shoulderY+105, hemY=385;
+  const sleeveHalfW=150, bodyHalfW=95, neckHalfW=30;
+  x.moveTo(cx-sleeveHalfW, shoulderY);         // 左袖上端
+  x.lineTo(cx-neckHalfW, shoulderY);           // 左襟元
+  x.quadraticCurveTo(cx, shoulderY+32, cx+neckHalfW, shoulderY); // 襟ぐり
+  x.lineTo(cx+sleeveHalfW, shoulderY);         // 右袖上端
+  x.lineTo(cx+sleeveHalfW, underarmY);         // 右袖下端
+  x.lineTo(cx+bodyHalfW, underarmY);           // 右脇（内側へ）
+  x.lineTo(cx+bodyHalfW, hemY);                // 右裾
+  x.lineTo(cx-bodyHalfW, hemY);                // 左裾
+  x.lineTo(cx-bodyHalfW, underarmY);           // 左脇
+  x.lineTo(cx-sleeveHalfW, underarmY);         // 左袖下端
   x.closePath(); x.fill(); x.stroke();
 
   // デザインを胸元エリアに合成
@@ -1596,7 +1597,7 @@ function drawTee(){
     const tc=tmp.getContext('2d');
     for(const el of state.els) drawEl(tc, el);
     // 胸元枠
-    const areaW=110, areaH=140, ax=cx-55, ay=160;
+    const areaW=130, areaH=170, ax=cx-65, ay=shoulderY+50;
     const ratio=Math.min(areaW/pxW(), areaH/pxH());
     const dw=pxW()*ratio, dh=pxH()*ratio;
     x.drawImage(tmp, ax+(areaW-dw)/2, ay+(areaH-dh)/2, dw, dh);
