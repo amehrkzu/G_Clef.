@@ -164,6 +164,15 @@
   .zoombar button:hover{background:var(--panel-2)}
   .zoombar span{font-family:"Space Mono",monospace;font-size:11px;color:var(--muted);min-width:42px;text-align:center}
 
+  .bgcolorbar{
+    position:absolute;top:12px;left:12px;display:flex;gap:7px;align-items:center;
+    background:rgba(255,255,255,.92);border:1px solid var(--line);padding:5px 9px 5px 11px;border-radius:12px;
+  }
+  .bgcolorbar span{font-family:"Space Mono",monospace;font-size:11px;color:var(--muted)}
+  .bgcolorbar input[type=color]{
+    width:26px;height:26px;border:1px solid var(--line);border-radius:7px;padding:1px;cursor:pointer;background:transparent;
+  }
+
   /* ---------- 右：レイヤー / 詳細 ---------- */
   .right{border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;min-height:0}
   .right .scroll{overflow:auto;padding:16px}
@@ -271,7 +280,6 @@
     <button class="btn ghost" id="btnUndo" title="元に戻す (Ctrl+Z)">↶</button>
     <button class="btn ghost" id="btnRedo" title="やり直す (Ctrl+Y)">↷</button>
     <button class="btn ghost" id="btnPreview">👕 プレビュー</button>
-    <button class="btn ghost" id="btnGuide">? 入稿ガイド</button>
     <div style="position:relative">
       <button class="btn primary" id="btnExportMenuToggle">⬇ 書き出し ▾</button>
       <div id="exportMenu" class="export-menu">
@@ -357,6 +365,10 @@
       <div class="stage-inner">
         <canvas id="board"></canvas>
       </div>
+      <div class="bgcolorbar" id="bgColorBar" title="背景色（プレビュー用・書き出しには影響しません）">
+        <span class="mono">背景</span>
+        <input type="color" id="canvasBgColor" value="#ffffff">
+      </div>
       <div class="zoombar">
         <button id="zoomOut">−</button>
         <span id="zoomVal">100%</span>
@@ -371,7 +383,7 @@
       <div class="scroll">
         <p class="section-label">レイヤー（上が前面）</p>
         <div class="layers" id="layers"></div>
-        <div class="empty" id="layersEmpty">まだ素材がありません。<br>左の「画像を読み込む」か<br>「テキストを追加」から始めましょう。</div>
+        <div class="empty" id="layersEmpty">まだ素材がありません。<br>左から素材を追加してみましょう。</div>
       </div>
       <div class="props" id="props" style="display:none">
         <p class="section-label">選択中の素材</p>
@@ -474,24 +486,6 @@
   </div>
 </div>
 
-<!-- 入稿ガイド -->
-<div class="modal-bg" id="guideModal">
-  <div class="modal">
-    <h2>ラクスル入稿ガイド <span class="x" data-close>×</span></h2>
-    <div class="mbody">
-      <p class="note">
-        このツールは <b>背景が透過されたPNG</b> を書き出します。デザインしたい範囲＝印刷範囲として作業し、余白（透過部分）はプリントされません。
-      </p>
-      <p class="note" style="margin-top:12px">
-        推奨設定：<code>350 dpi</code> / 背景 <b>透過PNG</b> / フチなしはギリギリまで攻めず内側の点線（セーフエリア）内に主要素を収めると安全です。
-      </p>
-      <div class="warn">
-        ⚠ ラクスルは商品・プリント方法（インクジェット / 転写 / シルクスクリーン 等）ごとに<b>対応形式・最大サイズ・解像度・印刷範囲・注意事項が異なります</b>。実際の注文前に、必ず注文する商品ページのデータ作成ガイドで最新仕様をご確認ください。フォントは書き出し時に画像化されるためアウトライン化は不要です。
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- 書き出し前チェック -->
 <div class="modal-bg" id="checkModal">
   <div class="modal">
@@ -587,19 +581,12 @@ function applyCanvasSize(){
 /* ============================================================
    描画
 ============================================================ */
-const checker = (()=>{  // 透過チェッカー
-  const c = document.createElement('canvas'); c.width=c.height=40;
-  const x=c.getContext('2d');
-  x.fillStyle='#fff4e8'; x.fillRect(0,0,40,40);
-  x.fillStyle='#ffe4c4'; x.fillRect(0,0,20,20); x.fillRect(20,20,20,20);
-  return x.createPattern(c,'repeat');
-})();
 
 function draw(){
   const W=board.width, H=board.height;
   ctx.clearRect(0,0,W,H);
-  // 透過背景（表示のみ・書き出しには含めない）
-  ctx.fillStyle=checker; ctx.fillRect(0,0,W,H);
+  // 背景（プレビュー用の色。書き出しには含めない）
+  ctx.fillStyle=teeColor; ctx.fillRect(0,0,W,H);
 
   // 素材
   for(const el of state.els) drawEl(ctx, el);
@@ -1615,27 +1602,33 @@ function drawTee(){
     x.drawImage(tmp, ax+(areaW-dw)/2, ay+(areaH-dh)/2, dw, dh);
   }
 }
+function setTeeColor(hex){
+  teeColor = hex;
+  const bgInput = document.getElementById('canvasBgColor');
+  const teeInput = document.getElementById('teeCustomColor');
+  if(bgInput) bgInput.value = hex;
+  if(teeInput) teeInput.value = hex;
+  renderTeeColors();
+  drawTee();
+  draw();
+}
 function renderTeeColors(){
   const box=document.getElementById('teeColors'); box.innerHTML='';
   TEE_COLORS.forEach(col=>{
     const s=document.createElement('div');
     s.className='swatch'+(col===teeColor?' sel':'');
     s.style.background=col;
-    s.onclick=()=>{teeColor=col;document.getElementById('teeCustomColor').value=col;renderTeeColors();drawTee();};
+    s.onclick=()=>setTeeColor(col);
     box.appendChild(s);
   });
 }
-document.getElementById('teeCustomColor').addEventListener('input', e=>{
-  teeColor = e.target.value;
-  renderTeeColors();
-  drawTee();
-});
+document.getElementById('teeCustomColor').addEventListener('input', e=> setTeeColor(e.target.value));
+document.getElementById('canvasBgColor').addEventListener('input', e=> setTeeColor(e.target.value));
 document.getElementById('btnPreview').onclick=()=>{
   document.getElementById('previewModal').classList.add('open');
   document.getElementById('teeCustomColor').value = teeColor;
   renderTeeColors(); drawTee();
 };
-document.getElementById('btnGuide').onclick=()=>document.getElementById('guideModal').classList.add('open');
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=e=>e.target.closest('.modal-bg').classList.remove('open'));
 document.querySelectorAll('.modal-bg').forEach(bg=>bg.onclick=e=>{if(e.target===bg)bg.classList.remove('open');});
 
