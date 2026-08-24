@@ -3,22 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>版下ラボ — Tシャツ入稿データメーカー</title>
+<title>Tシャツ画像データメーカー</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&family=Dela+Gothic+One&family=Yusei+Magic&family=Reggae+One&family=RocknRoll+One&family=Noto+Sans+JP:wght@400;500;700;900&family=Noto+Serif+JP:wght@400;600;700;900&family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Shippori+Mincho:wght@500;700;800&family=Zen+Old+Mincho:wght@500;700;900&family=Yuji+Syuku&family=Yuji+Boku&family=Yuji+Mai&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#fff7fa;          /* 全体背景（白に近い淡ピンク） */
+    --ink:#fff8f2;          /* 全体背景（白に近い淡オレンジ） */
     --panel:#ffffff;        /* パネル */
-    --panel-2:#ffeef5;      /* 一段濃い淡ピンクのパネル */
-    --line:#ffd3e6;         /* 罫線（ピンクの縁） */
-    --stage:#fff1f7;        /* キャンバスステージ */
-    --text:#5c3348;         /* 文字色（深めのプラム） */
-    --muted:#c98aa8;        /* 控えめなピンク文字 */
-    --accent:#ff6fa0;       /* メインのピンク */
+    --panel-2:#fff1e2;      /* 一段濃い淡オレンジのパネル */
+    --line:#ffd7ad;         /* 罫線（オレンジの縁） */
+    --stage:#fff4e8;        /* キャンバスステージ */
+    --text:#4a2f18;         /* 文字色（深めのプラム） */
+    --muted:#b98a55;        /* 控えめなオレンジ文字 */
+    --accent:#ff7a1c;       /* メインのオレンジ */
     --accent-2:#3ecfae;     /* 差し色のミント（選択枠など機能色） */
-    --safe:#ff6fa0;
+    --safe:#ff7a1c;
     --radius:14px;
   }
   *{box-sizing:border-box}
@@ -37,7 +37,7 @@
   header{
     display:flex;align-items:center;gap:16px;height:56px;
     padding:10px 16px;border-bottom:1px solid var(--line);
-    background:linear-gradient(180deg,#ffffff,#fff3f8);
+    background:linear-gradient(180deg,#ffffff,#fff3e6);
   }
   .brand{display:flex;align-items:baseline;gap:10px}
   .brand .logo{
@@ -52,9 +52,9 @@
     padding:8px 14px;border-radius:20px;cursor:pointer;font-size:13px;font-weight:500;
     display:inline-flex;align-items:center;gap:7px;transition:.15s;
   }
-  .btn:hover{border-color:var(--accent);background:#ffe1ee}
+  .btn:hover{border-color:var(--accent);background:#ffe6cc}
   .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
-  .btn.primary:hover{background:#ff8fb8;border-color:#ff8fb8}
+  .btn.primary:hover{background:#ff9a4d;border-color:#ff9a4d}
   .btn.ghost{background:transparent}
   .btn:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent-2);outline-offset:1px}
 
@@ -91,7 +91,7 @@
       padding:6px 0;border-radius:14px;cursor:pointer;font-family:"Space Mono",monospace;
     }
     .mtab .micon{font-size:17px;line-height:1}
-    .mtab.sel{color:var(--accent);background:#ffe1ee}
+    .mtab.sel{color:var(--accent);background:#ffe6cc}
   }
 
   /* ---------- 左：ツール ---------- */
@@ -109,6 +109,10 @@
   }
   .tool-btn:hover{border-color:var(--accent);transform:translateX(2px)}
   .tool-btn .ic{width:18px;text-align:center;color:var(--accent)}
+  .tool-btn.expand-btn .chev{margin-left:auto;color:var(--muted);font-size:11px;transition:.2s}
+  .tool-btn.expand-btn.open .chev{transform:rotate(180deg)}
+  .submenu{margin:0 0 9px 10px;padding-left:10px;border-left:2px solid var(--line)}
+  .submenu .sub-btn{font-size:12.5px;padding:9px 12px}
   hr.div{border:none;border-top:1px dashed var(--line);margin:18px 0}
 
   .field{margin-bottom:14px}
@@ -123,7 +127,7 @@
   .stage-wrap{position:relative;background:
       radial-gradient(circle at 50% 40%, #ffffff 0%, var(--stage) 70%);
     display:flex;align-items:center;justify-content:center;overflow:hidden;min-height:0}
-  .stage-inner{position:relative;box-shadow:0 20px 46px rgba(255,111,160,.22)}
+  .stage-inner{position:relative;box-shadow:0 20px 46px rgba(255,122,28,.22)}
   #board{display:block;touch-action:none;cursor:default}
   .stage-hint{
     position:absolute;bottom:12px;left:50%;transform:translateX(-50%);
@@ -149,12 +153,17 @@
     border-radius:14px;padding:8px 9px;cursor:pointer;font-size:12.5px;
   }
   .layer.sel{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+  .layer.dragging{opacity:.4}
+  .layer.drag-over{border-color:var(--accent-2);box-shadow:inset 0 0 0 2px var(--accent-2)}
+  .layer .grip{cursor:grab;color:var(--muted);font-size:13px;flex-shrink:0;letter-spacing:-1px;line-height:1;touch-action:none}
+  .layer .grip:active{cursor:grabbing}
   .layer .thumb{width:30px;height:30px;border-radius:9px;background:var(--stage);flex-shrink:0;
     display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:14px}
   .layer .thumb img{width:100%;height:100%;object-fit:contain}
   .layer .name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .layer .del{border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:15px}
-  .layer .del:hover{color:var(--accent)}
+  .layer .del{border:none;background:#ffe6cc;color:#cc5a12;cursor:pointer;font-size:13px;
+    width:26px;height:26px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:.15s}
+  .layer .del:hover{background:#ff7a1c;color:#fff}
   .empty{color:var(--muted);font-size:12px;text-align:center;padding:22px 8px;line-height:1.6}
 
   .props{border-top:1px solid var(--line);padding:16px;background:var(--panel-2)}
@@ -169,7 +178,7 @@
   .miniact button:hover{border-color:var(--accent)}
 
   /* ---------- モーダル ---------- */
-  .modal-bg{position:fixed;inset:0;background:rgba(120,50,80,.35);display:none;align-items:center;justify-content:center;z-index:70;padding:20px}
+  .modal-bg{position:fixed;inset:0;background:rgba(140,70,20,.35);display:none;align-items:center;justify-content:center;z-index:70;padding:20px}
   .modal-bg.open{display:flex}
   .modal{background:var(--panel);border:1px solid var(--line);border-radius:20px;max-width:640px;width:100%;max-height:90vh;overflow:auto}
   .modal h2{font-family:"Zen Maru Gothic",sans-serif;font-weight:700;font-size:18px;margin:0;padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
@@ -195,26 +204,26 @@
   .dirbtn{flex:1;padding:8px 0;border:1px solid var(--line);background:#fffbfd;color:var(--text);
     border-radius:14px;cursor:pointer;font-size:12.5px;transition:.15s}
   .dirbtn:hover{border-color:var(--accent)}
-  .dirbtn.sel{border-color:var(--accent);color:var(--accent);background:#ffe1ee}
-  .btn.sel{border-color:var(--accent);color:var(--accent);background:#ffe1ee}
+  .dirbtn.sel{border-color:var(--accent);color:var(--accent);background:#ffe6cc}
+  .btn.sel{border-color:var(--accent);color:var(--accent);background:#ffe6cc}
   .roletabs{display:flex;gap:6px;margin-bottom:12px}
   .roletabs button{flex:1;text-align:center;justify-content:center}
   .jobgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
   .jobgrid .tool-btn{margin-bottom:0;font-size:12px;padding:9px 10px}
   .jobgrid .tool-btn .ic{font-family:"Space Mono",monospace;font-size:10px;font-weight:700;
-    background:#ffe1ee;color:var(--accent);padding:2px 4px;border-radius:4px;flex-shrink:0}
+    background:#ffe6cc;color:var(--accent);padding:2px 4px;border-radius:4px;flex-shrink:0}
   .ie-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:14px}
   .ie-field{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--muted);min-width:170px}
   .ie-field input[type=range]{accent-color:var(--accent)}
   .ie-stage{
     background-image:
-      linear-gradient(45deg,#ffd9e8 25%,transparent 25%),
-      linear-gradient(-45deg,#ffd9e8 25%,transparent 25%),
-      linear-gradient(45deg,transparent 75%,#ffd9e8 75%),
-      linear-gradient(-45deg,transparent 75%,#ffd9e8 75%);
+      linear-gradient(45deg,#ffdfc0 25%,transparent 25%),
+      linear-gradient(-45deg,#ffdfc0 25%,transparent 25%),
+      linear-gradient(45deg,transparent 75%,#ffdfc0 75%),
+      linear-gradient(-45deg,transparent 75%,#ffdfc0 75%);
     background-size:20px 20px;
     background-position:0 0,0 10px,10px -10px,-10px 0px;
-    background-color:#fff5f9;
+    background-color:#fff6ec;
     border-radius:14px;padding:20px;display:flex;justify-content:center;align-items:center;min-height:220px;
   }
   #ieCanvas{display:block;cursor:crosshair;touch-action:none}
@@ -225,9 +234,9 @@
     border-radius:14px;overflow:hidden;cursor:pointer;transition:.15s}
   .mat-item:hover{border-color:var(--accent)}
   .mat-item img{width:100%;height:100%;object-fit:contain;padding:5px;box-sizing:border-box;pointer-events:none}
-  .mat-item .mat-del{position:absolute;top:2px;right:2px;background:rgba(255,255,255,.9);border:none;
-    color:var(--muted);border-radius:5px;width:18px;height:18px;font-size:10px;cursor:pointer;line-height:1;padding:0}
-  .mat-item .mat-del:hover{color:var(--accent)}
+  .mat-item .mat-del{position:absolute;top:2px;right:2px;background:#ffe6cc;border:none;
+    color:#cc5a12;border-radius:6px;width:20px;height:20px;font-size:11px;cursor:pointer;line-height:1;padding:0}
+  .mat-item .mat-del:hover{background:#ff7a1c;color:#fff}
 
   input[type=file]{display:none}
 </style>
@@ -236,8 +245,7 @@
 <div class="app">
   <header>
     <div class="brand">
-      <span class="logo">版下<b>ラボ</b></span>
-      <span class="sub">RAKSUL Tシャツ入稿データメーカー</span>
+      <span class="logo">Tシャツ画像データ<b>メーカー</b></span>
     </div>
     <div class="spacer"></div>
     <button class="btn ghost" id="btnUndo" title="元に戻す (Ctrl+Z)">↶</button>
@@ -251,10 +259,31 @@
     <!-- 左 ツール -->
     <aside class="left">
       <p class="section-label">素材を追加</p>
-      <button class="tool-btn" id="addImage"><span class="ic">🖼</span>画像を読み込む</button>
+
+      <button class="tool-btn expand-btn" id="toggleJobMaterials"><span class="ic">⚔</span>FF14素材の追加<span class="chev">▾</span></button>
+      <div class="submenu" id="jobMaterialsSubmenu" style="display:none">
+        <div class="roletabs" id="roleTabs">
+          <button class="btn ghost sel" data-role="tank">タンク</button>
+          <button class="btn ghost" data-role="healer">ヒーラー</button>
+          <button class="btn ghost" data-role="dps">DPS</button>
+        </div>
+        <div class="roletabs" id="dpsSubTabs" style="display:none">
+          <button class="btn ghost sel" data-dps="melee">近接</button>
+          <button class="btn ghost" data-dps="ranged">レンジ</button>
+          <button class="btn ghost" data-dps="caster">キャスター</button>
+        </div>
+        <div class="jobgrid" id="jobGrid"></div>
+      </div>
+
       <button class="tool-btn" id="addText"><span class="ic">T</span>テキストを追加</button>
-      <button class="tool-btn" id="addRect"><span class="ic">▭</span>四角形を追加</button>
-      <button class="tool-btn" id="addCircle"><span class="ic">◯</span>円を追加</button>
+
+      <button class="tool-btn expand-btn" id="toggleShapes"><span class="ic">▭</span>図形を追加<span class="chev">▾</span></button>
+      <div class="submenu" id="shapesSubmenu" style="display:none">
+        <button class="tool-btn sub-btn" id="addRect"><span class="ic">▭</span>四角形を追加</button>
+        <button class="tool-btn sub-btn" id="addCircle"><span class="ic">◯</span>円を追加</button>
+      </div>
+
+      <button class="tool-btn" id="addImage"><span class="ic">🖼</span>画像を読み込む</button>
 
       <hr class="div">
       <p class="section-label">マイ素材ライブラリ</p>
@@ -262,22 +291,6 @@
       <div class="empty" id="materialsEmpty" style="padding:16px 4px">
         まだ保存された素材はありません。<br>画像を配置して編集後、右の「マイ素材として保存」で追加できます。
       </div>
-
-      <hr class="div">
-      <p class="section-label">ジョブ素材（仮素材）</p>
-      <div class="roletabs" id="roleTabs">
-        <button class="btn ghost sel" data-role="tank">タンク</button>
-        <button class="btn ghost" data-role="healer">ヒーラー</button>
-        <button class="btn ghost" data-role="dps">DPS</button>
-      </div>
-      <div class="field">
-        <label>ロールカラー</label>
-        <input type="color" id="roleColor" value="#3a7bd5">
-      </div>
-      <div class="jobgrid" id="jobGrid"></div>
-      <p class="note" style="font-size:11px;color:var(--muted);line-height:1.7;margin-top:10px">
-        ※ 実物のアイコンがまだ無いための仮素材（色付き丸＋ジョブ略称）です。購入・加工した画像を「マイ素材ライブラリ」に保存すれば、そちらに差し替えられます。
-      </p>
 
       <hr class="div">
       <p class="section-label">キャンバス（印刷範囲）</p>
@@ -357,7 +370,9 @@
               <optgroup label="欧文">
                 <option value="'Archivo',sans-serif">Archivo（英字）</option>
               </optgroup>
+              <optgroup label="マイフォント" id="customFontsGroup"></optgroup>
             </select>
+            <button class="btn ghost" id="btnAddFont" style="width:100%;margin-top:6px;font-size:12px">＋ フォントを追加（TTF/OTF/WOFF）</button>
           </div>
           <div class="field"><label>書字方向</label>
             <div class="dirtoggle">
@@ -372,7 +387,7 @@
         </div>
         <div id="propShape" style="display:none">
           <div class="colorrow">
-            <input type="color" id="pFill" value="#ff6fa0">
+            <input type="color" id="pFill" value="#ff7a1c">
             <span class="mono" style="font-size:11px;color:var(--muted)">塗りつぶし色</span>
           </div>
           <div class="colorrow" id="propJobLabelRow" style="display:none;margin-top:8px">
@@ -381,6 +396,10 @@
           </div>
         </div>
         <div id="propImageRes" class="mono" style="display:none;font-size:11px;color:var(--muted);margin-top:8px;line-height:1.6"></div>
+        <div id="propImageColorRow" class="colorrow" style="display:none;margin-top:10px">
+          <input type="color" id="pImageColor" value="#000000">
+          <span class="mono" style="font-size:11px;color:var(--muted)">色を変更（ベタ塗り）</span>
+        </div>
         <div id="propImageActions" style="display:none;margin-top:10px">
           <div style="display:flex;flex-direction:column;gap:8px">
             <button class="btn ghost" id="btnEditImage">✂️ 枠・背景を消す</button>
@@ -412,8 +431,12 @@
   <div class="modal">
     <h2>Tシャツ着用イメージ <span class="x" data-close>×</span></h2>
     <div class="mbody">
-      <div class="tee-stage"><canvas id="teeCanvas" width="380" height="440"></canvas></div>
+      <div class="tee-stage"><canvas id="teeCanvas" width="380" height="400"></canvas></div>
       <div class="tee-colors" id="teeColors"></div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px">
+        <input type="color" id="teeCustomColor" value="#ffffff">
+        <span class="mono" style="font-size:11px;color:var(--muted)">好きな色を選ぶ</span>
+      </div>
       <p class="note" style="margin-top:16px">※ 位置とサイズはイメージです。実際のプリント位置は商品によって異なります。</p>
     </div>
   </div>
@@ -486,6 +509,7 @@
 </div>
 
 <input type="file" id="fileInput" accept="image/*" multiple>
+<input type="file" id="fontFileInput" accept=".ttf,.otf,.woff,.woff2" style="display:none">
 
 <script>
 "use strict";
@@ -534,8 +558,8 @@ function applyCanvasSize(){
 const checker = (()=>{  // 透過チェッカー
   const c = document.createElement('canvas'); c.width=c.height=40;
   const x=c.getContext('2d');
-  x.fillStyle='#fff0f6'; x.fillRect(0,0,40,40);
-  x.fillStyle='#ffdcea'; x.fillRect(0,0,20,20); x.fillRect(20,20,20,20);
+  x.fillStyle='#fff4e8'; x.fillRect(0,0,40,40);
+  x.fillStyle='#ffe4c4'; x.fillRect(0,0,20,20); x.fillRect(20,20,20,20);
   return x.createPattern(c,'repeat');
 })();
 
@@ -806,7 +830,7 @@ function addTextEl(){
 function addShape(kind){
   pushUndo();
   const size=Math.round(Math.min(pxW(),pxH())*0.28);
-  const el={id:++state.seq,type:kind,fill:'#ff6fa0',
+  const el={id:++state.seq,type:kind,fill:'#ff7a1c',
     x:pxW()/2,y:pxH()/2,w:size,h:size,rot:0,opacity:1};
   state.els.push(el); selectEl(el.id); renderLayers(); draw();
   setMobileTab('stage');
@@ -816,10 +840,12 @@ function addShape(kind){
 const JOBS = {
   tank:   [{code:'PLD',name:'ナイト'},{code:'WAR',name:'戦士'},{code:'DRK',name:'暗黒騎士'},{code:'GNB',name:'ガンブレイカー'}],
   healer: [{code:'WHM',name:'白魔道士'},{code:'SCH',name:'学者'},{code:'AST',name:'占星術師'},{code:'SGE',name:'賢者'}],
-  dps:    [{code:'MNK',name:'モンク'},{code:'DRG',name:'竜騎士'},{code:'NIN',name:'忍者'},{code:'SAM',name:'侍'},
-           {code:'RPR',name:'リーパー'},{code:'VPR',name:'ヴァイパー'},{code:'BRD',name:'吟遊詩人'},{code:'MCH',name:'機工士'},
-           {code:'DNC',name:'踊り子'},{code:'BLM',name:'黒魔道士'},{code:'SMN',name:'召喚士'},{code:'RDM',name:'赤魔道士'},
-           {code:'PCT',name:'ピクトマンサー'}],
+  dps: {
+    melee:  [{code:'SAM',name:'侍'},{code:'DRG',name:'竜騎士'},{code:'MNK',name:'モンク'},
+             {code:'RPR',name:'リーパー'},{code:'VPR',name:'ヴァイパー'},{code:'NIN',name:'忍者'}],
+    ranged: [{code:'MCH',name:'機工士'},{code:'DNC',name:'踊り子'},{code:'BRD',name:'吟遊詩人'}],
+    caster: [{code:'BLM',name:'黒魔道士'},{code:'SMN',name:'召喚士'},{code:'RDM',name:'赤魔道士'},{code:'PCT',name:'ピクトマンサー'}],
+  },
 };
 const JOB_ICON_DATA = {
   PLD: 'data:image/png;base64,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',
@@ -847,17 +873,21 @@ const JOB_ICON_DATA = {
 const ROLE_DEFAULT_COLOR = { tank:'#3a7bd5', healer:'#2ecc71', dps:'#e74c3c' };
 let currentRole = 'tank';
 
+let currentDpsSub = 'melee';
+function currentJobList(){
+  return currentRole==='dps' ? JOBS.dps[currentDpsSub] : JOBS[currentRole];
+}
 function renderJobGrid(){
-  document.getElementById('roleColor').value = ROLE_DEFAULT_COLOR[currentRole];
+  document.getElementById('dpsSubTabs').style.display = currentRole==='dps' ? 'flex' : 'none';
   const box = document.getElementById('jobGrid');
   box.innerHTML='';
-  JOBS[currentRole].forEach(job=>{
+  currentJobList().forEach(job=>{
     const b=document.createElement('button');
     b.className='tool-btn';
     if(JOB_ICON_DATA[job.code]){
       b.innerHTML = `<img src="${JOB_ICON_DATA[job.code]}" style="width:18px;height:18px;object-fit:contain;flex-shrink:0">${job.name}`;
     } else {
-      b.innerHTML = `<span class="ic">${job.code}</span>${job.name}<span class="mono" style="margin-left:auto;font-size:9px;color:var(--muted)">仮</span>`;
+      b.innerHTML = `<span class="ic">${job.code}</span>${job.name}`;
     }
     b.onclick=()=>addJobPlaceholder(job);
     box.appendChild(b);
@@ -870,13 +900,20 @@ document.querySelectorAll('#roleTabs button').forEach(btn=>{
     renderJobGrid();
   });
 });
+document.querySelectorAll('#dpsSubTabs button').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    currentDpsSub = btn.dataset.dps;
+    document.querySelectorAll('#dpsSubTabs button').forEach(b=>b.classList.toggle('sel', b===btn));
+    renderJobGrid();
+  });
+});
 function addJobPlaceholder(job){
   if(JOB_ICON_DATA[job.code]){
     addJobIconImage(job);
     return;
   }
   pushUndo();
-  const color = document.getElementById('roleColor').value;
+  const color = '#000000';
   const size = Math.round(Math.min(pxW(),pxH())*0.28);
   const el={id:++state.seq,type:'job',code:job.code,name:job.name,
     fill:color, labelColor:'#ffffff',
@@ -888,12 +925,12 @@ function addJobIconImage(job){
   const img = new Image();
   img.onload = ()=>{
     pushUndo();
-    const color = document.getElementById('roleColor').value;
+    const color = '#000000';
     const tinted = tintToCanvas(img, color);
     const maxW = pxW()*0.4;
     const scale = Math.min(1, maxW/tinted.width);
     const el = {id:++state.seq, type:'image', img:tinted, originalImg:tinted, name:`${job.code}_${job.name}`,
-      naturalW:tinted.width, naturalH:tinted.height,
+      naturalW:tinted.width, naturalH:tinted.height, tintColor:color,
       x:pxW()/2, y:pxH()/2, w:tinted.width*scale, h:tinted.height*scale, rot:0, opacity:1};
     state.els.push(el); selectEl(el.id); renderLayers(); draw();
     setMobileTab('stage');
@@ -902,9 +939,11 @@ function addJobIconImage(job){
 }
 function tintToCanvas(img, hex){
   const c = document.createElement('canvas');
-  c.width = img.naturalWidth; c.height = img.naturalHeight;
+  const w = img.naturalWidth || img.width;
+  const h = img.naturalHeight || img.height;
+  c.width = w; c.height = h;
   const cx = c.getContext('2d');
-  cx.drawImage(img, 0, 0);
+  cx.drawImage(img, 0, 0, w, h);
   const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
   const imgData = cx.getImageData(0,0,c.width,c.height);
   const d = imgData.data;
@@ -974,6 +1013,10 @@ function renderLayers(){
   [...state.els].reverse().forEach(el=>{
     const d=document.createElement('div');
     d.className='layer'+(el.id===state.sel?' sel':'');
+    d.draggable = true;
+    d.dataset.id = el.id;
+    const grip=document.createElement('div'); grip.className='grip'; grip.textContent='⠿'; grip.title='ドラッグで並び替え';
+    d.appendChild(grip);
     const thumb=document.createElement('div'); thumb.className='thumb';
     if(el.type==='image' && el.img){
       const im=new Image();
@@ -1006,13 +1049,65 @@ function renderLayers(){
         d.appendChild(b);
       }
     }
-    const del=document.createElement('button'); del.className='del'; del.textContent='🗑';
+    const del=document.createElement('button'); del.className='del'; del.textContent='🗑'; del.title='このレイヤーを削除';
     del.onclick=(ev)=>{ev.stopPropagation();removeEl(el.id);};
     d.appendChild(del);
     d.onclick=()=>selectEl(el.id);
     box.appendChild(d);
   });
 }
+/* ---- レイヤーのドラッグ並び替え ---- */
+let dragLayerId = null;
+function reorderLayers(draggedId, targetId, insertAfter){
+  pushUndo();
+  const visual = [...state.els].reverse(); // 先頭 = 最前面
+  const draggedIdx = visual.findIndex(e=>e.id===draggedId);
+  if(draggedIdx<0) return;
+  const [draggedEl] = visual.splice(draggedIdx,1);
+  let targetIdx = visual.findIndex(e=>e.id===targetId);
+  if(targetIdx<0) targetIdx = visual.length;
+  if(insertAfter) targetIdx += 1;
+  visual.splice(targetIdx, 0, draggedEl);
+  state.els = visual.reverse();
+  renderLayers(); draw();
+}
+const layersBox = document.getElementById('layers');
+layersBox.addEventListener('dragstart', e=>{
+  const row = e.target.closest('.layer');
+  if(!row) return;
+  dragLayerId = +row.dataset.id;
+  row.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+});
+layersBox.addEventListener('dragend', e=>{
+  const row = e.target.closest('.layer');
+  if(row) row.classList.remove('dragging');
+  layersBox.querySelectorAll('.layer.drag-over').forEach(r=>r.classList.remove('drag-over'));
+  dragLayerId = null;
+});
+layersBox.addEventListener('dragover', e=>{
+  e.preventDefault();
+  const row = e.target.closest('.layer');
+  layersBox.querySelectorAll('.layer.drag-over').forEach(r=>{ if(r!==row) r.classList.remove('drag-over'); });
+  if(row) row.classList.add('drag-over');
+});
+layersBox.addEventListener('dragleave', e=>{
+  const row = e.target.closest('.layer');
+  if(row) row.classList.remove('drag-over');
+});
+layersBox.addEventListener('drop', e=>{
+  e.preventDefault();
+  const row = e.target.closest('.layer');
+  if(!row || dragLayerId==null) return;
+  row.classList.remove('drag-over');
+  const targetId = +row.dataset.id;
+  if(targetId === dragLayerId){ dragLayerId=null; return; }
+  const rect = row.getBoundingClientRect();
+  const insertAfter = (e.clientY - rect.top) > rect.height/2;
+  reorderLayers(dragLayerId, targetId, insertAfter);
+  dragLayerId = null;
+});
+
 function syncProps(){
   const el=current();
   const props=document.getElementById('props');
@@ -1043,9 +1138,12 @@ function syncProps(){
     const cls = eff<150?'low':'ok';
     propRes.innerHTML = `ネイティブ ${el.naturalW}×${el.naturalH}px<br>配置時の実効解像度: <span class="res-badge ${cls}">${Math.round(eff)} dpi</span>`;
     document.getElementById('propImageActions').style.display='block';
+    document.getElementById('propImageColorRow').style.display='flex';
+    document.getElementById('pImageColor').value = el.tintColor || '#000000';
   } else {
     propRes.style.display='none';
     document.getElementById('propImageActions').style.display='none';
+    document.getElementById('propImageColorRow').style.display='none';
   }
   const op=Math.round((el.opacity??1)*100);
   document.getElementById('pOpacity').value=op;
@@ -1058,7 +1156,7 @@ function effectiveDPI(el){
 }
 let editArmed=false; // フォーカス中に一度だけUndoを記録
 function armEdit(){ if(!editArmed){ pushUndo(); editArmed=true; } }
-['pTextVal','pColor','pFill','pOpacity','pJobLabel'].forEach(id=>{
+['pTextVal','pColor','pFill','pOpacity','pJobLabel','pImageColor'].forEach(id=>{
   const node=document.getElementById(id);
   node.addEventListener('focus',()=>{editArmed=false;});
   node.addEventListener('mousedown',()=>{editArmed=false;});
@@ -1078,6 +1176,13 @@ document.getElementById('pFill').addEventListener('input',e=>{
   const el=current();if(!el)return;armEdit();el.fill=e.target.value;draw();});
 document.getElementById('pJobLabel').addEventListener('input',e=>{
   const el=current();if(!el||el.type!=='job')return;armEdit();el.labelColor=e.target.value;draw();});
+document.getElementById('pImageColor').addEventListener('input',e=>{
+  const el=current();if(!el||el.type!=='image')return;
+  armEdit();
+  el.img = tintToCanvas(el.img, e.target.value);
+  el.tintColor = e.target.value;
+  renderLayers(); draw();
+});
 document.getElementById('pOpacity').addEventListener('input',e=>{
   const el=current();if(!el)return;armEdit();el.opacity=+e.target.value/100;
   document.getElementById('opVal').textContent=e.target.value+'%';draw();});
@@ -1101,6 +1206,18 @@ document.getElementById('addImage').onclick=()=>document.getElementById('fileInp
 document.getElementById('addText').onclick=addTextEl;
 document.getElementById('addRect').onclick=()=>addShape('rect');
 document.getElementById('addCircle').onclick=()=>addShape('circle');
+
+function toggleSection(btnId, panelId){
+  const btn = document.getElementById(btnId);
+  const panel = document.getElementById(panelId);
+  btn.addEventListener('click', ()=>{
+    const isOpen = panel.style.display !== 'none';
+    panel.style.display = isOpen ? 'none' : 'block';
+    btn.classList.toggle('open', !isOpen);
+  });
+}
+toggleSection('toggleShapes','shapesSubmenu');
+toggleSection('toggleJobMaterials','jobMaterialsSubmenu');
 document.getElementById('aFlipH').onclick=()=>flip('h');
 document.getElementById('aFlipV').onclick=()=>flip('v');
 document.getElementById('btnUndo').onclick=undo;
@@ -1221,7 +1338,7 @@ document.getElementById('btnExportAnyway').onclick=()=>{
 /* ============================================================
    Tシャツプレビュー
 ============================================================ */
-const TEE_COLORS=['#ffffff','#111111','#3a4a63','#7a1f2b','#4a5a3a','#e8c14a','#c85a8a'];
+const TEE_COLORS=['#ffffff','#3a7bd5','#2ecc71','#e74c3c'];
 let teeColor='#ffffff';
 function drawTee(){
   const c=document.getElementById('teeCanvas');
@@ -1232,21 +1349,18 @@ function drawTee(){
   x.strokeStyle='rgba(0,0,0,.25)';x.lineWidth=2;
   x.beginPath();
   const cx=c.width/2;
-  x.moveTo(cx-70,70);              // 左肩
-  x.lineTo(cx-120,110);            // 左袖先
-  x.lineTo(cx-95,150);
-  x.lineTo(cx-70,130);
-  x.lineTo(cx-70,410);            // 左裾
-  x.lineTo(cx+70,410);           // 右裾
-  x.lineTo(cx+70,130);
-  x.lineTo(cx+95,150);
-  x.lineTo(cx+120,110);           // 右袖先
-  x.lineTo(cx+70,70);            // 右肩
-  x.quadraticCurveTo(cx,105,cx-70,70); // 襟
+  x.moveTo(cx-75,100);              // 左肩
+  x.lineTo(cx-125,145);            // 左袖先
+  x.lineTo(cx-100,178);
+  x.lineTo(cx-78,155);
+  x.lineTo(cx-88,350);            // 左裾（少し広がる）
+  x.lineTo(cx+88,350);           // 右裾
+  x.lineTo(cx+78,155);
+  x.lineTo(cx+100,178);
+  x.lineTo(cx+125,145);           // 右袖先
+  x.lineTo(cx+75,100);            // 右肩
+  x.quadraticCurveTo(cx,135,cx-75,100); // 襟
   x.closePath(); x.fill(); x.stroke();
-  // 襟ぐり
-  x.beginPath();x.strokeStyle='rgba(0,0,0,.2)';
-  x.moveTo(cx-38,74);x.quadraticCurveTo(cx,110,cx+38,74);x.stroke();
 
   // デザインを胸元エリアに合成
   if(state.els.length){
@@ -1254,8 +1368,8 @@ function drawTee(){
     tmp.width=pxW();tmp.height=pxH();
     const tc=tmp.getContext('2d');
     for(const el of state.els) drawEl(tc, el);
-    // 胸元枠 (cx-58..cx+58, y 150..300)
-    const areaW=116, areaH=150, ax=cx-58, ay=150;
+    // 胸元枠
+    const areaW=110, areaH=140, ax=cx-55, ay=160;
     const ratio=Math.min(areaW/pxW(), areaH/pxH());
     const dw=pxW()*ratio, dh=pxH()*ratio;
     x.drawImage(tmp, ax+(areaW-dw)/2, ay+(areaH-dh)/2, dw, dh);
@@ -1267,12 +1381,18 @@ function renderTeeColors(){
     const s=document.createElement('div');
     s.className='swatch'+(col===teeColor?' sel':'');
     s.style.background=col;
-    s.onclick=()=>{teeColor=col;renderTeeColors();drawTee();};
+    s.onclick=()=>{teeColor=col;document.getElementById('teeCustomColor').value=col;renderTeeColors();drawTee();};
     box.appendChild(s);
   });
 }
+document.getElementById('teeCustomColor').addEventListener('input', e=>{
+  teeColor = e.target.value;
+  renderTeeColors();
+  drawTee();
+});
 document.getElementById('btnPreview').onclick=()=>{
   document.getElementById('previewModal').classList.add('open');
+  document.getElementById('teeCustomColor').value = teeColor;
   renderTeeColors(); drawTee();
 };
 document.getElementById('btnGuide').onclick=()=>document.getElementById('guideModal').classList.add('open');
@@ -1418,6 +1538,69 @@ ie.canvas.addEventListener('touchmove',e=>{ e.preventDefault(); if(ie.drawing) i
 window.addEventListener('touchend',()=>{ if(ie.drawing){ ie.drawing=false; iePushHistory(); } });
 
 /* ============================================================
+   カスタムフォント（ユーザーがフォントファイルを追加）
+============================================================ */
+const CUSTOM_FONT_KEY = 'tshirtlab_customfonts_v1';
+function loadCustomFonts(){
+  try{ return JSON.parse(localStorage.getItem(CUSTOM_FONT_KEY)||'[]'); }
+  catch(e){ return []; }
+}
+function saveCustomFonts(list){ localStorage.setItem(CUSTOM_FONT_KEY, JSON.stringify(list)); }
+
+function addFontOption(family){
+  const group = document.getElementById('customFontsGroup');
+  const val = `'${family}',sans-serif`;
+  if([...group.options].some(o=>o.value===val)) return;
+  const opt = document.createElement('option');
+  opt.value = val;
+  opt.textContent = family + '（マイフォント）';
+  group.appendChild(opt);
+}
+async function registerCustomFont(family, dataUrl, selectAfter){
+  try{
+    const resp = await fetch(dataUrl);
+    const buf = await resp.arrayBuffer();
+    const face = new FontFace(family, buf);
+    await face.load();
+    document.fonts.add(face);
+  }catch(err){
+    console.error('フォント読み込み失敗', err);
+    return false;
+  }
+  addFontOption(family);
+  if(selectAfter){
+    const val = `'${family}',sans-serif`;
+    document.getElementById('pFont').value = val;
+    const el = current();
+    if(el && el.type==='text'){ pushUndo(); el.font = val; draw(); }
+  }
+  return true;
+}
+async function initCustomFonts(){
+  for(const item of loadCustomFonts()){
+    await registerCustomFont(item.name, item.dataUrl, false);
+  }
+}
+document.getElementById('btnAddFont').addEventListener('click', ()=>document.getElementById('fontFileInput').click());
+document.getElementById('fontFileInput').addEventListener('change', e=>{
+  const file = e.target.files[0];
+  e.target.value='';
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async ()=>{
+    const dataUrl = reader.result;
+    const family = file.name.replace(/\.[^.]+$/,'');
+    const ok = await registerCustomFont(family, dataUrl, true);
+    if(!ok){ alert('このフォントファイルは読み込めませんでした。TTF/OTF/WOFF形式をお試しください。'); return; }
+    const list = loadCustomFonts();
+    list.push({name:family, dataUrl});
+    try{ saveCustomFonts(list); }
+    catch(err){ alert('保存容量の上限に達したようです。今回のフォントはこのセッション中のみ使用できます。'); }
+  };
+  reader.readAsDataURL(file);
+});
+
+/* ============================================================
    マイ素材ライブラリ（localStorageに永続化）
 ============================================================ */
 const MAT_KEY = 'tshirtlab_materials_v1';
@@ -1437,7 +1620,7 @@ function renderMaterials(){
   list.forEach(m=>{
     const d=document.createElement('div'); d.className='mat-item'; d.title=m.name;
     const img=document.createElement('img'); img.src=m.src; img.alt=m.name;
-    const del=document.createElement('button'); del.className='mat-del'; del.textContent='✕';
+    const del=document.createElement('button'); del.className='mat-del'; del.textContent='✕'; del.title='この素材を削除';
     del.onclick=(ev)=>{ ev.stopPropagation(); removeMaterial(m.id); };
     d.appendChild(img); d.appendChild(del);
     d.onclick=()=>addMaterialToCanvas(m);
@@ -1497,6 +1680,7 @@ document.fonts.ready.then(draw);
 fitView();
 renderMaterials();
 renderJobGrid();
+initCustomFonts();
 </script>
 </body>
 </html>
