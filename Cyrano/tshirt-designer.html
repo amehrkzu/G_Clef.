@@ -162,6 +162,7 @@
   .zoombar button{width:28px;height:28px;border:none;background:transparent;color:var(--text);
     cursor:pointer;border-radius:6px;font-size:16px}
   .zoombar button:hover{background:var(--panel-2)}
+  .zoombar button.active{background:var(--accent);color:#fff}
   .zoombar span{font-family:"Space Mono",monospace;font-size:11px;color:var(--muted);min-width:42px;text-align:center}
 
   .bgcolorbar{
@@ -169,6 +170,11 @@
     background:rgba(255,255,255,.92);border:1px solid var(--line);padding:5px 9px 5px 11px;border-radius:12px;
   }
   .bgcolorbar span{font-family:"Space Mono",monospace;font-size:11px;color:var(--muted)}
+  .bg-swatches{display:flex;gap:5px}
+  .bg-swatches .swatch-sm{
+    width:18px;height:18px;border-radius:50%;border:2px solid var(--line);cursor:pointer;padding:0;
+  }
+  .bg-swatches .swatch-sm.sel{border-color:var(--accent-2);transform:scale(1.15)}
   .bgcolorbar input[type=color]{
     width:26px;height:26px;border:1px solid var(--line);border-radius:7px;padding:1px;cursor:pointer;background:transparent;
   }
@@ -367,9 +373,11 @@
       </div>
       <div class="bgcolorbar" id="bgColorBar" title="背景色（プレビュー用・書き出しには影響しません）">
         <span class="mono">背景</span>
+        <div class="bg-swatches" id="bgSwatches"></div>
         <input type="color" id="canvasBgColor" value="#ffffff">
       </div>
       <div class="zoombar">
+        <button id="gridToggle" title="グリッド線の表示/非表示">▦</button>
         <button id="zoomOut">−</button>
         <span id="zoomVal">100%</span>
         <button id="zoomIn">+</button>
@@ -582,11 +590,30 @@ function applyCanvasSize(){
    描画
 ============================================================ */
 
+let showGrid = true;
+function drawGrid(W,H){
+  const pxPerMM = state.dpi/25.4;
+  const step = pxPerMM*10; // 10mm間隔
+  if(step*state.view < 6) return; // 画面上で細かすぎる場合は描画しない
+  ctx.save();
+  ctx.strokeStyle='rgba(0,0,0,.16)';
+  ctx.lineWidth = Math.max(1/state.view, 1);
+  for(let x=step; x<W; x+=step){
+    ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke();
+  }
+  for(let y=step; y<H; y+=step){
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+  }
+  ctx.restore();
+}
 function draw(){
   const W=board.width, H=board.height;
   ctx.clearRect(0,0,W,H);
   // 背景（プレビュー用の色。書き出しには含めない）
   ctx.fillStyle=teeColor; ctx.fillRect(0,0,W,H);
+
+  // グリッド線（表示のみ・書き出しには含めない）
+  if(showGrid) drawGrid(W,H);
 
   // 素材
   for(const el of state.els) drawEl(ctx, el);
@@ -1310,6 +1337,12 @@ document.getElementById('dpi').addEventListener('change',e=>{state.dpi=+e.target
 document.getElementById('zoomIn').onclick=()=>{state.view=Math.min(2,state.view*1.2);applyCanvasSize();};
 document.getElementById('zoomOut').onclick=()=>{state.view=Math.max(0.02,state.view/1.2);applyCanvasSize();};
 document.getElementById('zoomFit').onclick=fitView;
+document.getElementById('gridToggle').classList.add('active');
+document.getElementById('gridToggle').addEventListener('click', ()=>{
+  showGrid = !showGrid;
+  document.getElementById('gridToggle').classList.toggle('active', showGrid);
+  draw();
+});
 
 // キー操作
 window.addEventListener('keydown',e=>{
@@ -1610,8 +1643,22 @@ function setTeeColor(hex){
   if(bgInput) bgInput.value = hex;
   if(teeInput) teeInput.value = hex;
   renderTeeColors();
+  renderBgSwatches();
   drawTee();
   draw();
+}
+function renderBgSwatches(){
+  const box = document.getElementById('bgSwatches');
+  if(!box) return;
+  box.innerHTML = '';
+  TEE_COLORS.forEach(col=>{
+    const b = document.createElement('button');
+    b.className = 'swatch-sm' + (col===teeColor ? ' sel' : '');
+    b.style.background = col;
+    b.title = col;
+    b.onclick = ()=> setTeeColor(col);
+    box.appendChild(b);
+  });
 }
 function renderTeeColors(){
   const box=document.getElementById('teeColors'); box.innerHTML='';
@@ -1913,6 +1960,7 @@ document.querySelectorAll('.mtab').forEach(b=>{
 window.addEventListener('resize',()=>{ if(!drag) fitView(); });
 document.fonts.ready.then(draw);
 fitView();
+renderBgSwatches();
 renderMaterials();
 renderJobGrid();
 initCustomFonts();
