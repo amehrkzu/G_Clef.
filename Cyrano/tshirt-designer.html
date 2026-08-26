@@ -56,25 +56,8 @@
   .btn:hover{border-color:var(--accent);background:#ffe6cc}
   .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
   .btn.primary:hover{background:#ff9a4d;border-color:#ff9a4d}
-  .export-menu{
-    display:none;position:absolute;right:0;top:calc(100% + 6px);background:var(--panel);
-    border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 28px rgba(80,40,10,.18);
-    overflow:hidden;z-index:80;min-width:190px;
-  }
-  .export-menu.open{display:block}
-  .export-menu button{
-    width:100%;text-align:left;border:none;background:transparent;color:var(--text);
-    padding:11px 14px;font-size:13px;cursor:pointer;display:block;
-  }
-  .export-menu button:hover{background:var(--panel-2)}
-  .export-menu button:disabled{opacity:.4;cursor:not-allowed;background:transparent}
-  .export-menu button:disabled:hover{background:transparent}
-  .export-filename{padding:10px 12px 8px;border-bottom:1px solid var(--line)}
-  .export-filename label{display:block;font-size:10px;color:var(--muted);margin-bottom:4px;font-family:"Space Mono",monospace}
-  .export-filename input{
-    width:100%;background:#fffbfd;border:1px solid var(--line);border-radius:8px;
-    padding:6px 8px;font-size:12.5px;color:var(--text);box-sizing:border-box;
-  }
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .btn:disabled:hover{background:transparent;border-color:var(--line)}
   .btn.ghost{background:transparent}
   .btn:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent-2);outline-offset:1px}
 
@@ -121,7 +104,12 @@
     text-transform:uppercase;color:var(--muted);margin:0 0 10px;
     display:flex;align-items:center;gap:6px;
   }
-  .section-label::before{content:'♡';color:var(--accent);font-size:11px}
+  .section-label::before{content:'☆';color:var(--accent);font-size:11px}
+  .modal-heading{
+    font-size:15px;font-weight:700;color:var(--text);margin:0 0 10px;
+    display:flex;align-items:center;gap:6px;
+  }
+  .modal-heading::before{content:'☆';color:var(--accent);font-size:14px}
   .tool-btn{
     width:100%;text-align:left;border:1px solid var(--line);background:var(--panel-2);
     color:var(--text);padding:11px 13px;border-radius:14px;cursor:pointer;font-size:13px;
@@ -235,6 +223,13 @@
     padding:13px 15px;border-radius:14px;cursor:pointer;margin-bottom:9px;display:block;transition:.15s;
   }
   .preset-item:hover{border-color:var(--accent)}
+  .sheet-item{
+    width:100%;text-align:left;border:1px solid var(--line);background:var(--panel-2);
+    padding:9px 12px;border-radius:10px;cursor:pointer;margin-bottom:7px;display:flex;justify-content:space-between;align-items:center;font-size:12.5px;
+  }
+  .sheet-item:hover{border-color:var(--accent)}
+  .sheet-item .sname{font-weight:600}
+  .sheet-item .sdate{color:var(--muted);font-size:11px;font-family:"Space Mono",monospace}
   .preset-item .pname{font-weight:700;font-size:14.5px;margin-bottom:3px;color:var(--text)}
   .preset-item .pdesc{font-size:12px;color:var(--muted);line-height:1.6}
   .check-item{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:14px;margin-bottom:8px;font-size:13px;line-height:1.6}
@@ -251,6 +246,23 @@
   .dirbtn.sel{border-color:var(--accent);color:var(--accent);background:#ffe6cc}
   .btn.sel{border-color:var(--accent);color:var(--accent);background:#ffe6cc}
   .roletabs{display:flex;gap:5px;margin-bottom:12px}
+  .sticky-tabs{display:flex;gap:10px;padding:6px 4px 0;position:relative;z-index:1}
+  .sticky-tabs button{
+    border:none;padding:10px 20px 12px;font-size:13.5px;font-weight:700;cursor:pointer;
+    color:var(--muted);background:#ffe9cf;border-radius:4px 4px 9px 9px;
+    box-shadow:0 3px 6px rgba(80,40,10,.12);transform:rotate(-2deg);
+    position:relative;top:6px;transition:.15s;
+  }
+  .sticky-tabs button:nth-child(2){transform:rotate(2deg)}
+  .sticky-tabs button:hover{top:3px;color:var(--text)}
+  .sticky-tabs button.sel{
+    background:#fff3c4;color:var(--text);transform:rotate(-1deg) scale(1.04);
+    top:0;box-shadow:0 6px 12px rgba(80,40,10,.18);z-index:2;
+  }
+  .sticky-content{
+    background:var(--panel-2);border-radius:10px;padding:16px 15px;margin-top:-4px;
+    position:relative;z-index:0;border:1px solid var(--line);
+  }
   .roletabs button{flex:1;text-align:center;justify-content:center;padding:8px 4px;font-size:12px}
   .jobgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
   .jobgrid .tool-btn{margin-bottom:0;font-size:12px;padding:9px 10px}
@@ -296,18 +308,7 @@
     <button class="btn ghost" id="btnRedo" title="やり直す (Ctrl+Y)">↷</button>
     <button class="btn ghost" id="btnPreview">👕 プレビュー</button>
     <button class="btn ghost" id="btnPresetMenu">🧩 プリセット</button>
-    <div style="position:relative">
-      <button class="btn primary" id="btnExportMenuToggle">⬇ 書き出し ▾</button>
-      <div id="exportMenu" class="export-menu">
-        <div class="export-filename">
-          <label>ファイル名</label>
-          <input type="text" id="exportFileName" value="tshirt" placeholder="tshirt">
-        </div>
-        <button id="btnExportPng">🖼 PNG（透過）</button>
-        <button id="btnExportSvg">✏️ SVG（ベクター）</button>
-        <button id="btnExportPdf">📄 PDF（印刷サイズ）</button>
-      </div>
-    </div>
+    <button class="btn primary" id="btnShareMenu">💾 保存・書き出し</button>
   </header>
 
 
@@ -515,6 +516,61 @@
     <button class="mtab sel" data-tab="stage"><span class="micon">🖼</span>キャンバス</button>
     <button class="mtab" data-tab="right"><span class="micon">📋</span>レイヤー</button>
   </nav>
+</div>
+
+<!-- 保存/共有 -->
+<div class="modal-bg" id="saveModal">
+  <div class="modal" style="max-width:560px">
+    <h2>保存・書き出し <span class="x" data-close>×</span></h2>
+    <div class="mbody">
+      <div class="sticky-tabs" id="shareTabs">
+        <button class="sel" data-tab="save">📌 保存</button>
+        <button data-tab="export">📌 書き出し</button>
+      </div>
+
+      <div class="sticky-content">
+      <div id="shareTabSave">
+        <p class="modal-heading" style="margin-bottom:10px">スプレッドシートに保存</p>
+        <div class="field" style="margin-top:10px">
+          <label>ラベル（例：山田_D1案）</label>
+          <input type="text" id="saveLabel" placeholder="ラベルを入力">
+        </div>
+        <button class="btn primary" id="btnSheetSave" style="width:100%;margin-top:6px">☁ 保存する</button>
+        <p class="mono" id="sheetSaveStatus" style="font-size:11.5px;color:var(--muted);min-height:16px;margin-top:8px"></p>
+
+        <hr class="div">
+
+        <p class="modal-heading" style="margin-bottom:10px">スプレッドシートから読み込む</p>
+        <p class="mono" id="sheetListStatus" style="font-size:11.5px;color:var(--muted);min-height:16px"></p>
+        <div id="sheetList"></div>
+        <button class="btn ghost" id="btnRefreshList" style="width:100%;margin-top:4px">🔄 一覧を更新</button>
+
+        <hr class="div">
+
+        <p class="modal-heading" style="margin-bottom:10px">ファイルに保存（バックアップ用）</p>
+        <div style="display:flex;gap:10px;margin:10px 0 4px">
+          <button class="btn ghost" id="btnSaveFile" style="flex:1">⬇ ファイルに保存（.json）</button>
+          <button class="btn ghost" id="btnLoadFile" style="flex:1">⬆ ファイルから読み込む</button>
+        </div>
+        <input type="file" id="loadFileInput" accept=".json" style="display:none">
+      </div>
+
+      <div id="shareTabExport" style="display:none">
+        <p class="modal-heading" style="margin-bottom:10px">画像として書き出し</p>
+        <div class="field">
+          <label>ファイル名</label>
+          <input type="text" id="exportFileName" value="tshirt" placeholder="tshirt">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+          <button class="btn ghost" id="btnExportPng">🖼 PNG（透過）</button>
+          <button class="btn ghost" id="btnExportSvg">✏️ SVG（ベクター）</button>
+          <button class="btn ghost" id="btnExportPdf">📄 PDF（印刷サイズ）</button>
+          <button class="btn ghost" id="btnExportPreview">👕 プレビュー画像（PNG）</button>
+        </div>
+      </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- プリセット選択 -->
@@ -955,6 +1011,213 @@ function renderPresetList(){
     box.appendChild(b);
   });
 }
+/* ============================================================
+   保存 / 共有（ファイル・スプレッドシート）
+============================================================ */
+function serializeState(){
+  return {
+    version: 1,
+    savedAt: new Date().toISOString(),
+    canvas: { wMM: state.wMM, hMM: state.hMM, dpi: state.dpi },
+    teeColor: teeColor,
+    els: state.els.map(serializeElement).filter(Boolean)
+  };
+}
+function serializeElement(el){
+  const base = { type: el.type, x: el.x, y: el.y, rot: el.rot||0, opacity: el.opacity??1 };
+  if(el.type==='text'){
+    return {...base, text:el.text, font:el.font, color:el.color, vertical:!!el.vertical,
+      align:el.align||'center', bold:!!el.bold, fontSize:el.fontSize};
+  }
+  if(el.type==='rect' || el.type==='circle'){
+    return {...base, w:el.w, h:el.h, fill:el.fill};
+  }
+  if(el.type==='job'){
+    return {...base, kind:'placeholder', code:el.code, name:el.name, fill:el.fill, labelColor:el.labelColor, w:el.w, h:el.h};
+  }
+  if(el.type==='image'){
+    if(el.svgSource && el.jobCode && !el.rasterModified){
+      return {type:'image', kind:'jobicon', code:el.jobCode, tintColor:el.tintColor||'#000000',
+        x:el.x, y:el.y, w:el.w, h:el.h, rot:el.rot||0, opacity:el.opacity??1};
+    }
+    const src = el.img.tagName==='CANVAS' ? el.img.toDataURL('image/png') : el.img.src;
+    return {type:'image', kind:'raster', src, name:el.name||'image', tintColor:el.tintColor,
+      x:el.x, y:el.y, w:el.w, h:el.h, rot:el.rot||0, opacity:el.opacity??1};
+  }
+  return null;
+}
+function loadImageAsync(src){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>resolve(img);
+    img.onerror=reject;
+    img.src=src;
+  });
+}
+async function deserializeElement(spec){
+  const common = {id:++state.seq, x:spec.x, y:spec.y, rot:spec.rot||0, opacity:spec.opacity??1};
+  if(spec.type==='text'){
+    return {...common, type:'text', text:spec.text, font:spec.font, color:spec.color,
+      vertical:!!spec.vertical, align:spec.align||'center', bold:!!spec.bold, fontSize:spec.fontSize, w:10, h:10};
+  }
+  if(spec.type==='rect' || spec.type==='circle'){
+    return {...common, type:spec.type, w:spec.w, h:spec.h, fill:spec.fill};
+  }
+  if(spec.kind==='placeholder'){
+    return {...common, type:'job', code:spec.code, name:spec.name, fill:spec.fill, labelColor:spec.labelColor, w:spec.w, h:spec.h};
+  }
+  if(spec.type==='image' && spec.kind==='jobicon' && JOB_ICON_SVG[spec.code]){
+    const canvas = await rasterizeSvg(JOB_ICON_SVG[spec.code], spec.tintColor||'#000000', 1400);
+    if(!canvas) return null;
+    return {...common, type:'image', img:canvas, originalImg:canvas, name:spec.code,
+      naturalW:canvas.width, naturalH:canvas.height, tintColor:spec.tintColor,
+      svgSource:JOB_ICON_SVG[spec.code], jobCode:spec.code, rasterModified:false, w:spec.w, h:spec.h};
+  }
+  if(spec.type==='image' && spec.kind==='raster' && spec.src){
+    try{
+      const img = await loadImageAsync(spec.src);
+      return {...common, type:'image', img, originalImg:img, name:spec.name||'image',
+        naturalW:img.naturalWidth, naturalH:img.naturalHeight, tintColor:spec.tintColor, w:spec.w, h:spec.h};
+    }catch(e){ return null; }
+  }
+  return null;
+}
+async function loadStateData(data){
+  pushUndo();
+  state.wMM = data.canvas.wMM; state.hMM = data.canvas.hMM; state.dpi = data.canvas.dpi;
+  document.getElementById('cw').value = state.wMM;
+  document.getElementById('ch').value = state.hMM;
+  document.getElementById('dpi').value = state.dpi;
+  document.getElementById('preset').value = 'custom';
+  setTeeColor(data.teeColor || '#ffffff');
+  const newEls = [];
+  for(const spec of data.els){
+    const el = await deserializeElement(spec);
+    if(el) newEls.push(el);
+  }
+  state.els = newEls;
+  fitView();
+  renderLayers();
+  draw();
+}
+document.getElementById('btnShareMenu').onclick = ()=>{
+  document.getElementById('saveModal').classList.add('open');
+  refreshSheetList();
+};
+document.querySelectorAll('#shareTabs button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#shareTabs button').forEach(b=>b.classList.toggle('sel', b===btn));
+    document.getElementById('shareTabSave').style.display = btn.dataset.tab==='save' ? 'block' : 'none';
+    document.getElementById('shareTabExport').style.display = btn.dataset.tab==='export' ? 'block' : 'none';
+  });
+});
+document.getElementById('btnSaveFile').onclick = ()=>{
+  const data = serializeState();
+  const blob = new Blob([JSON.stringify(data)], {type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download = `${getExportBaseName()}_design.json`;
+  a.click();
+};
+document.getElementById('btnLoadFile').onclick = ()=> document.getElementById('loadFileInput').click();
+document.getElementById('loadFileInput').addEventListener('change', e=>{
+  const file = e.target.files[0];
+  e.target.value='';
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async ()=>{
+    try{
+      const data = JSON.parse(reader.result);
+      await loadStateData(data);
+      document.getElementById('saveModal').classList.remove('open');
+    }catch(err){
+      alert('ファイルの読み込みに失敗しました。正しいデザインファイル(.json)か確認してください。');
+    }
+  };
+  reader.readAsText(file);
+});
+
+/* ---- スプレッドシート連携（Google Apps Script経由） ---- */
+const SHEET_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwAcGncBkNVhnE8lIkrEy8INPwP93IZ-u_GQH1zUq4-7lxGh08LFoyaWQakRuGYA99ulQ/exec';
+function getSheetUrl(){
+  return SHEET_WEB_APP_URL;
+}
+function setSaveStatus(msg, isError){
+  const el = document.getElementById('sheetSaveStatus');
+  el.textContent = msg;
+  el.style.color = isError ? '#cc5a12' : 'var(--muted)';
+}
+function setListStatus(msg, isError){
+  const el = document.getElementById('sheetListStatus');
+  el.textContent = msg;
+  el.style.color = isError ? '#cc5a12' : 'var(--muted)';
+}
+document.getElementById('btnSheetSave').onclick = async ()=>{
+  const url = getSheetUrl();
+  const label = document.getElementById('saveLabel').value.trim();
+  if(!url){ setSaveStatus('保存先が設定されていません', true); return; }
+  if(!label){ setSaveStatus('ラベルを入力してください', true); return; }
+  setSaveStatus('保存中…');
+  try{
+    const data = serializeState();
+    const resp = await fetch(url, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
+      body: JSON.stringify({ action:'save', name:label, state:data })
+    });
+    const json = await resp.json();
+    if(json.ok){ setSaveStatus(`保存しました（ID: ${json.id}）`); }
+    else{ setSaveStatus('保存に失敗しました: ' + (json.error||'unknown'), true); }
+  }catch(err){
+    setSaveStatus('通信エラー：保存先の設定を確認してください', true);
+  }
+};
+document.getElementById('btnRefreshList').onclick = refreshSheetList;
+async function refreshSheetList(){
+  const url = getSheetUrl();
+  if(!url){ setListStatus('保存先が設定されていません', true); return; }
+  setListStatus('一覧を取得中…');
+  document.getElementById('sheetList').innerHTML='';
+  try{
+    const resp = await fetch(`${url}?action=list`);
+    const json = await resp.json();
+    renderSheetList(json.list||[]);
+    setListStatus(`${(json.list||[]).length}件見つかりました`);
+  }catch(err){
+    setListStatus('通信エラー：保存先の設定を確認してください', true);
+  }
+}
+function renderSheetList(list){
+  const box = document.getElementById('sheetList');
+  box.innerHTML='';
+  if(!list.length){
+    box.innerHTML = '<p class="note">まだ保存されたデザインがありません。</p>';
+    return;
+  }
+  list.slice().reverse().forEach(item=>{
+    const b = document.createElement('button');
+    b.className='sheet-item';
+    const d = item.date ? new Date(item.date).toLocaleString('ja-JP') : '';
+    b.innerHTML = `<span class="sname">${item.name||'無題'}</span><span class="sdate">${d}</span>`;
+    b.onclick = ()=> loadFromSheet(item.id);
+    box.appendChild(b);
+  });
+}
+async function loadFromSheet(id){
+  const url = getSheetUrl();
+  setListStatus('読み込み中…');
+  try{
+    const resp = await fetch(`${url}?action=get&id=${encodeURIComponent(id)}`);
+    const json = await resp.json();
+    if(json.error){ setListStatus('読み込み失敗: '+json.error, true); return; }
+    await loadStateData(json.state);
+    setListStatus('読み込みました');
+    document.getElementById('saveModal').classList.remove('open');
+  }catch(err){
+    setListStatus('通信エラー', true);
+  }
+}
+
 function applyPreset(preset){
   pushUndo();
   const specs = preset.build();
@@ -1118,7 +1381,7 @@ async function addJobIconImage(job){
   const maxW = pxW()*0.4;
   const scale = Math.min(1, maxW/canvas.width);
   const el = {id:++state.seq, type:'image', img:canvas, originalImg:canvas, name:`${job.code}_${job.name}`,
-    naturalW:canvas.width, naturalH:canvas.height, tintColor:'#000000', svgSource:JOB_ICON_SVG[job.code], rasterModified:false,
+    naturalW:canvas.width, naturalH:canvas.height, tintColor:'#000000', svgSource:JOB_ICON_SVG[job.code], jobCode:job.code, rasterModified:false,
     x:pxW()/2, y:pxH()/2, w:canvas.width*scale, h:canvas.height*scale, rot:0, opacity:1};
   state.els.push(el); selectEl(el.id); renderLayers(); draw();
   setMobileTab('stage');
@@ -1243,6 +1506,8 @@ function renderLayers(){
       }
     }
     const del=document.createElement('button'); del.className='del'; del.textContent='🗑'; del.title='このレイヤーを削除';
+    del.draggable = false;
+    del.addEventListener('dragstart', ev=>ev.preventDefault());
     del.onclick=(ev)=>{ev.stopPropagation();removeEl(el.id);};
     d.appendChild(del);
     d.onclick=()=>selectEl(el.id);
@@ -1719,7 +1984,7 @@ async function buildSvgString(){
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${defs}${body}</svg>`;
 }
 async function doExportSvg(){
-  const btn = document.getElementById('btnExportMenuToggle');
+  const btn = document.getElementById('btnExportSvg');
   const original = btn.textContent;
   btn.textContent = '⏳ フォント準備中…';
   btn.disabled = true;
@@ -1748,6 +2013,20 @@ function doExportPdf(){
   pdf.addImage(dataUrl, 'PNG', 0, 0, state.wMM, state.hMM);
   pdf.save(`${getExportBaseName()}_${state.wMM}x${state.hMM}mm.pdf`);
 }
+/* ---- プレビュー画像（Tシャツ着用イメージ）をそのままPNG保存 ---- */
+function doExportPreview(){
+  drawTee(); // 最新の色・デザインで再描画してから書き出す
+  const canvas = document.getElementById('teeCanvas');
+  canvas.toBlob(blob=>{
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download = `${getExportBaseName()}_preview.png`;
+    a.click();
+  }, 'image/png');
+}
+document.getElementById('btnExportPreview').onclick = ()=>{
+  doExportPreview();
+};
 function runChecks(){
   const issues=[];
   if(!state.els.length){
@@ -1790,7 +2069,6 @@ function renderCheckList(issues){
 }
 let pendingExportFormat = 'png';
 function requestExport(format){
-  document.getElementById('exportMenu').classList.remove('open');
   pendingExportFormat = format;
   const issues=runChecks();
   const hasWarn=issues.some(i=>i.level==='warn');
@@ -1801,12 +2079,6 @@ function requestExport(format){
     doExport(format);
   }
 }
-document.getElementById('btnExportMenuToggle').addEventListener('click', e=>{
-  e.stopPropagation();
-  document.getElementById('exportMenu').classList.toggle('open');
-});
-document.addEventListener('click', ()=> document.getElementById('exportMenu').classList.remove('open'));
-document.getElementById('exportMenu').addEventListener('click', e=> e.stopPropagation());
 document.getElementById('btnExportPng').onclick=()=>requestExport('png');
 document.getElementById('btnExportSvg').onclick=()=>requestExport('svg');
 document.getElementById('btnExportPdf').onclick=()=>requestExport('pdf');
