@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>絶妖星乱舞 P4ネオエクスデス&カオス デバフ処理特訓</title>
+<link rel="stylesheet" href="files/styles.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Yusei+Magic&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --gold-soft:#b98f34;
+    --ok:var(--gold);
+    --bad:var(--danger);
+    --text:#edf3ff;
+    --text-dim:var(--muted);
+  }
+  *{box-sizing:border-box;}
+  body{
+    padding:24px 16px 60px;
+    font-family: 'Yusei Magic', sans-serif;
+  }
+  .app{ max-width:1080px; margin:0 auto; }
+
+  header{ text-align:center; margin-bottom:28px; }
+  header .eyebrow{
+    color:var(--cyan);
+    letter-spacing:.18em;
+    font-size:11px;
+    font-weight:800;
+    font-family: 'Yusei Magic', sans-serif;
+  }
+  header h1{
+    font-size:clamp(1.4rem,4vw,2.1rem);
+    margin:.4em 0 .25em;
+    letter-spacing:.03em;
+    color:var(--text);
+  }
+  header p{ color:var(--text-dim); font-size:.88rem; margin:0; line-height:1.6; }
+
+  .layout{
+    display:grid;
+    grid-template-columns: 1fr 300px;
+    gap:20px;
+    align-items:start;
+  }
+  @media (max-width:820px){
+    .layout{ grid-template-columns: 1fr; }
+  }
+
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:7px;
+    padding:18px 20px;
+    min-width:0;
+  }
+
+  /* ---- rules panel ---- */
+  details.rules{ margin-bottom:18px; }
+  details.rules summary{
+    cursor:pointer;
+    font-weight:700;
+    color:var(--gold);
+    list-style:none;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  details.rules summary::before{
+    content:"▸";
+    display:inline-block;
+    transition:transform .15s ease;
+    color:var(--cyan);
+  }
+  details.rules[open] summary::before{ transform:rotate(90deg); }
+  .rules-body{ margin-top:12px; font-size:.85rem; line-height:1.75; color:var(--text-dim); }
+  .rules-body b{ color:var(--text); }
+  .rules-body .formula{
+    background:rgba(255,255,255,.035);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:10px 14px;
+    margin:10px 0;
+    color:var(--gold);
+    font-size:.83rem;
+  }
+  .rules-body table{ width:100%; border-collapse:collapse; margin:10px 0; font-size:.8rem;}
+  .rules-body th,.rules-body td{ border:1px solid var(--line); padding:5px 8px; text-align:center; }
+  .rules-body th{ color:var(--gold); background:rgba(255,255,255,.04);}
+  .rules-body h4{ color:var(--cyan); font-size:.82rem; margin:14px 0 4px; }
+
+  /* ---- clock row ---- */
+  .clock-row{
+    display:flex; align-items:center; justify-content:space-between;
+    flex-wrap:wrap; gap:10px;
+    margin-bottom:14px;
+    padding:12px 16px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    background:rgba(255,255,255,.02);
+  }
+  .clock-display{
+    font-size:1.8rem; font-weight:700; color:var(--text);
+    letter-spacing:.03em; font-variant-numeric:tabular-nums;
+    min-width:110px;
+  }
+  .clock-display span{ font-size:.7rem; color:var(--text-dim); display:block; letter-spacing:.14em; }
+  .clock-controls{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .speed-btn{
+    padding:6px 12px; border-radius:5px; border:1px solid #2d3a50;
+    background:#111927; color:var(--text-dim); font-size:.78rem; font-weight:700;
+    cursor:pointer; transition:all .12s;
+  }
+  .speed-btn:hover{ border-color:var(--cyan); color:var(--text); }
+  .speed-btn.active{ background:var(--cyan); color:#071016; border-color:transparent; }
+  button.action{
+    padding:9px 18px;
+    border-radius:5px;
+    border:1px solid #2d3a50;
+    background:#111927;
+    color:#fff;
+    font-size:.85rem;
+    font-weight:700;
+    cursor:pointer;
+    transition:all .12s;
+  }
+  button.action:hover{ border-color:var(--cyan); background:#172438; transform:translateY(-2px); }
+  button.action.primary{ background:var(--cyan); border:none; color:#071016; font-weight:900; }
+  button.action.primary:hover{ filter:brightness(1.08); color:#071016; transform:translateY(-2px); }
+  button.action:disabled{ opacity:.35; cursor:default; transform:none; }
+
+  /* ---- log feed ---- */
+  .log-feed{
+    height:150px;
+    overflow-y:auto;
+    border:1px solid var(--line);
+    border-radius:6px;
+    background:#0a0f18;
+    padding:10px 12px;
+    margin-bottom:16px;
+    font-size:.8rem;
+    line-height:1.9;
+    color:var(--text-dim);
+  }
+  .log-feed .log-line{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .log-feed .log-line b{ color:var(--cyan); font-weight:700; }
+  .log-feed .log-line.milestone b{ color:var(--gold); }
+  .log-feed .log-time{ color:#57647c; font-variant-numeric:tabular-nums; margin-right:6px; }
+  .idle-msg{ text-align:center; color:var(--text-dim); font-size:.85rem; padding:30px 10px; }
+
+  /* ---- party chat replica ---- */
+  .party-chat{
+    background:#0a0f1a;
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:8px 10px 10px;
+    margin-bottom:16px;
+    overflow-x:auto;
+  }
+  .chat-table{ border-collapse:collapse; font-size:.78rem; color:#9fd6ff; white-space:nowrap; }
+  .chat-table td{ padding:2px 10px; text-align:center; border-right:1px solid #21406b; }
+  .chat-table td:last-child{ border-right:none; }
+  /* 早水雷|水雷|視線 と 遅水雷|水雷|視線 の内側の区切りは元マクロに無いので消す（6グループの境界＝3,4,5,8,9列目の右だけ残す） */
+  .chat-table thead tr:nth-child(2) td:nth-child(1),
+  .chat-table thead tr:nth-child(2) td:nth-child(2),
+  .chat-table thead tr:nth-child(2) td:nth-child(6),
+  .chat-table thead tr:nth-child(2) td:nth-child(7),
+  .chat-table tbody td:nth-child(1),
+  .chat-table tbody td:nth-child(2),
+  .chat-table tbody td:nth-child(6),
+  .chat-table tbody td:nth-child(7){ border-right:none; }
+  .chat-table thead td{ color:#6fb6e0; font-size:.72rem; }
+  .chat-table thead tr:first-child td.chat-group{ color:var(--gold); font-weight:700; }
+  .chat-divider{ border-top:1px solid #1e3350; padding:2px 0 !important; border-right:none !important; }
+  .chat-table tbody td:empty::after{ content:"\00a0"; }
+  .chat-table tbody tr{ border-left:2px solid transparent; }
+  .chat-table tbody tr.chat-new{ border-left-color:var(--cyan); }
+
+  /* ---- decision card ---- */
+  .decision-card{
+    border:1px solid var(--cyan);
+    border-radius:7px;
+    background:rgba(82,215,231,.045);
+    padding:16px 18px;
+    margin-bottom:14px;
+  }
+  .decision-title{ color:var(--cyan); font-weight:800; font-size:1rem; margin-bottom:8px; }
+  .decision-info{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+  .info-chip{
+    display:inline-flex; align-items:center; gap:5px;
+    background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:5px;
+    padding:5px 10px; font-size:.78rem; color:var(--text-dim);
+  }
+  .info-chip b{ color:var(--gold); }
+  .countdown-wrap{ height:5px; background:#0a0f18; border-radius:3px; overflow:hidden; margin-bottom:14px; }
+  .countdown-bar{ height:100%; background:linear-gradient(90deg,var(--cyan),var(--gold)); transition:width .1s linear; }
+
+  .mini-board-wrap{ display:flex; flex-direction:column; align-items:center; margin-bottom:12px; }
+  .mini-board{ width:180px; height:180px; }
+  .mini-board-caption{ margin-top:4px; font-size:.74rem; color:var(--text-dim); text-align:center; }
+
+  .decision-row{
+    display:flex; align-items:center; justify-content:space-between;
+    flex-wrap:wrap; gap:8px;
+    padding:10px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .decision-row:last-child{ border-bottom:none; }
+  .row-label{ font-size:.88rem; color:var(--text); font-weight:700; min-width:150px; }
+  .row-choices{ display:flex; gap:8px; flex-wrap:wrap; }
+  .choice-btn{
+    padding:8px 16px; border-radius:5px; border:1px solid #2d3a50;
+    background:#111927; color:var(--text-dim); font-size:.82rem; font-weight:700;
+    cursor:pointer; transition:all .12s;
+  }
+  .choice-btn:hover{ border-color:var(--cyan); color:var(--text); }
+  .choice-btn.selected{ background:var(--cyan); color:#071016; border-color:transparent; }
+  .choice-btn.correct{ background:var(--ok); color:#1a1200; border-color:transparent; }
+  .choice-btn.wrong{ background:var(--bad); color:#2a0006; border-color:transparent; }
+  .choice-btn:disabled{ cursor:default; }
+  .row-result{ font-size:.78rem; font-weight:700; min-width:60px; text-align:right; }
+  .row-result.ok{ color:var(--ok); }
+  .row-result.bad{ color:var(--bad); }
+  .row-note{ font-size:.78rem; color:var(--text-dim); padding:6px 0; }
+
+  .round-summary{
+    text-align:center; padding:18px 10px;
+    border:1px solid var(--gold-soft);
+    border-radius:7px;
+    background:rgba(240,189,79,.06);
+    margin-bottom:14px;
+  }
+  .round-summary .score{ font-size:1.6rem; font-weight:800; color:var(--gold); margin:4px 0; }
+  .round-summary p{ color:var(--text-dim); font-size:.82rem; margin:4px 0 12px; }
+
+  /* ---- stats panel ---- */
+  .stats-panel h2{
+    font-size:11px; letter-spacing:.18em; color:var(--cyan);
+    margin:0 0 14px; text-transform:uppercase; font-weight:800;
+  }
+  .stat-row{
+    display:flex; justify-content:space-between;
+    padding:9px 0; border-bottom:1px solid var(--line);
+    font-size:.86rem; color:var(--text-dim);
+  }
+  .stat-row:last-child{ border-bottom:none; }
+  .stat-row b{ color:var(--text); font-size:1rem; }
+  .stats-note{ margin-top:14px; font-size:.78rem; color:var(--text-dim); line-height:1.6; }
+
+  .table-scroll{ overflow-x:auto; }
+
+  /* ---- mobile ---- */
+  @media (max-width:640px){
+    body{ padding:14px 10px 44px; }
+    .panel{ padding:14px 14px; border-radius:6px; }
+    header{ margin-bottom:18px; }
+    header p{ font-size:.82rem; }
+
+    .rules-body table{ font-size:.74rem; min-width:480px; }
+
+    .clock-row{ flex-direction:column; align-items:stretch; padding:12px; }
+    .clock-display{ text-align:center; font-size:1.6rem; }
+    .clock-controls{ justify-content:center; }
+    .speed-btn, button.action{ padding:10px 14px; font-size:.8rem; }
+
+    .log-feed{ height:120px; font-size:.76rem; }
+    .log-feed .log-line{ white-space:normal; overflow:visible; text-overflow:unset; }
+
+    .decision-card{ padding:14px 12px; }
+    .decision-title{ font-size:.92rem; }
+    .info-chip{ font-size:.74rem; padding:5px 8px; }
+
+    .decision-row{ flex-direction:column; align-items:stretch; gap:6px; }
+    .row-label{ min-width:0; }
+    .row-choices{ width:100%; }
+    .choice-btn{ flex:1 1 0; min-height:44px; text-align:center; }
+    .row-result{ text-align:left; }
+
+    .round-summary .score{ font-size:1.35rem; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="eyebrow">FF14 &nbsp;絶妖星乱舞 &nbsp;PHASE 4</div>
+    <h1>P4ネオエクスデス&カオス　デバフ処理特訓</h1>
+    <p>実際のキャスト時刻に合わせてデバフが付与・解決していきます。ケフカ登場からの経過時間0:00でスタートし、①ビーム ②1セット目デバフ ③炎処理 ④2セット目デバフ ⑤マジックアウト最終判定 の5ポイントで正しい処理を選んでください。</p>
+  </header>
+
+  <div class="layout">
+    <div class="panel board-panel">
+
+      <details class="rules">
+        <summary>ギミックのルールを見る</summary>
+        <div class="rules-body">
+          ケフカの「おちょくりソウル」でネオエクスデスとカオスが出現。グランドクロス→つなみorほのお→グランドクロス→つなみorほのお→グランドクロスの順に3回着弾したあと、無の氾濫（ビーム）で全体の「真偽」が確定する。以降のデバフはこの真偽を基準に処理する。
+          <div class="formula">
+            詠唱中に見える球：青（そのまま）＝<b>真</b>　／　赤いハテナ（逆）＝<b>偽</b>
+          </div>
+          <h4>① 無の氾濫（ビーム）</h4>
+          <div class="table-scroll"><table>
+            <tr><th>自分の持ちデバフ</th><th>真のとき</th><th>偽のとき</th></tr>
+            <tr><td>アラガンフィールド</td><td>違う色のビーム</td><td>同じ色のビーム</td></tr>
+            <tr><td>死の超越</td><td>同じ色のビーム</td><td>違う色のビーム</td></tr>
+          </table></div>
+          <h4>② 加速度爆弾／散開デバフ／叫声（1・2セット目とも共通）</h4>
+          <div class="table-scroll"><table>
+            <tr><th>デバフ</th><th>真のとき</th><th>偽のとき</th></tr>
+            <tr><td>加速度爆弾</td><td>止まる</td><td>動く</td></tr>
+            <tr><td>フォークライトニング</td><td>散開</td><td>頭割り</td></tr>
+            <tr><td>水属性圧縮</td><td>頭割り</td><td>散開</td></tr>
+            <tr><td>呪詛の叫声</td><td>見ない</td><td>見る</td></tr>
+          </table></div>
+          <h4>③④ 混沌の炎／混沌の水（カオス側の真偽で判定・炎と水は逆になる）</h4>
+          <div class="table-scroll"><table>
+            <tr><th>デバフ</th><th>真のとき</th><th>偽のとき</th></tr>
+            <tr><td>混沌の炎</td><td>タケノコ（自分の円に留まる）</td><td>ドーナツ（外周を踏む）</td></tr>
+            <tr><td>混沌の水</td><td>ドーナツ（外周を踏む）</td><td>タケノコ（自分の円に留まる）</td></tr>
+          </table></div>
+          <h4>⑤ マジックアウト最終判定</h4>
+          サンダガ・ブリザガは詠唱時に「チャージ」された真偽を覚えておき、マジックアウトの真偽と<b>同じなら最終的に真、違うなら最終的に偽</b>として処理する（＝チャージとアウトのXNOR）。
+          <div class="formula">
+            チャージ真 × アウト真 → 最終<b>真</b>　／　チャージ真 × アウト偽 → 最終<b>偽</b><br>
+            チャージ偽 × アウト真 → 最終<b>偽</b>　／　チャージ偽 × アウト偽 → 最終<b>真</b>
+          </div>
+          このツールでは、真偽と持ちデバフが「見えた」タイミングでその場で正しい処理を選び、実際の判定時刻までに答えられるかを練習します。
+          <h4>見た目について</h4>
+          サンダガは対角に伸びる紫の直線バンド、ブリザガは4色に分かれた風車模様で、②④⑤の判定カードにその見た目を表示します。真偽が反転すると、サンダガは向きが90度変わり、ブリザガは色の組み合わせ（NW-SE↔NE-SW）が入れ替わります。この反転ロジックは絶妖星乱舞P1の「なぞなぞマジック（扇＋直線）」と同じ考え方です。
+        </div>
+      </details>
+
+      <div class="clock-row">
+        <div class="clock-display" id="clockDisplay">0:00<span>ケフカ登場からの経過時間</span></div>
+        <div class="clock-controls">
+          <button class="speed-btn active" data-speed="1">1倍速</button>
+          <button class="speed-btn" data-speed="2">2倍速</button>
+          <button class="speed-btn" data-speed="4">4倍速</button>
+          <button class="action primary" id="startBtn">開始</button>
+          <button class="action" id="resetBtn">リセット</button>
+        </div>
+      </div>
+
+      <div class="party-chat" id="partyChat">
+        <table class="chat-table">
+          <thead>
+            <tr>
+              <td class="chat-group" colspan="3">早加速</td>
+              <td class="chat-group"></td>
+              <td class="chat-group"></td>
+              <td class="chat-group" colspan="3">遅加速</td>
+              <td class="chat-group"></td>
+              <td class="chat-group"></td>
+            </tr>
+            <tr>
+              <td>早水雷</td><td>水雷</td><td>視線</td><td>視線1</td><td>炎</td>
+              <td>遅水雷</td><td>水雷</td><td>視線</td><td>視線2</td><td>つなみ</td>
+            </tr>
+            <tr><td colspan="10" class="chat-divider"></td></tr>
+          </thead>
+          <tbody id="chatBody"></tbody>
+        </table>
+      </div>
+
+      <div class="log-feed" id="logFeed"></div>
+
+      <div id="decisionArea"></div>
+
+      <div class="idle-msg" id="idleMsg">「開始」を押すとタイムラインが進みます。デバフが見えたら、判定時刻までに正しい処理を選んでください。</div>
+    </div>
+
+    <div class="panel stats-panel">
+      <h2>Training Log</h2>
+      <div class="stat-row"><span>ラウンド数</span><b id="statAttempts">0</b></div>
+      <div class="stat-row"><span>全問正解数</span><b id="statPerfect">0</b></div>
+      <div class="stat-row"><span>現在の連続全問正解</span><b id="statStreak">0</b></div>
+      <div class="stat-row"><span>直前ラウンドの正答率</span><b id="statLast">-</b></div>
+      <div class="stat-row"><span>平均正答率</span><b id="statAvg">-</b></div>
+      <div class="stats-note">
+        ①〜⑤のすべてで正しい処理を選べれば「全問正解」。真偽を覚えておく必要がある⑤マジックアウトは特に間違いやすいので、サンダガ・ブリザガのチャージ真偽をきちんと記憶しておきましょう。
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ============ timeline log events (flavor) ============
+  const LOG_EVENTS = [
+    {t:7,   text:'ケフカ「再び登場、お人形！」'},
+    {t:13,  text:'ケフカの「おちょくりソウル」詠唱'},
+    {t:23,  text:'床が発動（なぞなぞマジック）'},
+    {t:27,  text:'ネオエクスデスの「グランドクロス」1回目 着弾'},
+    {t:32,  text:'カオスの「ほのお」'},
+    {t:37,  text:'床が発動'},
+    {t:42,  text:'ネオエクスデスの「グランドクロス」2回目 着弾'},
+    {t:47,  text:'カオスの「つなみ」'},
+    {t:53,  text:'床が発動'},
+    {t:57,  text:'ネオエクスデスの「グランドクロス」3回目 着弾', milestone:true},
+    {t:63,  text:'ネオエクスデスが「無の氾濫」の構え……', milestone:true},
+    {t:96,  text:'ケフカの「どきどきアルテマ」全体攻撃'},
+    {t:104, text:'ケフカの「ひろげるブリザガ」'},
+    {t:117, text:'ケフカの「マジックアウト」着弾！', milestone:true},
+    {t:126, text:'ケフカが「裁きの光」の構え……時間切れへ'},
+  ];
+
+  // ============ state ============
+  let elapsed = 0, speed = 1, timerId = null, running = false;
+  let roundState = null;
+  let notified = {}, resolved = {};
+  let roundCorrect = 0, roundTotal = 0;
+  let attempts = 0, perfectCount = 0, streak = 0, accSum = 0;
+
+  function rollSet(){
+    const hasAccel = Math.random() < 0.5;
+    let elem = null;
+    if(Math.random() < 0.5) elem = Math.random() < 0.5 ? 'fork' : 'water';
+    const hasScream = Math.random() < 0.25;
+    return { hasAccel, elem, hasScream };
+  }
+  function rollState(){
+    return {
+      neoTruth: Math.random() < 0.5,
+      chaosTruth: Math.random() < 0.5,
+      beamRole: Math.random() < 0.5 ? 'aragan' : 'toetsu',
+      set1: rollSet(),
+      set2: rollSet(),
+      sandagaCharge: Math.random() < 0.5,
+      blizzagaCharge: Math.random() < 0.5,
+      magicOutTruth: Math.random() < 0.5,
+      lineDir: Math.random() < 0.5 ? 'AD' : 'AB',
+      fanDir: Math.random() < 0.5 ? 'NW-SE' : 'NE-SW',
+    };
+  }
+
+  // ---- サンダガ(直線)／ブリザガ(扇) の見た目 : P1(なぞなぞマジック)と同じ「真=見た目通り／偽=反転」ロジック ----
+  function flipLine(dir){ return dir.endsWith('-R') ? dir.slice(0,-2) : dir + '-R'; }
+  function flipFan(dir){ return dir === 'NW-SE' ? 'NE-SW' : 'NW-SE'; }
+  function effLine(s, truthy){ return truthy ? s.lineDir : flipLine(s.lineDir); }
+  function effFan(s, truthy){ return truthy ? s.fanDir : flipFan(s.fanDir); }
+
+  const BOARD_PIE = {
+    NE: "M180,180 L180,25 A155,155 0 0,1 335,180 Z",
+    SE: "M180,180 L335,180 A155,155 0 0,1 180,335 Z",
+    SW: "M180,180 L180,335 A155,155 0 0,1 25,180 Z",
+    NW: "M180,180 L25,180 A155,155 0 0,1 180,25 Z",
+  };
+  const BOARD_MARKERS = [
+    ['A',180,84], ['2',245,115], ['B',284,184], ['3',245,245],
+    ['C',180,284], ['4',115,245], ['D',76,184],  ['1',115,115],
+  ];
+  function bandFanBoard(lineConfig, fanConfig, caption){
+    const rotate = (lineConfig === 'AD' || lineConfig === 'AD-R') ? -45 : 45;
+    const isR = lineConfig && lineConfig.endsWith('-R');
+    const [y1, y2] = isR ? [25, 180] : [100, 255];
+    const bandHTML = lineConfig ? `
+      <g clip-path="url(#boardClip)">
+        <g transform="rotate(${rotate} 180 180)" fill="rgba(190,90,230,.32)" stroke="rgba(190,90,230,.6)" stroke-width="1">
+          <rect x="-100" y="${y1}" width="560" height="80"/>
+          <rect x="-100" y="${y2}" width="560" height="80"/>
+        </g>
+      </g>` : '';
+    const fanHTML = fanConfig ? ['NE','SE','SW','NW'].map(dir=>{
+      const inGroup1 = (fanConfig === 'NW-SE') ? (dir === 'NW' || dir === 'SE') : (dir === 'NE' || dir === 'SW');
+      const fill = inGroup1 ? 'rgba(240,189,79,.3)' : 'rgba(82,215,231,.25)';
+      const stroke = inGroup1 ? 'rgba(240,189,79,.55)' : 'rgba(82,215,231,.5)';
+      return `<path d="${BOARD_PIE[dir]}" fill="${fill}" stroke="${stroke}"/>`;
+    }).join('') : '';
+    const markerHTML = BOARD_MARKERS.map(([label,x,y])=>`
+      <circle cx="${x}" cy="${y}" r="11" fill="rgba(255,255,255,.05)" stroke="var(--line)"/>
+      <text x="${x}" y="${y+3.5}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--text-dim)">${label}</text>`).join('');
+    return `<div class="mini-board-wrap">
+      <svg viewBox="0 0 360 360" class="mini-board">
+        <defs><clipPath id="boardClip"><circle cx="180" cy="180" r="155"/></clipPath></defs>
+        <circle cx="180" cy="180" r="155" fill="rgba(255,255,255,.02)" stroke="var(--line)"/>
+        ${fanHTML}${bandHTML}${markerHTML}
+      </svg>
+      <div class="mini-board-caption">${caption}</div>
+    </div>`;
+  }
+
+  // ============ truth logic (derived from actual FF14 timeline/trigger data) ============
+  function beamAnswer(s){
+    const baseDiffForAragan = true; // when neoTruth true: aragan->diff, toetsu->same
+    let wantsDiff = (s.beamRole === 'aragan') ? baseDiffForAragan : !baseDiffForAragan;
+    if(!s.neoTruth) wantsDiff = !wantsDiff;
+    return wantsDiff ? 'diff' : 'same';
+  }
+  function accelAnswer(s){ return s.neoTruth ? 'stop' : 'move'; }
+  function elemAnswer(s, type){
+    if(type === 'fork') return s.neoTruth ? 'spread' : 'stack';
+    return s.neoTruth ? 'stack' : 'spread';
+  }
+  function screamAnswer(s){ return s.neoTruth ? 'noLook' : 'look'; }
+  function fireAnswer(s){ return s.chaosTruth ? 'takenoko' : 'donut'; }
+  function waterAnswer(s){ return s.chaosTruth ? 'donut' : 'takenoko'; }
+  function sandagaFinalAnswer(s){ return s.sandagaCharge === s.magicOutTruth; }
+  function blizzagaFinalAnswer(s){ return s.blizzagaCharge === s.magicOutTruth; }
+
+  const TF = v => v ? '真' : '偽';
+
+  // ============ decision defs ============
+  function buildDecisions(s){
+    const set1Rows = [];
+    if(s.set1.hasAccel) set1Rows.push({ key:'accel1', label:'加速度爆弾', opts:[['止まる','stop'],['動く','move']], correct: accelAnswer(s) });
+    if(s.set1.elem) set1Rows.push({ key:'elem1', label: s.set1.elem === 'fork' ? 'フォークライトニング' : '水属性圧縮', opts:[['散開する','spread'],['頭割りする','stack']], correct: elemAnswer(s, s.set1.elem) });
+    if(s.set1.hasScream) set1Rows.push({ key:'scream1', label:'呪詛の叫声', opts:[['見る','look'],['見ない','noLook']], correct: screamAnswer(s) });
+
+    const set2Rows = [];
+    if(s.set2.hasAccel) set2Rows.push({ key:'accel2', label:'加速度爆弾', opts:[['止まる','stop'],['動く','move']], correct: accelAnswer(s) });
+    if(s.set2.elem) set2Rows.push({ key:'elem2', label: s.set2.elem === 'fork' ? 'フォークライトニング' : '水属性圧縮', opts:[['散開する','spread'],['頭割りする','stack']], correct: elemAnswer(s, s.set2.elem) });
+    if(s.set2.hasScream) set2Rows.push({ key:'scream2', label:'呪詛の叫声', opts:[['見る','look'],['見ない','noLook']], correct: screamAnswer(s) });
+
+    return [
+      { id:'beam', notifyT:63, resolveT:71,
+        title:'① 無の氾濫（ビーム）',
+        info:[ `持ちデバフ：<b>${s.beamRole === 'aragan' ? 'アラガンフィールド' : '死の超越'}</b>`, `ビーム：<b>${TF(s.neoTruth)}</b>` ],
+        rows:[ { key:'beam', label:'踏むべきビーム', opts:[['違う色のビーム','diff'],['同じ色のビーム','same']], correct: beamAnswer(s) } ] },
+
+      { id:'set1', notifyT:74, resolveT:86,
+        title:'② 1セット目 デバフ処理',
+        info:[ `サンダガ：<b>${TF(s.sandagaCharge)}</b>（チャージ・後で使うので記憶）` ],
+        diagram: bandFanBoard(effLine(s, s.sandagaCharge), null, 'サンダガの直線バンド（紫）を避ける方向の目安'),
+        rows: set1Rows },
+
+      { id:'fire1', notifyT:90, resolveT:98,
+        title:'③ 炎処理（混沌の炎）',
+        info:[ `混沌の真偽：<b>${TF(s.chaosTruth)}</b>` ],
+        rows:[ { key:'fire1', label:'混沌の炎', opts:[['ドーナツ（外周）','donut'],['タケノコ（自分の円）','takenoko']], correct: fireAnswer(s) } ] },
+
+      { id:'set2', notifyT:100, resolveT:109,
+        title:'④ 2セット目 デバフ処理',
+        info:[ `ブリザガ：<b>${TF(s.blizzagaCharge)}</b>（チャージ・後で使うので記憶）` ],
+        diagram: bandFanBoard(null, effFan(s, s.blizzagaCharge), 'ブリザガの風車模様（金＝グループ1／シアン＝グループ2）'),
+        rows: set2Rows },
+
+      { id:'final', notifyT:113, resolveT:117,
+        title:'⑤ 水処理＋マジックアウト最終判定',
+        info:[ `マジックアウト：<b>${TF(s.magicOutTruth)}</b>`, `サンダガ(チャージ)：<b>${TF(s.sandagaCharge)}</b>`, `ブリザガ(チャージ)：<b>${TF(s.blizzagaCharge)}</b>` ],
+        diagram: bandFanBoard(effLine(s, sandagaFinalAnswer(s)), effFan(s, blizzagaFinalAnswer(s)), 'マジックアウト後の最終形（バンド＋風車が重なる）'),
+        rows:[
+          { key:'water2', label:'混沌の水', opts:[['ドーナツ（外周）','donut'],['タケノコ（自分の円）','takenoko']], correct: waterAnswer(s) },
+          { key:'sandagaFinal', label:'サンダガ最終判定', opts:[['真として処理', true],['偽として処理', false]], correct: sandagaFinalAnswer(s) },
+          { key:'blizzagaFinal', label:'ブリザガ最終判定', opts:[['真として処理', true],['偽として処理', false]], correct: blizzagaFinalAnswer(s) },
+        ] },
+    ];
+  }
+
+  let decisions = [];
+  let decisionAnswers = {}; // id -> {rowKey: val}
+
+  // ============ DOM refs ============
+  const clockDisplay = document.getElementById('clockDisplay');
+  const logFeed = document.getElementById('logFeed');
+  const decisionArea = document.getElementById('decisionArea');
+  const idleMsg = document.getElementById('idleMsg');
+  const startBtn = document.getElementById('startBtn');
+  const resetBtn = document.getElementById('resetBtn');
+
+  function fmtTime(t){
+    const m = Math.floor(t / 60), sec = Math.floor(t % 60);
+    return m + ':' + String(sec).padStart(2,'0');
+  }
+
+  function appendLog(text, milestone){
+    const line = document.createElement('div');
+    line.className = 'log-line' + (milestone ? ' milestone' : '');
+    line.innerHTML = `<span class="log-time">${fmtTime(elapsed)}</span>${text}`;
+    logFeed.appendChild(line);
+    logFeed.scrollTop = logFeed.scrollHeight;
+  }
+
+  const chatBody = document.getElementById('chatBody');
+  function appendChatRow(cells){
+    const tr = document.createElement('tr');
+    tr.className = 'chat-new';
+    cells.forEach(text=>{
+      const td = document.createElement('td');
+      td.textContent = text || '';
+      tr.appendChild(td);
+    });
+    chatBody.appendChild(tr);
+    document.getElementById('partyChat').scrollTop = document.getElementById('partyChat').scrollHeight;
+  }
+  // 実際のゲームでは球の色（真偽）は着弾のその瞬間に見えるので、
+  // パーティチャットもグランドクロス／ほのお／つなみの着弾タイミングに同期させる。
+  // 列は [早水雷, 水雷, 視線, 視線1, 炎, 遅水雷, 水雷, 視線, 視線2, つなみ] の10列。
+  // 「視線」列＝加速度爆弾の動作、「早水雷／遅水雷」列＝水属性系デバフの生の真偽。
+  const CHAT_EVENTS = [
+    { t:27, build: s => {
+        const acc = s.neoTruth ? '止' : '動く';
+        const look1 = s.neoTruth ? '見ない' : '見る';
+        return [
+          ['', '', acc, look1, '', '', '', '', '', ''],
+          [s.neoTruth ? '本当' : '嘘', '', '', '', '', '', '', '', '', ''],
+        ];
+      } },
+    { t:32, build: s => [['', '', '', '', s.chaosTruth ? '本当' : '嘘', '', '', '', '', '']] },
+    { t:42, build: s => {
+        const acc = s.neoTruth ? '止' : '動く';
+        const look2 = s.neoTruth ? '見ない' : '見る';
+        return [
+          ['', '', '', '', '', '', '', acc, look2, ''],
+          ['', '', '', '', '', s.neoTruth ? '本当' : '嘘', '', '', '', ''],
+        ];
+      } },
+    { t:47, build: s => [['', '', '', '', '', '', '', '', '', s.chaosTruth ? '本当' : '嘘']] },
+  ];
+
+  function renderDecisionCard(dec){
+    decisionArea.innerHTML = '';
+    idleMsg.style.display = 'none';
+    const card = document.createElement('div');
+    card.className = 'decision-card';
+    card.id = 'card-' + dec.id;
+
+    const title = document.createElement('div');
+    title.className = 'decision-title';
+    title.textContent = dec.title;
+    card.appendChild(title);
+
+    const info = document.createElement('div');
+    info.className = 'decision-info';
+    dec.info.forEach(txt=>{
+      const chip = document.createElement('span');
+      chip.className = 'info-chip';
+      chip.innerHTML = txt;
+      info.appendChild(chip);
+    });
+    card.appendChild(info);
+
+    if(dec.diagram){
+      const diagramWrap = document.createElement('div');
+      diagramWrap.innerHTML = dec.diagram;
+      card.appendChild(diagramWrap);
+    }
+
+    const cdWrap = document.createElement('div');
+    cdWrap.className = 'countdown-wrap';
+    const cdBar = document.createElement('div');
+    cdBar.className = 'countdown-bar';
+    cdBar.id = 'cdbar-' + dec.id;
+    cdWrap.appendChild(cdBar);
+    card.appendChild(cdWrap);
+
+    if(dec.rows.length === 0){
+      const note = document.createElement('div');
+      note.className = 'row-note';
+      note.textContent = '今回はデバフなし。通常の頭割り／散開のみで対応。';
+      card.appendChild(note);
+    } else {
+      dec.rows.forEach(row=>{
+        const rowEl = document.createElement('div');
+        rowEl.className = 'decision-row';
+        rowEl.id = 'row-' + dec.id + '-' + row.key;
+
+        const label = document.createElement('div');
+        label.className = 'row-label';
+        label.textContent = row.label;
+        rowEl.appendChild(label);
+
+        const choices = document.createElement('div');
+        choices.className = 'row-choices';
+        row.opts.forEach(([label2, val])=>{
+          const btn = document.createElement('button');
+          btn.className = 'choice-btn';
+          btn.textContent = label2;
+          btn.addEventListener('click', ()=>{
+            if(resolved[dec.id]) return;
+            decisionAnswers[dec.id] = decisionAnswers[dec.id] || {};
+            decisionAnswers[dec.id][row.key] = val;
+            choices.querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('selected'));
+            btn.classList.add('selected');
+          });
+          choices.appendChild(btn);
+        });
+        rowEl.appendChild(choices);
+
+        const result = document.createElement('div');
+        result.className = 'row-result';
+        result.id = 'result-' + dec.id + '-' + row.key;
+        rowEl.appendChild(result);
+
+        card.appendChild(rowEl);
+      });
+    }
+
+    decisionArea.appendChild(card);
+  }
+
+  function gradeDecision(dec){
+    if(resolved[dec.id]) return;
+    resolved[dec.id] = true;
+    const answers = decisionAnswers[dec.id] || {};
+    const card = document.getElementById('card-' + dec.id);
+
+    if(dec.rows.length === 0){
+      roundTotal += 1; roundCorrect += 1;
+      appendLog(`${dec.title}：デバフなしで問題なし`, false);
+    } else {
+      dec.rows.forEach(row=>{
+        roundTotal += 1;
+        const given = answers[row.key];
+        const isCorrect = given === row.correct;
+        if(isCorrect) roundCorrect += 1;
+        const rowEl = document.getElementById('row-' + dec.id + '-' + row.key);
+        if(rowEl){
+          rowEl.querySelectorAll('.choice-btn').forEach(btn=>{
+            const matchVal = row.opts.find(([lbl,val])=> btn.textContent === lbl);
+            btn.disabled = true;
+            if(matchVal && matchVal[1] === row.correct) btn.classList.add('correct');
+            else if(btn.classList.contains('selected') && !isCorrect) btn.classList.add('wrong');
+          });
+          const resEl = document.getElementById('result-' + dec.id + '-' + row.key);
+          if(resEl){
+            resEl.textContent = isCorrect ? '正解' : (given === undefined ? '未回答' : '不正解');
+            resEl.className = 'row-result ' + (isCorrect ? 'ok' : 'bad');
+          }
+        }
+        appendLog(`${row.label}：${isCorrect ? '正解' : '不正解'}`, false);
+      });
+    }
+
+    if(card){
+      const cd = document.getElementById('cdbar-' + dec.id);
+      if(cd) cd.style.width = '0%';
+    }
+
+    setTimeout(()=>{
+      if(decisionArea.querySelector('#card-' + dec.id)){
+        decisionArea.innerHTML = '';
+        idleMsg.style.display = 'block';
+        idleMsg.textContent = '次のポイントまで待機中……';
+      }
+    }, 1500 / speed);
+  }
+
+  function endRound(){
+    running = false;
+    clearInterval(timerId);
+    startBtn.disabled = false;
+    attempts++;
+    const pct = roundTotal > 0 ? Math.round((roundCorrect / roundTotal) * 100) : 0;
+    accSum += pct;
+    if(roundCorrect === roundTotal){ perfectCount++; streak++; }
+    else { streak = 0; }
+
+    document.getElementById('statAttempts').textContent = attempts;
+    document.getElementById('statPerfect').textContent = perfectCount;
+    document.getElementById('statStreak').textContent = streak;
+    document.getElementById('statLast').textContent = pct + '%（' + roundCorrect + '/' + roundTotal + '）';
+    document.getElementById('statAvg').textContent = Math.round(accSum / attempts) + '%';
+
+    decisionArea.innerHTML = '';
+    idleMsg.style.display = 'none';
+    const summary = document.createElement('div');
+    summary.className = 'round-summary';
+    summary.innerHTML = `
+      <div>ラウンド終了</div>
+      <div class="score">${roundCorrect} / ${roundTotal} 正解（${pct}%）</div>
+      <p>${roundCorrect === roundTotal ? 'すべて正しく処理できました！' : '間違えた処理はログで確認してください。'}</p>
+    `;
+    const again = document.createElement('button');
+    again.className = 'action primary';
+    again.textContent = 'もう一度';
+    again.addEventListener('click', startRound);
+    summary.appendChild(again);
+    decisionArea.appendChild(summary);
+  }
+
+  function tick(){
+    elapsed += 0.1 * speed;
+    clockDisplay.innerHTML = fmtTime(elapsed) + '<span>ケフカ登場からの経過時間</span>';
+
+    LOG_EVENTS.forEach(ev=>{
+      if(!ev._fired && elapsed >= ev.t){
+        ev._fired = true;
+        appendLog(ev.text, ev.milestone);
+      }
+    });
+
+    CHAT_EVENTS.forEach(ev=>{
+      if(!ev._fired && elapsed >= ev.t){
+        ev._fired = true;
+        ev.build(roundState).forEach(cells => appendChatRow(cells));
+      }
+    });
+
+    decisions.forEach(dec=>{
+      if(!notified[dec.id] && elapsed >= dec.notifyT){
+        notified[dec.id] = true;
+        renderDecisionCard(dec);
+      }
+      if(notified[dec.id] && !resolved[dec.id]){
+        const cd = document.getElementById('cdbar-' + dec.id);
+        if(cd){
+          const remain = Math.max(0, dec.resolveT - elapsed);
+          const span = dec.resolveT - dec.notifyT;
+          cd.style.width = (remain / span * 100) + '%';
+        }
+        if(elapsed >= dec.resolveT){
+          gradeDecision(dec);
+        }
+      }
+    });
+
+    if(elapsed >= 128 && decisions.every(d=>resolved[d.id])){
+      endRound();
+    }
+  }
+
+  function startRound(){
+    elapsed = 0;
+    roundState = rollState();
+    decisions = buildDecisions(roundState);
+    notified = {}; resolved = {}; decisionAnswers = {};
+    roundCorrect = 0; roundTotal = 0;
+    LOG_EVENTS.forEach(ev=>{ ev._fired = false; });
+    CHAT_EVENTS.forEach(ev=>{ ev._fired = false; });
+    logFeed.innerHTML = '';
+    chatBody.innerHTML = '';
+    decisionArea.innerHTML = '';
+    idleMsg.style.display = 'block';
+    idleMsg.textContent = '「開始」を押すとタイムラインが進みます。デバフが見えたら、判定時刻までに正しい処理を選んでください。';
+    clockDisplay.innerHTML = '0:00<span>ケフカ登場からの経過時間</span>';
+    startBtn.disabled = true;
+    running = true;
+    clearInterval(timerId);
+    timerId = setInterval(tick, 100);
+  }
+
+  function resetAll(){
+    running = false;
+    clearInterval(timerId);
+    elapsed = 0;
+    notified = {}; resolved = {}; decisionAnswers = {};
+    roundCorrect = 0; roundTotal = 0;
+    LOG_EVENTS.forEach(ev=>{ ev._fired = false; });
+    CHAT_EVENTS.forEach(ev=>{ ev._fired = false; });
+    logFeed.innerHTML = '';
+    chatBody.innerHTML = '';
+    decisionArea.innerHTML = '';
+    idleMsg.style.display = 'block';
+    idleMsg.textContent = '「開始」を押すとタイムラインが進みます。デバフが見えたら、判定時刻までに正しい処理を選んでください。';
+    clockDisplay.innerHTML = '0:00<span>ケフカ登場からの経過時間</span>';
+    startBtn.disabled = false;
+  }
+
+  startBtn.addEventListener('click', startRound);
+  resetBtn.addEventListener('click', resetAll);
+
+  document.querySelectorAll('.speed-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.speed-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      speed = Number(btn.dataset.speed);
+    });
+  });
+})();
+</script>
+</body>
+</html>
