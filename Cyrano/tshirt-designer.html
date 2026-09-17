@@ -953,19 +953,26 @@ window.addEventListener('touchend',onUp);
    素材の追加 / 選択 / 操作
 ============================================================ */
 function addImageFromFile(file){
-  const url=URL.createObjectURL(file);
-  const img=new Image();
-  img.onload=()=>{
-    pushUndo();
-    const maxW=pxW()*0.6;
-    const scale=Math.min(1, maxW/img.width);
-    const el={id:++state.seq,type:'image',img,originalImg:img,name:file.name,
-      naturalW:img.naturalWidth, naturalH:img.naturalHeight,
-      x:pxW()/2,y:pxH()/2,w:img.width*scale,h:img.height*scale,rot:0,opacity:1};
-    state.els.push(el); selectEl(el.id); renderLayers(); draw();
-    setMobileTab('stage');
+  // blob: URLはそのタブの中でしか有効ではなく、保存データに残しても他の環境では復元できない。
+  // 最初からデータURLとして読み込んでおくことで、保存ファイル単体で画像を持ち歩けるようにする。
+  const reader=new FileReader();
+  reader.onload=()=>{
+    const img=new Image();
+    img.onload=()=>{
+      pushUndo();
+      const maxW=pxW()*0.6;
+      const scale=Math.min(1, maxW/img.width);
+      const el={id:++state.seq,type:'image',img,originalImg:img,name:file.name,
+        naturalW:img.naturalWidth, naturalH:img.naturalHeight,
+        x:pxW()/2,y:pxH()/2,w:img.width*scale,h:img.height*scale,rot:0,opacity:1};
+      state.els.push(el); selectEl(el.id); renderLayers(); draw();
+      setMobileTab('stage');
+    };
+    img.onerror=()=>alert('画像を読み込めませんでした：'+file.name);
+    img.src=reader.result;
   };
-  img.src=url;
+  reader.onerror=()=>alert('画像を読み込めませんでした：'+file.name);
+  reader.readAsDataURL(file);
 }
 /* ============================================================
    プリセット
@@ -1009,6 +1016,19 @@ function serializeState(){
     els: state.els.map(serializeElement).filter(Boolean)
   };
 }
+// 画像要素を保存用のデータURLに変換する。
+// blob: など「その場限り」の参照が混ざっていても、ここで必ずキャンバス経由でデータURL化する。
+function imageToDataURL(el){
+  try{
+    if(el.img.tagName==='CANVAS') return el.img.toDataURL('image/png');
+    if(typeof el.img.src==='string' && el.img.src.startsWith('data:')) return el.img.src;
+    const c = document.createElement('canvas');
+    c.width = el.naturalW || el.img.naturalWidth || el.img.width;
+    c.height = el.naturalH || el.img.naturalHeight || el.img.height;
+    c.getContext('2d').drawImage(el.img, 0, 0, c.width, c.height);
+    return c.toDataURL('image/png');
+  }catch(e){ return null; }
+}
 function serializeElement(el){
   const base = { type: el.type, x: el.x, y: el.y, rot: el.rot||0, opacity: el.opacity??1 };
   if(el.type==='text'){
@@ -1022,11 +1042,8 @@ function serializeElement(el){
     return {...base, kind:'placeholder', code:el.code, name:el.name, fill:el.fill, labelColor:el.labelColor, w:el.w, h:el.h};
   }
   if(el.type==='image'){
-    if(el.svgSource && el.jobCode && !el.rasterModified){
-      return {type:'image', kind:'jobicon', code:el.jobCode, tintColor:el.tintColor||'#000000',
-        x:el.x, y:el.y, w:el.w, h:el.h, rot:el.rot||0, opacity:el.opacity??1};
-    }
-    const src = el.img.tagName==='CANVAS' ? el.img.toDataURL('image/png') : el.img.src;
+    const src = imageToDataURL(el);
+    if(!src) return null;
     return {type:'image', kind:'raster', src, name:el.name||'image', tintColor:el.tintColor,
       x:el.x, y:el.y, w:el.w, h:el.h, rot:el.rot||0, opacity:el.opacity??1};
   }
@@ -1060,6 +1077,9 @@ async function deserializeElement(spec){
   return null;
 }
 async function loadStateData(data){
+  if(!data || !data.canvas || !Array.isArray(data.els)){
+    alert('デザインデータの形式が正しくありません。'); return;
+  }
   pushUndo();
   state.wMM = data.canvas.wMM; state.hMM = data.canvas.hMM; state.dpi = data.canvas.dpi;
   document.getElementById('cw').value = state.wMM;
@@ -1068,14 +1088,21 @@ async function loadStateData(data){
   document.getElementById('preset').value = 'custom';
   setTeeColor(data.teeColor || '#ffffff');
   const newEls = [];
+  let droppedFF14 = 0, droppedImage = 0;
   for(const spec of data.els){
     const el = await deserializeElement(spec);
-    if(el) newEls.push(el);
+    if(el){ newEls.push(el); }
+    else if(spec.kind==='placeholder' || spec.kind==='jobicon'){ droppedFF14++; }
+    else { droppedImage++; }
   }
   state.els = newEls;
   fitView();
   renderLayers();
   draw();
+  const msgs = [];
+  if(droppedFF14) msgs.push(`FF14素材 ${droppedFF14}件（提供を終了したため復元されません）`);
+  if(droppedImage) msgs.push(`画像 ${droppedImage}件（データが保存されていないか壊れています）`);
+  if(msgs.length) alert('復元できなかった素材があります：\n・' + msgs.join('\n・'));
 }
 document.getElementById('btnShareMenu').onclick = ()=>{
   document.getElementById('saveModal').classList.add('open');
@@ -1129,22 +1156,81 @@ function setListStatus(msg, isError){
   el.textContent = msg;
   el.style.color = isError ? '#cc5a12' : 'var(--muted)';
 }
+/* 画像をデータURLで持つようになったため、1件のデザインがスプレッドシートのセル上限
+   （5万文字）を超えることがある。超える分は複数レコードに分割して保存し、
+   読み込み時につなぎ直す。分割されたレコードはラベル末尾の [n/total#グループID] で見分ける。 */
+const SHEET_CHUNK_SIZE = 40000;
+const CHUNK_TAG_RE = /\s*\[(\d+)\/(\d+)#([A-Za-z0-9]+)\]$/;
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function splitForSheet(str, size){
+  const out=[];
+  let i=0;
+  while(i<str.length){
+    let end=Math.min(i+size, str.length);
+    if(end<str.length){
+      const code=str.charCodeAt(end-1);
+      if(code>=0xD800 && code<=0xDBFF) end--; // サロゲートペアを分断しない
+    }
+    out.push(str.slice(i,end));
+    i=end;
+  }
+  return out;
+}
+function normalizeSheetState(state){
+  if(typeof state==='string'){
+    try{ return JSON.parse(state); }catch(e){ return null; }
+  }
+  return state;
+}
+async function postSheet(url, payload){
+  const resp = await fetch(url, {
+    method:'POST',
+    headers:{'Content-Type':'text/plain'},
+    body: JSON.stringify(payload)
+  });
+  return await resp.json();
+}
 document.getElementById('btnSheetSave').onclick = async ()=>{
   const url = getSheetUrl();
   const label = document.getElementById('saveLabel').value.trim();
   if(!url){ setSaveStatus('保存先が設定されていません', true); return; }
   if(!label){ setSaveStatus('ラベルを入力してください', true); return; }
+  if(CHUNK_TAG_RE.test(label)){ setSaveStatus('ラベルの末尾に [1/2#xxxx] のような表記は使えません', true); return; }
   setSaveStatus('保存中…');
   try{
     const data = serializeState();
-    const resp = await fetch(url, {
-      method:'POST',
-      headers:{'Content-Type':'text/plain'},
-      body: JSON.stringify({ action:'save', name:label, state:data })
-    });
-    const json = await resp.json();
-    if(json.ok){ setSaveStatus(`保存しました（ID: ${json.id}）`); }
-    else{ setSaveStatus('保存に失敗しました: ' + (json.error||'unknown'), true); }
+    const jsonText = JSON.stringify(data);
+    const chunks = splitForSheet(jsonText, SHEET_CHUNK_SIZE);
+    if(chunks.length<=1){
+      const res = await postSheet(url, { action:'save', name:label, state:data });
+      if(res.ok){ setSaveStatus(`保存しました（ID: ${res.id}）`); }
+      else{ setSaveStatus('保存に失敗しました: ' + (res.error||'unknown'), true); }
+      return;
+    }
+    const total = chunks.length;
+    if(total>20){
+      const mb = Math.round(jsonText.length/1024/1024*10)/10;
+      if(!confirm(`デザインが大きいため ${total} 件に分割して保存します（約${mb}MB）。\n保存に時間がかかります。画像を小さいものに差し替えると分割数を減らせます。\n続けますか？`)){
+        setSaveStatus('保存を中止しました');
+        return;
+      }
+    }
+    const gid = 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+    for(let i=0;i<total;i++){
+      setSaveStatus(`保存中… 分割 ${i+1}/${total}`);
+      const res = await postSheet(url, {
+        action:'save',
+        name:`${label} [${i+1}/${total}#${gid}]`,
+        state:{ __chunk:1, gid, index:i, total, data:chunks[i] }
+      });
+      if(!res.ok){
+        setSaveStatus(`保存に失敗しました（${i+1}/${total}個目）: ${res.error||'unknown'}。途中まで保存された分は一覧に「欠落」と表示されます。`, true);
+        return;
+      }
+    }
+    setSaveStatus(`保存しました（${total}分割）`);
   }catch(err){
     setSaveStatus('通信エラー：保存先の設定を確認してください', true);
   }
@@ -1164,34 +1250,92 @@ async function refreshSheetList(){
     setListStatus('通信エラー：保存先の設定を確認してください', true);
   }
 }
+// 分割保存されたレコードを1件のデザインとしてまとめる
+function groupSheetList(list){
+  const groups = [];
+  const byGid = {};
+  list.forEach(item=>{
+    const name = String(item.name||'無題');
+    const m = name.match(CHUNK_TAG_RE);
+    if(!m){ groups.push({name, date:item.date, singleId:item.id}); return; }
+    const index = parseInt(m[1],10)-1, total = parseInt(m[2],10), gid = m[3];
+    let g = byGid[gid];
+    if(!g){
+      g = {name:name.replace(CHUNK_TAG_RE,''), date:item.date, gid, total, parts:[]};
+      byGid[gid] = g;
+      groups.push(g);
+    }
+    g.parts.push({id:item.id, index});
+  });
+  return groups;
+}
 function renderSheetList(list){
   const box = document.getElementById('sheetList');
   box.innerHTML='';
-  if(!list.length){
+  const groups = groupSheetList(list);
+  if(!groups.length){
     box.innerHTML = '<p class="note">まだ保存されたデザインがありません。</p>';
     return;
   }
-  list.slice().reverse().forEach(item=>{
+  groups.slice().reverse().forEach(g=>{
     const b = document.createElement('button');
     b.className='sheet-item';
-    const d = item.date ? new Date(item.date).toLocaleString('ja-JP') : '';
-    b.innerHTML = `<span class="sname">${item.name||'無題'}</span><span class="sdate">${d}</span>`;
-    b.onclick = ()=> loadFromSheet(item.id);
+    const d = g.date ? new Date(g.date).toLocaleString('ja-JP') : '';
+    if(g.singleId!=null){
+      b.innerHTML = `<span class="sname">${escapeHtml(g.name)}</span><span class="sdate">${d}</span>`;
+      b.onclick = ()=> loadFromSheet(g.singleId);
+    }else{
+      const missing = g.total - g.parts.length;
+      const note = missing>0 ? `（${g.total}分割 / ${missing}個欠落）` : `（${g.total}分割）`;
+      b.innerHTML = `<span class="sname">${escapeHtml(g.name)}${note}</span><span class="sdate">${d}</span>`;
+      if(missing>0){
+        b.disabled = true;
+        b.style.opacity = '.55';
+        b.title = '保存が途中で失敗しているため読み込めません';
+      }else{
+        b.onclick = ()=> loadChunkedFromSheet(g);
+      }
+    }
     box.appendChild(b);
   });
+}
+async function fetchSheetState(url, id){
+  const resp = await fetch(`${url}?action=get&id=${encodeURIComponent(id)}`);
+  return await resp.json();
 }
 async function loadFromSheet(id){
   const url = getSheetUrl();
   setListStatus('読み込み中…');
   try{
-    const resp = await fetch(`${url}?action=get&id=${encodeURIComponent(id)}`);
-    const json = await resp.json();
+    const json = await fetchSheetState(url, id);
     if(json.error){ setListStatus('読み込み失敗: '+json.error, true); return; }
-    await loadStateData(json.state);
+    await loadStateData(normalizeSheetState(json.state));
     setListStatus('読み込みました');
     document.getElementById('saveModal').classList.remove('open');
   }catch(err){
     setListStatus('通信エラー', true);
+  }
+}
+async function loadChunkedFromSheet(g){
+  const url = getSheetUrl();
+  const parts = g.parts.slice().sort((a,b)=>a.index-b.index);
+  try{
+    let jsonText = '';
+    for(let i=0;i<parts.length;i++){
+      setListStatus(`読み込み中… ${i+1}/${parts.length}`);
+      const json = await fetchSheetState(url, parts[i].id);
+      if(json.error){ setListStatus('読み込み失敗: '+json.error, true); return; }
+      const st = normalizeSheetState(json.state);
+      if(!st || !st.__chunk || typeof st.data!=='string'){
+        setListStatus('読み込み失敗：分割データが壊れています', true); return;
+      }
+      jsonText += st.data;
+    }
+    await loadStateData(JSON.parse(jsonText));
+    setListStatus('読み込みました');
+    document.getElementById('saveModal').classList.remove('open');
+  }catch(err){
+    setListStatus('読み込み失敗：通信エラー、またはデータが壊れています', true);
   }
 }
 
