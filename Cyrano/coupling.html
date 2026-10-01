@@ -234,9 +234,7 @@ function render() {
   let html;
 
   if (!a || !b) {
-    html = `<p class="placeholder">2人えらぶと<br>カップリングが表示されます</p>`;
-  } else if (a === b) {
-    html = `<p class="placeholder">同じキャラクターです……！<br>別の2人をえらんでね</p>`;
+    html = `<p class="placeholder">左右どちらもえらぶと<br>カップリングが表示されます</p>`;
   } else {
     const cp = findCoupling(a, b);
     const [first, second] = cp ? [cp.a, cp.b] : [a, b];
