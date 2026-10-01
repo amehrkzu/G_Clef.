@@ -634,7 +634,7 @@
 </div>
 
 <input type="file" id="fileInput" accept="image/*" multiple>
-<input type="file" id="fontFileInput" accept=".ttf,.otf,.woff,.woff2" style="display:none">
+<input type="file" id="fontFileInput" accept=".ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2,font/sfnt,application/x-font-ttf,application/x-font-otf,application/font-woff,application/vnd.ms-opentype,application/octet-stream" style="display:none">
 
 <script>
 "use strict";
@@ -2362,7 +2362,7 @@ function saveCustomFonts(list){ localStorage.setItem(CUSTOM_FONT_KEY, JSON.strin
 function addFontOption(family){
   const group = document.getElementById('customFontsGroup');
   const val = `'${family}',sans-serif`;
-  if([...group.options].some(o=>o.value===val)) return;
+  if([...group.querySelectorAll('option')].some(o=>o.value===val)) return;
   const opt = document.createElement('option');
   opt.value = val;
   opt.textContent = family + '（マイフォント）';
@@ -2401,7 +2401,7 @@ document.getElementById('fontFileInput').addEventListener('change', e=>{
   const reader = new FileReader();
   reader.onload = async ()=>{
     const dataUrl = reader.result;
-    const family = file.name.replace(/\.[^.]+$/,'');
+    const family = file.name.replace(/\.[^.]+$/,'').replace(/['"\\,;]/g,'').trim() || 'MyFont';
     const ok = await registerCustomFont(family, dataUrl, true);
     if(!ok){ alert('このフォントファイルは読み込めませんでした。TTF/OTF/WOFF形式をお試しください。'); return; }
     const list = loadCustomFonts();

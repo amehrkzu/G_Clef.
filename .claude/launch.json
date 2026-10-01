@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "characa",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["C:/Users/gamer/AppData/Local/Temp/claude/C--Users-gamer-Documents-Claude-G-Clef/98d490e1-c83a-4af4-8c3e-0cb9ac1aa2c2/scratchpad/serve.mjs"],
+      "port": 8000
+    }
+  ]
+}
