@@ -1,6 +1,5 @@
 // FF14 キャラカ用 Lodestone 取得 Worker(Cloudflare Workers)
-//   GET /?id={LodestoneID}   → キャラ情報 JSON
-//   GET /img?url={画像URL}    → img2.finalfantasyxiv.com の画像を CORS 付きで中継(PNG書き出し用)
+//   GET /?id={LodestoneID}   → キャラ情報 JSON(文字情報のみ。キャラ画像は使う人のスクショを使う)
 
 // カードを置くサイトのオリジン。GitHub Pages の URL が決まったら書き換える
 const ALLOWED_ORIGINS = [
@@ -26,12 +25,7 @@ export default {
     const hit = await cache.match(cacheKey);
     if (hit) return withHeaders(hit, cors);
 
-    let res;
-    if (url.pathname === "/img") {
-      res = await relayImage(url.searchParams.get("url"));
-    } else {
-      res = await character(url.searchParams.get("id"));
-    }
+    const res = await character(url.searchParams.get("id"));
 
     if (res.ok) ctx.waitUntil(cache.put(cacheKey, res.clone()));
     return withHeaders(res, cors);
@@ -89,8 +83,6 @@ function parseProfile(html) {
     grandCompanyRank: clean(grandCompanyRank),
     freeCompany: pick(/character__freecompany__name">[\s\S]*?<h4><a[^>]*>([^<]*)/),
     selfIntroduction: intro === "未設定" ? "" : intro,
-    face: pick(/(https:\/\/img2\.finalfantasyxiv\.com\/f\/[^"]*fc0\.jpg[^"]*)/),
-    image: pick(/(https:\/\/img2\.finalfantasyxiv\.com\/f\/[^"]*fl0\.jpg[^"]*)/),
   };
 }
 
@@ -101,27 +93,6 @@ function parseLevels(html) {
     levels.push({ name: clean(m[2]), level: clean(m[1]) });
   }
   return levels;
-}
-
-async function relayImage(src) {
-  let target;
-  try {
-    target = new URL(src ?? "");
-  } catch {
-    return json({ error: "invalid url" }, 400);
-  }
-  if (target.protocol !== "https:" || target.hostname !== "img2.finalfantasyxiv.com") {
-    return json({ error: "host not allowed" }, 403);
-  }
-
-  const res = await fetch(target.toString(), { headers: { "User-Agent": "Mozilla/5.0" } });
-  if (!res.ok) return json({ error: `image ${res.status}` }, 502);
-  return new Response(res.body, {
-    headers: {
-      "Content-Type": res.headers.get("Content-Type") ?? "image/jpeg",
-      "Cache-Control": "max-age=86400",
-    },
-  });
 }
 
 // <br> は改行に、その他のタグは除去し、HTML エンティティを戻す
