@@ -1,6 +1,9 @@
 "use strict";
 // 枠エディタ:オリジナル枠の「角の飾り」と「辺の模様」を描く。描き方の共通部分は frames.js
 //   保存すると、このブラウザのオリジナル枠(characa:frames)に入り、キャラカの「枠の形」に並ぶ
+// シンボルエディタ(symbol-editor.html、<body data-editor="symbol">)も、このファイルで動く
+//   部品は「シンボル」1つだけ。保存先は characa:symbols。キャラカの「要素を追加」に並ぶ
+const SYMBOL_MODE = document.body.dataset.editor === "symbol";
 
 const NS = "http://www.w3.org/2000/svg";
 const $ = (id) => document.getElementById(id);
@@ -29,16 +32,29 @@ const newFrame = () => ({
   baseCorner: { paths: [defaultBasePath()] }, // 土台の形「自分で描く」の左上の角の形
   border: { w: 2, color: "@accent", paths: [], size: 0.08, gap: 0.5 }, // 枠線の色・太さ(太さの単位はパネルの短い辺の 1/200)と、枠線に沿って並べる図形
 });
-let def = structuredClone(loadCustomFrames().find((f) => f.id === editId) ?? newFrame());
-def.baseRadius ??= 0.08;
-def.baseCorner ??= { paths: [] };
-def.border ??= { w: 2, color: "@accent" }; // 枠線の色・太さ
-def.border.paths ??= []; // 枠線に沿って並べる図形
-def.border.size ??= 0.08; // 並べる図形の大きさ(パネルの短い辺に対する割合)
-def.border.gap ??= 0.5; // 並べる間隔(図形の大きさに対する割合)
+// シンボル:描くマスの大きさ(長い辺が 100)と、線・図形
+const newSymbol = () => ({
+  id: "s" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+  name: "オリジナルシンボル",
+  w: 100,
+  h: 100,
+  symbol: { paths: [] },
+});
+const isNew = !(SYMBOL_MODE ? loadSymbols() : loadCustomFrames()).some((f) => f.id === editId);
+let def = SYMBOL_MODE
+  ? structuredClone(loadSymbols().find((f) => f.id === editId) ?? newSymbol())
+  : structuredClone(loadCustomFrames().find((f) => f.id === editId) ?? newFrame());
+if (!SYMBOL_MODE) {
+  def.baseRadius ??= 0.08;
+  def.baseCorner ??= { paths: [] };
+  def.border ??= { w: 2, color: "@accent" }; // 枠線の色・太さ
+  def.border.paths ??= []; // 枠線に沿って並べる図形
+  def.border.size ??= 0.08; // 並べる図形の大きさ(パネルの短い辺に対する割合)
+  def.border.gap ??= 0.5; // 並べる間隔(図形の大きさに対する割合)
+}
 const savedJson = JSON.stringify(def); // 変更があるかを見る用
 
-let piece = "corner"; // 描いている部品
+let piece = SYMBOL_MODE ? "symbol" : "corner"; // 描いている部品
 let mode = "draw";
 let sel = { path: null, point: -1 };
 let drawing = null;
@@ -46,9 +62,9 @@ let drag = null;
 const undoStack = [], redoStack = [];
 
 // 部品:角の飾り(corner)・辺の模様(edge)・土台の角(base → def.baseCorner)
-const PIECE_KEY = { corner: "corner", edge: "edge", base: "baseCorner", border: "border" };
+const PIECE_KEY = { corner: "corner", edge: "edge", base: "baseCorner", border: "border", symbol: "symbol" };
 const BORDER_ID = "__border"; // 枠線を選んだときの sel.path
-const box = () => (piece === "edge" ? { w: EDGE_W, h: EDGE_H } : { w: CORNER_BOX, h: CORNER_BOX });
+const box = () => (piece === "symbol" ? { w: def.w || 100, h: def.h || 100 } : piece === "edge" ? { w: EDGE_W, h: EDGE_H } : { w: CORNER_BOX, h: CORNER_BOX });
 const paths = () => def[PIECE_KEY[piece]].paths;
 const findPath = (id) => paths().find((p) => p.id === id) ?? null;
 function uid() {
@@ -145,9 +161,10 @@ function renderGuides() {
   for (let y = Math.ceil(v.y / 10) * 10; y <= v.y + v.h; y += 10) el("line", { x1: v.x, y1: y, x2: v.x + v.w, y2: y, stroke: "#f1e8f7", "stroke-width": 0.4 * u() }, g);
   renderContext(g, v.x, v.y, v.w, v.h);
   // パネルの縁(太い線)と、部品の大きさ(点線の四角)
-  const edgeAt = piece === "base" ? 0 : -(def.inset ?? 0.02) / (piece === "corner" ? def.corner.size || 0.2 : def.edge.size || 0.07) * (piece === "corner" ? CORNER_BOX : EDGE_H);
+  const edgeAt = piece === "symbol" || piece === "border" ? 0 : piece === "base" ? 0 : -(def.inset ?? 0.02) / (piece === "corner" ? def.corner.size || 0.2 : def.edge.size || 0.07) * (piece === "corner" ? CORNER_BOX : EDGE_H);
   const e = Math.max(-pad + 2, edgeAt);
-  if (piece === "border") {
+  if (piece === "border" || piece === "symbol") {
+    // 枠線の画面・シンボルは、パネルの縁の目安を出さない(シンボルは点線の四角がマス)
     // 枠線の画面は、真ん中の横線(上で描く)が枠線なので、縁の目安は出さない
   } else if (piece !== "edge") {
     el("path", { d: `M${e},${v.y + v.h}V${e}H${v.x + v.w}`, fill: "none", stroke: "#d9c6e6", "stroke-width": 3 * u() }, g);
@@ -164,7 +181,7 @@ function renderGuides() {
 let contextBefore = null;
 function renderContext(g, vx, vy, vw, vh) {
   contextBefore = null;
-  if (piece === "border") return;
+  if (piece === "border" || piece === "symbol") return;
   const M = 1000; // 仮のパネルの短い辺
   const l = { x: 0, y: 0, w: piece === "edge" ? M * 1.6 : M, h: M, radius: 0, borderWidth: 0, borderColor: "@accent" };
   const others = structuredClone(def); // 編集している部品だけ外す
@@ -375,6 +392,17 @@ function renderPreview() {
   g.setTransform(1, 0, 0, 1, 0, 0);
   g.fillStyle = bg;
   g.fillRect(0, 0, W, H);
+  if (SYMBOL_MODE) {
+    // 大きさ違いを3つ(色はアクセント。キャラカでは要素ごとに色を選ぶ)
+    const sw = def.w || 100, sh = def.h || 100;
+    let x = 24;
+    for (const s of [250, 140, 70]) {
+      const k = s / Math.max(sw, sh);
+      drawSymbol(g, def, x, (H - sh * k) / 2, sw * k, sh * k, col("@accent"));
+      x += sw * k + 36;
+    }
+    return;
+  }
   for (const l of [
     { x: 20, y: 30, w: 360, h: 210 },
     { x: 400, y: 30, w: 170, h: 170 },
@@ -392,11 +420,15 @@ function renderSettings() {
     $(id + "Out").textContent = fmt(v);
   };
   const pct = (v) => `${Math.round(v * 1000) / 10}%`;
-  set("edgeSize", def.edge.size, pct);
-  set("edgeGap", def.edge.gap, (v) => `模様 ${Math.round(v * 100)}%`);
-  const baseOpt = $("pieceSelect").querySelector('[value="base"]'); // 土台を自分で描くときだけ選べる
-  baseOpt.hidden = baseOpt.disabled = def.base !== "custom";
-  $("pieceSelect").value = piece;
+  if (!SYMBOL_MODE) {
+    set("edgeSize", def.edge.size, pct);
+    set("edgeGap", def.edge.gap, (v) => `模様 ${Math.round(v * 100)}%`);
+    const baseOpt = $("pieceSelect").querySelector('[value="base"]'); // 土台を自分で描くときだけ選べる
+    baseOpt.hidden = baseOpt.disabled = def.base !== "custom";
+    $("pieceSelect").value = piece;
+  } else {
+    $("symbolRatio").value = ratioKey();
+  }
   $("undo").disabled = !undoStack.length;
   $("redo").disabled = !redoStack.length;
 }
@@ -452,7 +484,9 @@ function renderPathPanel() {
   if (p.cut) {
     const note = document.createElement("p");
     note.className = "note";
-    note.textContent = "切り抜き:この形に重なる所が透明になります。レイヤーでこれより下にあるもの(パネル・枠線も)が消えます。";
+    note.textContent = SYMBOL_MODE
+      ? "切り抜き:この形に重なる所が透明になります。レイヤーでこれより下にあるものが消えます。"
+      : "切り抜き:この形に重なる所が透明になります。レイヤーでこれより下にあるもの(パネル・枠線も)が消えます。";
     panel.append(note);
   }
 
@@ -599,6 +633,7 @@ function renderLayerPanel() {
     li.append(move(i + 1, "▲", "手前へ"), move(i - 1, "▼", "奥へ"));
     li.dataset.index = i;
     li.addEventListener("pointerdown", (e) => startLayerDrag(e, li, ul, list, i));
+    li.addEventListener("contextmenu", (e) => e.preventDefault()); // 長押しでメニューを出さない
     li.addEventListener("click", () => {
       if (layerDragged) return; // ドラッグで並べ替えた直後のクリックでは選ばない
       if (drawing && drawing !== p.id) {
@@ -618,22 +653,47 @@ function renderLayerPanel() {
   const note = document.createElement("p");
   note.className = "note";
   note.textContent = list.length
-    ? "上にあるものほど手前に描かれます。いちばん下に、パネル・枠線があります。"
+    ? SYMBOL_MODE ? "上にあるものほど手前に描かれます。" : "上にあるものほど手前に描かれます。いちばん下に、パネル・枠線があります。"
     : "この部品には、まだ線や図形がありません。";
   panel.append(note);
 }
 
 // レイヤーをドラッグで並べ替える
 //   離した所が行の上なら、その行のすぐ下に差し込む(行と行のあいだに離しても同じ)。いちばん上の行より上なら、いちばん上に
+//   マウスは、そのままドラッグ。スマホ(指)は、長押しで「並べ替えモード」になってからドラッグ
+//   (指でなぞるだけなら、ふつうに一覧がスクロールする。キャラカのレイヤーと同じ)
 let layerDragged = false;
+const LONG_PRESS = 400; // 長押しと見なす時間(ミリ秒)
 function startLayerDrag(e, li, ul, list, from) {
   if (e.button !== 0 || e.target.closest("button, input")) return;
   layerDragged = false;
-  const sy = e.clientY;
+  const touch = e.pointerType === "touch";
+  const sx = e.clientX, sy = e.clientY;
+  let armed = !touch; // 並べ替えできる状態か(マウスは最初から、指は長押しのあと)
   let target = null; // 見た目の並び(上から)で、何番目の位置に差し込むか
   const others = () => [...ul.children].filter((x) => x !== li);
   const clearMarks = () => ul.querySelectorAll(".drop-above, .drop-below").forEach((x) => x.classList.remove("drop-above", "drop-below"));
+  // 並べ替えモードの間は、指で動かしても一覧やページをスクロールさせない
+  const block = (ev) => {
+    if (armed && layerDragged) ev.preventDefault();
+  };
+  const timer = touch
+    ? setTimeout(() => {
+        armed = true;
+        layerDragged = true;
+        li.classList.add("dragging", "lifted");
+        navigator.vibrate?.(15); // 並べ替えモードになった合図(震えない端末もある)
+        try {
+          li.setPointerCapture(e.pointerId);
+        } catch {}
+      }, LONG_PRESS)
+    : null;
   const move = (ev) => {
+    if (!armed) {
+      // 長押しの前に指が動いたら、スクロールなので並べ替えはやめる
+      if (Math.hypot(ev.clientX - sx, ev.clientY - sy) > 8) up();
+      return;
+    }
     if (!layerDragged) {
       if (Math.abs(ev.clientY - sy) < 4) return;
       layerDragged = true;
@@ -647,30 +707,36 @@ function startLayerDrag(e, li, ul, list, from) {
     if (k >= 0) rows[k].classList.add("drop-below");
     else if (rows[0]) rows[0].classList.add("drop-above");
   };
-  const up = () => {
+  function up() {
+    clearTimeout(timer);
     li.removeEventListener("pointermove", move);
     li.removeEventListener("pointerup", up);
     li.removeEventListener("pointercancel", up);
+    document.removeEventListener("touchmove", block);
     clearMarks();
-    li.classList.remove("dragging");
-    if (!layerDragged || target === null) return;
-    // 見た目は配列の逆順。抜いたあとの配列で、見た目の target 番目 = 配列の (長さ - target) 番目
-    const rest = list.filter((_, n) => n !== from);
-    const to = rest.length - target;
-    if (to !== from) {
-      snapshot();
-      const [item] = list.splice(from, 1);
-      list.splice(to, 0, item);
+    li.classList.remove("dragging", "lifted");
+    if (layerDragged && target !== null) {
+      // 見た目は配列の逆順。抜いたあとの配列で、見た目の target 番目 = 配列の (長さ - target) 番目
+      const rest = list.filter((_, n) => n !== from);
+      const to = rest.length - target;
+      if (to !== from) {
+        snapshot();
+        const [item] = list.splice(from, 1);
+        list.splice(to, 0, item);
+      }
+      renderAll();
     }
-    renderAll();
-    setTimeout(() => (layerDragged = false), 0);
-  };
-  try {
-    li.setPointerCapture(e.pointerId);
-  } catch {}
+    setTimeout(() => (layerDragged = false), 0); // 直後のクリックでは選ばない
+  }
+  if (!touch) {
+    try {
+      li.setPointerCapture(e.pointerId);
+    } catch {}
+  }
   li.addEventListener("pointermove", move);
   li.addEventListener("pointerup", up);
   li.addEventListener("pointercancel", up);
+  document.addEventListener("touchmove", block, { passive: false });
 }
 
 // サイドバーのタブ(詳細 / レイヤー)。キャラカと同じ付箋のタブで、シートの色もタブの色にする
@@ -1149,14 +1215,39 @@ function setBase(base) {
   else renderAll();
 }
 $("frameName").addEventListener("input", (e) => { def.name = e.target.value; });
-for (const [id, set] of [
-  ["edgeSize", (v) => (def.edge.size = v)],
-  ["edgeGap", (v) => (def.edge.gap = v)],
-]) {
-  $(id).addEventListener("pointerdown", snapshot);
-  $(id).addEventListener("input", () => { set(Number($(id).value)); renderSettings(); renderGuides(); renderShapes(); renderPreview(); });
+if (!SYMBOL_MODE) {
+  for (const [id, set] of [
+    ["edgeSize", (v) => (def.edge.size = v)],
+    ["edgeGap", (v) => (def.edge.gap = v)],
+  ]) {
+    $(id).addEventListener("pointerdown", snapshot);
+    $(id).addEventListener("input", () => { set(Number($(id).value)); renderSettings(); renderGuides(); renderShapes(); renderPreview(); });
+  }
+  $("pieceSelect").addEventListener("change", (e) => setPiece(e.target.value));
 }
-$("pieceSelect").addEventListener("change", (e) => setPiece(e.target.value));
+
+// ---------- シンボルのマスの形(縦横比) ----------
+// 長い辺を 100 にする。形を変えても、描いた線の位置はそのまま
+const RATIOS = [["1:1", "正方形 1:1"], ["4:3", "横長 4:3"], ["3:2", "横長 3:2"], ["16:9", "横長 16:9"], ["2:1", "横長 2:1"], ["3:4", "縦長 3:4"], ["2:3", "縦長 2:3"], ["9:16", "縦長 9:16"], ["1:2", "縦長 1:2"]];
+function ratioKey() {
+  const w = def.w || 100, h = def.h || 100;
+  return RATIOS.find(([k]) => {
+    const [a, b] = k.split(":").map(Number);
+    return Math.abs(a / b - w / h) < 0.01;
+  })?.[0] ?? "";
+}
+if (SYMBOL_MODE) {
+  const r = $("symbolRatio");
+  for (const [k, name] of RATIOS) r.add(new Option(name, k));
+  r.addEventListener("change", () => {
+    const [a, b] = r.value.split(":").map(Number);
+    snapshot();
+    def.w = Math.round((a >= b ? 100 : (100 * a) / b) * 10) / 10;
+    def.h = Math.round((b >= a ? 100 : (100 * b) / a) * 10) / 10;
+    resetView();
+    renderAll();
+  });
+}
 $("modeToggle").addEventListener("click", () => setMode(mode === "draw" ? "move" : "draw"));
 $("shapeSelect").addEventListener("change", (e) => {
   if (e.target.value) addShape(e.target.value);
@@ -1172,14 +1263,19 @@ $("redo").addEventListener("click", redo);
 const dirty = () => JSON.stringify(def) !== savedJson;
 $("save").addEventListener("click", () => {
   if (drawing) finishDrawing();
-  def.name = def.name?.trim() || "オリジナル枠";
-  const list = loadCustomFrames().filter((f) => f.id !== def.id);
-  if (!saveCustomFrames([...list, def])) {
+  def.name = def.name?.trim() || (SYMBOL_MODE ? "オリジナルシンボル" : "オリジナル枠");
+  const ok = SYMBOL_MODE
+    ? saveSymbols([...loadSymbols().filter((f) => f.id !== def.id), def])
+    : saveCustomFrames([...loadCustomFrames().filter((f) => f.id !== def.id), def]);
+  if (!ok) {
     alert("保存できませんでした(このブラウザの保存容量がいっぱいの可能性があります)");
     return;
   }
   leaving = true;
-  location.href = "index.html?frame=" + encodeURIComponent(CUSTOM_PREFIX + def.id);
+  // シンボルを新しく作ったときは、キャラカに戻ったらカードに置く
+  location.href = SYMBOL_MODE
+    ? "index.html?symbol=" + encodeURIComponent(def.id) + (isNew ? "&add=1" : "")
+    : "index.html?frame=" + encodeURIComponent(CUSTOM_PREFIX + def.id);
 });
 $("back").addEventListener("click", () => {
   if (dirty() && !confirm("保存していない変更があります。保存せずにキャラカに戻りますか?")) return;

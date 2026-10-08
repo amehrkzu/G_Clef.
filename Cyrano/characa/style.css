@@ -295,6 +295,13 @@ input[type="range"] { padding: 0; border: none; box-shadow: none; }
 .layers li:hover { background: #fff3f8; }
 .layers li.selected { background: #ffe3ef; border-color: var(--accent); }
 .layers li.hidden .layer-label { opacity: .4; }
+/* ドラッグで並べ替え:動かしている行はうすく、差し込む位置にピンクの線 */
+/*   指でなぞるとスクロール、長押しで並べ替えモード(.lifted)になる */
+.layers li { touch-action: pan-y; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.layers li.lifted { transform: scale(1.03); box-shadow: 0 4px 10px rgba(138, 111, 158, .35); background: #fff; }
+.layers li.dragging { opacity: .45; }
+.layers li.drop-below { box-shadow: 0 4px 0 -1px var(--accent); }
+.layers li.drop-above { box-shadow: 0 -4px 0 -1px var(--accent); }
 .layer-type {
   font-size: 11px;
   font-weight: 700;
@@ -457,6 +464,11 @@ input[type="range"] { padding: 0; border: none; box-shadow: none; }
   .top { padding-top: max(6px, env(safe-area-inset-top)); padding-bottom: 6px; }
   .sheet-tab { font-size: 12px; padding: 4px 5px 3px; }
   .sheet-tab[aria-selected="true"] { padding-bottom: calc(5px + var(--border)); }
+}
+/* タブが5つあるので、幅が狭い画面ではタブの文字と余白を小さくして、文字が切れないように */
+@media (max-width: 420px) {
+  .sheet-tabs { gap: 2px; padding: 0 6px; }
+  .sheet-tab { font-size: 11px; padding-left: 2px; padding-right: 2px; }
 }
 /* iPhone SE など幅がとても狭い画面: ヘッダーの文字を小さくしてタイトルが切れないように */
 @media (max-width: 360px) {

@@ -49,7 +49,7 @@ const SIZES = [
   [1080, 1920, "縦 9:16(1080×1920)"],
 ];
 
-const TYPE_LABEL = { text: "テキスト", image: "画像", rect: "図形", jobs: "ジョブ" };
+const TYPE_LABEL = { text: "テキスト", image: "画像", rect: "図形", jobs: "ジョブ", symbol: "シンボル" };
 
 // 配色の役割。要素の色に "@accent" のように書くと、選んでいる配色のその色になる
 const ROLES = [
@@ -71,6 +71,7 @@ const DEFAULTS = {
   text: { text: "テキスト", font: "Noto Sans JP", size: 48, color: "@text", bold: false, italic: false, align: "left", lineHeight: 1.4, spacing: 0, width: 0, strokeColor: "#000000", strokeWidth: 0, shadow: true, opacity: 1 },
   image: { src: "", w: 640, h: 360, fit: "cover", zoom: 1, posX: 0, posY: 0, radius: 0, flip: false, opacity: 1, ...FX_DEFAULTS },
   rect: { w: 400, h: 240, color: "@panel", radius: 16, borderColor: "@accent", borderWidth: 0, opacity: 0.4 },
+  symbol: { symbol: "", w: 240, h: 240, color: "@accent", opacity: 1 }, // シンボルエディタで作った形(symbol は id)
   jobs: { display: "icon", filter: "battle", hideUnlearned: false, cols: 6, cellW: 155, font: "Noto Sans JP", size: 28, bold: false, iconColor: "@text", color: "@text", levelColor: "@accent", dimColor: "@muted", shadow: true, opacity: 1 },
 };
 
@@ -107,6 +108,11 @@ const FIELDS = {
     ["radius", "角丸", "number", { min: 0 }],
     ["borderColor", "枠線の色", "color"],
     ["borderWidth", "枠線の太さ", "number", { min: 0 }],
+  ],
+  symbol: [
+    ["w", "幅", "number", { min: 4 }],
+    ["h", "高さ", "number", { min: 4 }],
+    ["color", "色", "color"],
   ],
   jobs: [
     ["display", "表示形式", "select", { options: [["icon", "アイコン+レベル"], ["iconName", "アイコン+名前+レベル"], ["name", "名前+レベル"]] }],
@@ -379,6 +385,20 @@ const DRAW = {
     }
     ctx.restore();
     return b;
+  },
+
+  // シンボル(シンボルエディタで作った形)。箱いっぱいに伸び縮みして、要素の色で塗る
+  symbol(l) {
+    const sym = findSymbol(l.symbol);
+    if (sym) drawSymbol(ctx, sym, l.x, l.y, l.w, l.h, col(l.color));
+    else if (!exporting) {
+      // シンボルが消されているときは、場所だけ点線で示す(書き出しには出さない)
+      ctx.strokeStyle = "rgba(255,255,255,.5)";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 6]);
+      ctx.strokeRect(l.x, l.y, l.w, l.h);
+    }
+    return { x: l.x, y: l.y, w: l.w, h: l.h };
   },
 
   // 図形(パネル)。形は「枠の形」(project.frame)で決まる(描き方は frames.js)
@@ -867,7 +887,7 @@ canvas.addEventListener("pointercancel", endDrag);
 function resize({ layer: l, orig: o, b, edge }, dx, dy, keepRatio) {
   const W = edge.includes("e") ? b.w + dx : edge.includes("w") ? b.w - dx : b.w;
   const H = edge.includes("s") ? b.h + dy : edge.includes("n") ? b.h - dy : b.h;
-  if (l.type === "rect" || l.type === "image") {
+  if (l.type === "rect" || l.type === "image" || l.type === "symbol") {
     let w = Math.max(10, o.w + (W - b.w)), h = Math.max(10, o.h + (H - b.h));
     if (keepRatio && edge.length === 2) {
       const f = Math.max(w / o.w, h / o.h);
@@ -990,13 +1010,18 @@ function select(id) {
   requestDraw();
 }
 
-function addLayer(type) {
+function addLayer(type, symbolId) {
   const { w, h } = project.card;
+  // シンボルは、作ったときの縦横比のまま置く(長い辺 240)
+  const sym = type === "symbol" ? findSymbol(symbolId) : null;
+  const sw = sym ? Math.round(240 * Math.min(1, (sym.w || 100) / (sym.h || 100))) : 240;
+  const sh = sym ? Math.round(240 * Math.min(1, (sym.h || 100) / (sym.w || 100))) : 240;
   const props = {
     text: { x: Math.round(w / 2 - 150), y: Math.round(h / 2 - 30), text: "テキスト" },
     image: { x: Math.round(w / 2 - 200), y: Math.round(h / 2 - 270) },
     rect: { x: Math.round(w / 2 - 200), y: Math.round(h / 2 - 120) },
     jobs: { x: Math.round(w / 2 - 470), y: Math.round(h / 2 - 120) },
+    symbol: { x: Math.round(w / 2 - sw / 2), y: Math.round(h / 2 - sh / 2), w: sw, h: sh, symbol: symbolId },
   }[type];
   const l = makeLayer(type, props);
   project.layers.push(l);
@@ -1167,6 +1192,7 @@ function layerLabel(l) {
   if (l.type === "text") return resolveText(l.text).replace(/\n/g, " ").slice(0, 30) || "(空)";
   if (l.type === "image") return l.src ? "スクショ" : "(未設定)";
   if (l.type === "rect") return `${l.w}×${l.h}`;
+  if (l.type === "symbol") return findSymbol(l.symbol)?.name || "(消されたシンボル)";
   return { battle: "戦闘職", craft: "クラフター・ギャザラー", all: "すべて" }[l.filter];
 }
 
@@ -1193,9 +1219,91 @@ function renderLayers() {
       changed();
     });
     li.append(type, label, eye);
-    li.addEventListener("click", () => select(l.id));
+    li.addEventListener("pointerdown", (e) => startLayerDrag(e, li, ul, l));
+    li.addEventListener("contextmenu", (e) => e.preventDefault()); // 長押しでメニューを出さない
+    li.addEventListener("click", () => {
+      if (layerDragged) return; // ドラッグで並べ替えた直後のクリックでは選ばない
+      select(l.id);
+    });
     ul.append(li);
   }
+}
+
+// レイヤーをドラッグで並べ替える(枠エディタのレイヤーと同じ決まり)
+//   離した所が行の上なら、その行のすぐ下に差し込む(行と行のあいだも同じ)。いちばん上の行より上なら、いちばん上に
+//   マウスは、そのままドラッグ。スマホ(指)は、長押しで「並べ替えモード」になってからドラッグ
+//   (指でなぞるだけなら、ふつうに一覧がスクロールする)
+let layerDragged = false;
+const LONG_PRESS = 400; // 長押しと見なす時間(ミリ秒)
+function startLayerDrag(e, li, ul, layer) {
+  if (e.button !== 0 || e.target.closest("button, input")) return;
+  layerDragged = false;
+  const touch = e.pointerType === "touch";
+  const sx = e.clientX, sy = e.clientY;
+  let armed = !touch; // 並べ替えできる状態か(マウスは最初から、指は長押しのあと)
+  let target = null; // 見た目の並び(上から)で、何番目の位置に差し込むか
+  const others = () => [...ul.children].filter((x) => x !== li);
+  const clearMarks = () => ul.querySelectorAll(".drop-above, .drop-below").forEach((x) => x.classList.remove("drop-above", "drop-below"));
+  // 並べ替えモードの間は、指で動かしても一覧やページをスクロールさせない
+  const block = (ev) => {
+    if (armed && layerDragged) ev.preventDefault();
+  };
+  const timer = touch
+    ? setTimeout(() => {
+        armed = true;
+        layerDragged = true;
+        li.classList.add("dragging", "lifted");
+        navigator.vibrate?.(15); // 並べ替えモードになった合図(震えない端末もある)
+        try {
+          li.setPointerCapture(e.pointerId);
+        } catch {}
+      }, LONG_PRESS)
+    : null;
+  const move = (ev) => {
+    if (!armed) {
+      // 長押しの前に指が動いたら、スクロールなので並べ替えはやめる
+      if (Math.hypot(ev.clientX - sx, ev.clientY - sy) > 8) up();
+      return;
+    }
+    if (!layerDragged) {
+      if (Math.abs(ev.clientY - sy) < 4) return;
+      layerDragged = true;
+      li.classList.add("dragging");
+    }
+    const rows = others();
+    let k = -1; // 指している行(上端より下にある、いちばん下の行)
+    rows.forEach((r, n) => { if (ev.clientY >= r.getBoundingClientRect().top) k = n; });
+    clearMarks();
+    target = k + 1;
+    if (k >= 0) rows[k].classList.add("drop-below");
+    else if (rows[0]) rows[0].classList.add("drop-above");
+  };
+  function up() {
+    clearTimeout(timer);
+    li.removeEventListener("pointermove", move);
+    li.removeEventListener("pointerup", up);
+    li.removeEventListener("pointercancel", up);
+    document.removeEventListener("touchmove", block);
+    clearMarks();
+    li.classList.remove("dragging", "lifted");
+    if (layerDragged && target !== null) {
+      // 見た目は配列の逆順(上ほど前面)。抜いたあとの配列で、見た目の target 番目 = 配列の (長さ - target) 番目
+      const rest = project.layers.filter((x) => x !== layer);
+      rest.splice(rest.length - target, 0, layer);
+      project.layers = rest;
+      changed();
+    }
+    setTimeout(() => (layerDragged = false), 0); // 直後のクリックでは選ばない
+  }
+  if (!touch) {
+    try {
+      li.setPointerCapture(e.pointerId);
+    } catch {}
+  }
+  li.addEventListener("pointermove", move);
+  li.addEventListener("pointerup", up);
+  li.addEventListener("pointercancel", up);
+  document.addEventListener("touchmove", block, { passive: false });
 }
 
 function renderProps() {
@@ -1241,6 +1349,20 @@ function renderProps() {
     note.textContent = "画像の上でホイール → ズーム / Alt+ドラッグ → 枠の中で位置調整";
     box.append(note);
     renderFxFields(box, l);
+  }
+  if (l.type === "symbol") {
+    const sym = findSymbol(l.symbol);
+    const row = document.createElement("div");
+    row.className = "actions";
+    if (sym) {
+      row.append(
+        button("このシンボルを編集", () => openSymbolEditor(sym.id)),
+        button("このシンボルを削除", () => deleteSymbol(sym), "btn btn--small btn--danger"),
+      );
+    } else {
+      row.append(Object.assign(document.createElement("p"), { className: "note", textContent: "このシンボルは消されています。" }));
+    }
+    box.append(row);
   }
   for (const [key, label, type, opt] of COMMON_FIELDS) box.append(field(l, key, label, type, opt));
 }
@@ -1430,6 +1552,7 @@ function renderAll() {
   renderCard();
   renderSwatches();
   renderFrames();
+  renderAddTiles();
   renderPaletteForm();
   requestDraw();
 }
@@ -1558,6 +1681,7 @@ function paletteChanged() {
   changed();
   renderSwatches();
   renderFrames(); // オリジナル枠の見本は配色の色で描いている
+  renderAddTiles(); // シンボルの見本も
   renderProps();
   renderCard();
 }
@@ -1609,6 +1733,58 @@ function renderFrames() {
       }, "btn btn--small btn--danger"),
     );
   }
+}
+
+// 要素を追加の一覧。「枠の形」と同じように、見本付きのボタンを並べる(押すとカードの真ん中に追加)
+const ADD_PREVIEW = {
+  text: '<path d="M16 9H44M30 9V33" fill="none"/>',
+  image: '<rect x="7" y="6" width="46" height="28" rx="4"/><path d="M11 31L24 18L32 26L38 20L49 31" fill="none"/><circle cx="41" cy="13" r="3"/>',
+  rect: '<rect x="7" y="8" width="46" height="24" rx="7"/>',
+  jobs: '<rect x="8" y="9" width="10" height="10" rx="2"/><rect x="25" y="9" width="10" height="10" rx="2"/><rect x="42" y="9" width="10" height="10" rx="2"/><rect x="8" y="23" width="10" height="10" rx="2"/><rect x="25" y="23" width="10" height="10" rx="2"/><rect x="42" y="23" width="10" height="10" rx="2"/>',
+};
+function renderAddTiles() {
+  const box = $("addTiles");
+  box.replaceChildren();
+  const tile = (name, preview, onClick) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "frame-btn";
+    b.append(preview, Object.assign(document.createElement("span"), { textContent: name }));
+    b.addEventListener("click", onClick);
+    box.append(b);
+  };
+  for (const type of ["text", "image", "rect", "jobs"]) {
+    const svg = document.createElement("span");
+    svg.innerHTML = `<svg viewBox="0 0 60 40" aria-hidden="true">${ADD_PREVIEW[type]}</svg>`;
+    tile(type === "jobs" ? "ジョブ一覧" : TYPE_LABEL[type], svg.firstChild, () => addLayer(type));
+  }
+  // 自分で作ったシンボル(アクセント色で見本を描く)
+  for (const sym of loadSymbols()) {
+    const c = document.createElement("canvas");
+    c.width = 120;
+    c.height = 80;
+    c.className = "frame-canvas";
+    drawSymbolPreview(c, sym, col("@accent"), 6);
+    tile(sym.name || "オリジナルシンボル", c, () => addLayer("symbol", sym.id));
+  }
+  $("symbolActions").replaceChildren(button("＋ オリジナルシンボルを作成する", () => openSymbolEditor(), "btn btn--small btn--primary"));
+}
+
+// シンボルエディタへ移る(枠エディタと同じく、今のカードはすぐ保存しておく)
+function openSymbolEditor(id) {
+  saveNow();
+  location.href = "symbol-editor.html" + (id ? "?id=" + encodeURIComponent(id) : "");
+}
+// シンボルを消す。カードに置いてある、そのシンボルの要素も一緒に消す
+function deleteSymbol(sym) {
+  const used = project.layers.filter((l) => l.type === "symbol" && l.symbol === sym.id).length;
+  if (!confirm(`「${sym.name || "オリジナルシンボル"}」を削除します。${used ? `カードに置いてある ${used} 個も消えます。` : ""}よろしいですか?`)) return;
+  saveSymbols(loadSymbols().filter((s) => s.id !== sym.id));
+  project.layers = project.layers.filter((l) => !(l.type === "symbol" && l.symbol === sym.id));
+  if (!project.layers.some((l) => l.id === selectedId)) selectedId = null;
+  changed();
+  renderProps();
+  renderAddTiles();
 }
 
 // 枠エディタへ移る。今のカードはすぐ保存しておく(戻ってきたら、そのまま続けられる)
@@ -1731,8 +1907,15 @@ $("exportPng").addEventListener("click", async () => {
   }
 });
 
+// カードに置いてあるシンボル(書き出しに入れる)
+function usedSymbols() {
+  const ids = new Set(project.layers.filter((l) => l.type === "symbol").map((l) => l.symbol));
+  const list = loadSymbols().filter((s) => ids.has(s.id));
+  return list.length ? list : undefined;
+}
+
 $("exportJson").addEventListener("click", () => {
-  const json = JSON.stringify({ version: 2, card: project.card, palette: project.palette, paletteId: project.paletteId, frame: project.frame, customFrames: findCustomFrame(project.frame) ? [findCustomFrame(project.frame)] : undefined, layers: project.layers }, null, 1);
+  const json = JSON.stringify({ version: 2, card: project.card, palette: project.palette, paletteId: project.paletteId, frame: project.frame, customFrames: findCustomFrame(project.frame) ? [findCustomFrame(project.frame)] : undefined, customSymbols: usedSymbols(), layers: project.layers }, null, 1);
   download(new Blob([json], { type: "application/json" }), "characa_template.json");
 });
 
@@ -1747,6 +1930,11 @@ $("importJson").addEventListener("change", async (e) => {
     if (Array.isArray(t.customFrames) && t.customFrames.length) {
       const ids = new Set(t.customFrames.map((f) => f.id));
       saveCustomFrames([...loadCustomFrames().filter((f) => !ids.has(f.id)), ...t.customFrames]);
+    }
+    // シンボルも同じく、このブラウザのシンボルに足す
+    if (Array.isArray(t.customSymbols) && t.customSymbols.length) {
+      const ids = new Set(t.customSymbols.map((s) => s.id));
+      saveSymbols([...loadSymbols().filter((s) => !ids.has(s.id)), ...t.customSymbols]);
     }
     project = normalize({ palette: project.palette, paletteId: project.paletteId, frame: project.frame, ...t, data: project.data });
     selectedId = null;
@@ -1779,7 +1967,6 @@ $("mainShot").addEventListener("change", async (e) => {
   setImage(l, src);
 });
 
-document.querySelectorAll("[data-add]").forEach((b) => b.addEventListener("click", () => addLayer(b.dataset.add)));
 
 // ---------- 画面のレイアウト ----------
 
@@ -2018,6 +2205,13 @@ if (matchMedia("(pointer: coarse)").matches) {
     project.frame = back;
     saveNow();
     openTab("design");
+  }
+  // シンボルエディタで保存して戻ってきたとき:新しく作ったシンボルはカードに置く
+  const sym = params.get("symbol");
+  if (sym && findSymbol(sym)) {
+    if (params.get("add")) addLayer("symbol", sym);
+    saveNow();
+    openTab("layers");
   }
   if (params.toString()) history.replaceState(null, "", location.pathname);
 }

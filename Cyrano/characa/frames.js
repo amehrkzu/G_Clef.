@@ -364,10 +364,10 @@ function piecePath2D(p) {
 }
 
 // 部品の線をまとめて描く(g には位置・向き・大きさの変換をかけておく)
-function drawPieces(g, paths, col) {
+function drawPieces(g, paths, col, color0) {
   for (const p of paths) {
     if (!p.pts.length) continue;
-    const path = piecePath2D(p), color = p.cut ? "#000" : col(p.color ?? "@accent");
+    const path = piecePath2D(p), color = p.cut ? "#000" : color0 ?? col(p.color ?? "@accent");
     if (p.cut) {
       g.save();
       g.globalCompositeOperation = "destination-out";
@@ -434,36 +434,85 @@ function drawCustomDecoration(g, def, l, col) {
   g.restore();
 }
 
-// パネル1枚(土台の塗り・枠線・飾り)を描く
-//   切り抜きのある枠は、別の canvas にパネルだけを描いてから重ねる(切り抜きで、パネルの下の絵まで消さないように)
+// 切り抜きがあるときは、別の canvas に描いてから重ねる(切り抜きで、その下にある絵まで消さないように)
+//   needed が false なら、そのまま g に描く
 let cutLayer = null;
+function drawIsolated(g, needed, draw) {
+  if (!needed) return draw(g);
+  cutLayer ??= document.createElement("canvas");
+  if (cutLayer.width !== g.canvas.width) cutLayer.width = g.canvas.width;
+  if (cutLayer.height !== g.canvas.height) cutLayer.height = g.canvas.height;
+  const t = cutLayer.getContext("2d");
+  t.setTransform(1, 0, 0, 1, 0, 0);
+  t.clearRect(0, 0, cutLayer.width, cutLayer.height);
+  t.setTransform(g.getTransform());
+  draw(t);
+  g.save();
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.drawImage(cutLayer, 0, 0);
+  g.restore();
+}
+const hasCut = (paths) => !!paths?.some((p) => p.cut && p.pts.length);
+
+// パネル1枚(土台の塗り・枠線・飾り)を描く。切り抜きのある枠は、パネルだけを別に描いてから重ねる
 function drawFramePanel(g, frame, l, col, fill, alpha = 1) {
   const { def } = resolveFrame(frame);
-  const cut = !!def && [def.corner, def.edge, def.border].some((part) => part?.paths?.some((p) => p.cut && p.pts.length));
-  let t = g;
-  if (cut) {
-    cutLayer ??= document.createElement("canvas");
-    if (cutLayer.width !== g.canvas.width) cutLayer.width = g.canvas.width;
-    if (cutLayer.height !== g.canvas.height) cutLayer.height = g.canvas.height;
-    t = cutLayer.getContext("2d");
-    t.setTransform(1, 0, 0, 1, 0, 0);
-    t.clearRect(0, 0, cutLayer.width, cutLayer.height);
-    t.setTransform(g.getTransform());
+  const cut = !!def && [def.corner, def.edge, def.border].some((part) => hasCut(part?.paths));
+  drawIsolated(g, cut, (t) => {
+    framePath(t, frame, l.x, l.y, l.w, l.h, l.radius);
+    t.save();
+    t.globalAlpha *= alpha;
+    t.fillStyle = fill;
+    t.fill();
+    t.restore();
+    strokeFrameBorder(t, frame, l, col);
+    drawFrameDecoration(t, frame, l, col);
+  });
+}
+
+// ---------- オリジナルシンボル ----------
+// シンボルエディタで作る、図形の要素。{ id, name, w, h(描くマスの大きさ。長い辺が 100), symbol: { paths } }
+//   保存先はこのブラウザ(characa:symbols)。キャラカの要素「シンボル」は { symbol: id, x, y, w, h, color }
+const SYMBOLS_KEY = "characa:symbols";
+function loadSymbols() {
+  try {
+    const list = JSON.parse(localStorage.getItem(SYMBOLS_KEY));
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
   }
-  framePath(t, frame, l.x, l.y, l.w, l.h, l.radius);
-  t.save();
-  t.globalAlpha *= alpha;
-  t.fillStyle = fill;
-  t.fill();
-  t.restore();
-  strokeFrameBorder(t, frame, l, col);
-  drawFrameDecoration(t, frame, l, col);
-  if (cut) {
-    g.save();
-    g.setTransform(1, 0, 0, 1, 0, 0);
-    g.drawImage(cutLayer, 0, 0);
-    g.restore();
+}
+function saveSymbols(list) {
+  try {
+    localStorage.setItem(SYMBOLS_KEY, JSON.stringify(list));
+    return true;
+  } catch {
+    return false;
   }
+}
+const findSymbol = (id) => (id ? loadSymbols().find((s) => s.id === id) ?? null : null);
+
+// シンボルを箱(x, y, w, h)いっぱいに描く。縦横は箱に合わせて伸び縮みする。color は全部の線・図形の色
+//   切り抜きは、そのシンボルの中だけを透明にする
+function drawSymbol(g, sym, x, y, w, h, color) {
+  const paths = sym?.symbol?.paths ?? [];
+  if (!paths.length) return;
+  drawIsolated(g, hasCut(paths), (t) => {
+    t.save();
+    t.transform(w / (sym.w || 100), 0, 0, h / (sym.h || 100), x, y);
+    drawPieces(t, paths, (v) => v, color);
+    t.restore();
+  });
+}
+
+// シンボルの見本(一覧のボタン用):縦横比を保って canvas の真ん中に
+function drawSymbolPreview(canvas, sym, color, pad = 4) {
+  const g = canvas.getContext("2d");
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.clearRect(0, 0, canvas.width, canvas.height);
+  const sw = sym.w || 100, sh = sym.h || 100;
+  const k = Math.min((canvas.width - pad * 2) / sw, (canvas.height - pad * 2) / sh);
+  drawSymbol(g, sym, (canvas.width - sw * k) / 2, (canvas.height - sh * k) / 2, sw * k, sh * k, color);
 }
 
 // ---------- 見本 ----------

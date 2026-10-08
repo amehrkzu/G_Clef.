@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>枠エディタ - FF14 キャラカメーカー</title>
+<title>シンボルエディタ - FF14 キャラカメーカー</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&display=swap">
@@ -197,24 +197,18 @@ kbd { background: #f4edff; border: 1px solid var(--line); border-radius: 6px; pa
 }
 </style>
 </head>
-<body>
+<body data-editor="symbol">
 <header class="top">
   <button type="button" class="btn btn--small" id="back">← キャラカに戻る</button>
-  <h1>枠エディタ</h1>
+  <h1>シンボルエディタ</h1>
   <span class="grow"></span>
-  <input id="frameName" type="text" placeholder="枠の名前" aria-label="枠の名前">
+  <input id="frameName" type="text" placeholder="シンボルの名前" aria-label="シンボルの名前">
   <button type="button" class="btn btn--primary" id="save">保存してキャラカに戻る</button>
 </header>
 
 <main class="app">
   <section class="stage">
     <div class="row toolbar">
-      <select id="pieceSelect" aria-label="描く部品">
-        <option value="corner">角の飾り</option>
-        <option value="edge">辺の模様</option>
-        <option value="base">土台の角</option>
-        <option value="border">枠線</option>
-      </select>
       <button type="button" class="btn btn--small" id="modeToggle" title="描く ⇔ 動かす(Tab)"></button>
       <select id="shapeSelect" aria-label="図形を追加">
         <option value="">図形を追加…</option>
@@ -257,12 +251,8 @@ kbd { background: #f4edff; border: 1px solid var(--line); border-radius: 6px; pa
         <div id="pathPanel"></div>
         <div class="frame-fields">
           <label class="field">
-            <span>辺の模様の大きさ <output id="edgeSizeOut"></output></span>
-            <input id="edgeSize" type="range" min="0.02" max="0.2" step="0.005">
-          </label>
-          <label class="field">
-            <span>辺の模様のすき間 <output id="edgeGapOut"></output></span>
-            <input id="edgeGap" type="range" min="0" max="3" step="0.05">
+            <span>マスの形</span>
+            <select id="symbolRatio"></select>
           </label>
         </div>
       </section>
@@ -277,22 +267,20 @@ kbd { background: #f4edff; border: 1px solid var(--line); border-radius: 6px; pa
     <section class="box">
       <h2>プレビュー</h2>
       <canvas id="preview" width="720" height="330"></canvas>
-      <p class="note">キャラカで選んでいる配色で表示しています。</p>
+      <p class="note">キャラカで選んでいる配色のアクセント色で表示しています。キャラカでは、置いたシンボルごとに色を選べます。</p>
     </section>
 
     <section class="box">
       <h2>使い方</h2>
       <ul class="help">
-        <li><b>角の飾り</b>:左上の角だけを描きます。点線の四角の中が飾りの大きさで、左と上の太い線がパネルの縁です。ほかの3つの角には、反転してコピーされます</li>
-        <li><b>土台の角</b>(土台の形が「自分で描く」のとき):左上の角の形を、左の太い線から上の太い線まで1本の線で描きます。4つの角に反転してコピーされ、パネルの形になります。うすく塗られた側がパネルの内側です</li>
-        <li><b>枠線</b>:パネルのふちの線です。真ん中の横線が枠線で、押して選ぶと色・太さ(0 で枠線なし)と模様の大きさを変えられます。この画面で描いたものは、枠線に沿ってすき間なく一周並びます。点線の四角が模様の1回分で、右の端から出た線はとなりの左の端につながります(左右のうすい絵が、となりの模様)</li>
-        <li><b>辺の模様</b>:1つ分を描きます。上の太い線がパネルの縁です。辺の長さに合わせて繰り返し並びます(うすく表示しているのが、となりの模様)</li>
-        <li><b>描く / 動かす</b>:左上のボタン(または <kbd>Tab</kbd>)で切り替えます。描く部品は、いちばん左の選択欄で選びます</li>
+        <li><b>シンボル</b>:点線の四角の中に描きます。キャラカの「要素を追加」に並び、カードに置けます。置いたあとは、縦横の大きさと色をキャラカで変えられます</li>
+        <li><b>マスの形</b>:「詳細」の下で、正方形・横長・縦長を選べます。形を変えても、描いた線はそのままです</li>
+        <li><b>描く / 動かす</b>:左上のボタン(または <kbd>Tab</kbd>)で切り替えます</li>
         <li><b>描く</b>:クリックで点を置くと、なめらかな線でつながります。最初の点を押すと閉じた形に。<kbd>Enter</kbd>・<kbd>Esc</kbd>・ダブルクリック・最後に置いた点を押すと描き終わり。描いていないときに線の上をクリックすると、そこに点が足されます</li>
         <li><b>動かす</b>:点や線をドラッグ。点を選ぶと青いハンドルが出て、曲がり具合を変えられます(<kbd>Alt</kbd>+ドラッグで片側だけ)。点をダブルクリックで角⇔なめらか</li>
         <li><kbd>Alt</kbd>+点をクリック:どちらのモードでも、角⇔なめらかを切り替えます</li>
         <li><b>図形</b>:「図形を追加…」から選ぶと、塗りつぶしの図形を置きます</li>
-        <li><b>切り抜き</b>:線や図形を選んで「詳細」の「切り抜き」を押すと、その形に重なる所が透明になります。透明になるのは、レイヤーでそれより下にあるもの(パネル・枠線も)です。切り抜きの形は、点線のふちで表示されます</li>
+        <li><b>切り抜き</b>:線や図形を選んで「詳細」の「切り抜き」を押すと、その形に重なる所が透明になります。透明になるのは、レイヤーでそれより下にあるものです。切り抜きの形は、点線のふちで表示されます</li>
         <li><b>レイヤー</b>:サイドバーの「レイヤー」タブで、線や図形の重なる順番を、ドラッグか ▲▼ で入れ替えます。ドラッグを行の上で離すと、その行のすぐ下に入ります(スマホは、行を長押ししてから動かします)。名前をダブルクリックすると、名前を変えられます(空にすると元の名前に戻ります)。上にあるものほど手前です。押すと、その線を選びます</li>
         <li><b>点を消す</b>:「動かす」で点を押して選び、「詳細」の欄の「消す」(または <kbd>Delete</kbd>)。点を選んでいなければ線ごと消えます</li>
         <li> <kbd>Ctrl</kbd>+<kbd>Z</kbd> 戻す / <kbd>Ctrl</kbd>+<kbd>Y</kbd> やり直す</li>
