@@ -168,6 +168,7 @@ function defaultProject() {
     card: { w: 1920, h: 1080, bg: { type: "gradient", color1: "@bg1", color2: "@bg2", angle: 135, image: "", dim: 0.3 } },
     palette: defaultPalette(),
     paletteId: PALETTES[0]?.id ?? "",
+    frame: "round", // 枠の形
     data: emptyData(),
     layers: [
       // スクショがカード全体の土台。その上に文字やパネルを載せる
@@ -201,9 +202,18 @@ function normalize(p) {
     card: { ...base.card, ...p.card, bg: { ...base.card.bg, ...p.card?.bg } },
     palette: { ...base.palette, ...p.palette },
     paletteId: p.palette ? p.paletteId ?? "" : base.paletteId,
+    frame: FRAMES.some(([id]) => id === p.frame) || findCustomFrame(p.frame) ? p.frame : base.frame,
     data: (({ face, image, ...d }) => d)({ ...emptyData(), ...p.data }), // 以前保存した Lodestone の画像URLは捨てる
     layers: p.layers.filter((l) => DEFAULTS[l.type]).map(({ bind, ...l }) => ({ ...makeLayer(l.type), ...l })), // bind は以前の「Lodestone の画像を表示」設定(廃止)
   };
+}
+
+// 今すぐ保存する(別のページへ移る前など)
+function saveNow() {
+  clearTimeout(saveTimer);
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(project));
+  } catch {}
 }
 
 let saveTimer;
@@ -371,15 +381,11 @@ const DRAW = {
     return b;
   },
 
+  // 図形(パネル)。形は「枠の形」(project.frame)で決まる(描き方は frames.js)
   rect(l) {
-    roundRectPath(l.x, l.y, l.w, l.h, l.radius);
-    ctx.fillStyle = col(l.color);
-    ctx.fill();
-    if (l.borderWidth > 0) {
-      ctx.lineWidth = l.borderWidth;
-      ctx.strokeStyle = col(l.borderColor);
-      ctx.stroke();
-    }
+    const frame = project.frame ?? "round";
+    // 塗り・枠線(土台を自分で描いた枠は、その線の色・太さ)・飾り。切り抜きもここで(frames.js)
+    drawFramePanel(ctx, frame, l, col, col(l.color));
     return { x: l.x, y: l.y, w: l.w, h: l.h };
   },
 
@@ -1423,6 +1429,7 @@ function renderAll() {
   renderProps();
   renderCard();
   renderSwatches();
+  renderFrames();
   renderPaletteForm();
   requestDraw();
 }
@@ -1458,7 +1465,7 @@ async function loadTemplates() {
 
 // テンプレートに、今のキャラ情報・配色・スクショ・背景画像を入れたものを作る
 function fromTemplate(t) {
-  const p = normalize({ ...structuredClone(t.data), data: project.data, palette: project.palette, paletteId: project.paletteId });
+  const p = normalize({ ...structuredClone(t.data), data: project.data, palette: project.palette, paletteId: project.paletteId, frame: project.frame });
   p.layers.forEach((l) => (l.id = uid()));
   const shot = project.layers.find((l) => l.type === "image" && l.src);
   const target = p.layers.find((l) => l.type === "image");
@@ -1550,8 +1557,64 @@ function setPalette(pal) {
 function paletteChanged() {
   changed();
   renderSwatches();
+  renderFrames(); // オリジナル枠の見本は配色の色で描いている
   renderProps();
   renderCard();
+}
+
+// 枠の形の一覧。最初からある枠は SVG の見本、オリジナル枠は canvas に描いた見本
+function renderFrames() {
+  const box = $("frames");
+  box.replaceChildren();
+  const current = project.frame ?? "round";
+  const pick = (id) => {
+    project.frame = id;
+    changed();
+    renderFrames();
+  };
+  const frameButton = (id, name, preview) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "frame-btn";
+    b.setAttribute("aria-pressed", String(current === id));
+    b.append(preview, Object.assign(document.createElement("span"), { textContent: name }));
+    b.addEventListener("click", () => pick(id));
+    box.append(b);
+  };
+  for (const [id, name] of FRAMES) {
+    const svg = document.createElement("span");
+    svg.innerHTML = `<svg viewBox="0 0 60 40" aria-hidden="true">${FRAME_PREVIEW[id]}</svg>`;
+    frameButton(id, name, svg.firstChild);
+  }
+  for (const def of loadCustomFrames()) {
+    const c = document.createElement("canvas");
+    c.width = 120;
+    c.height = 80;
+    c.className = "frame-canvas";
+    drawFramePreview(c, def, col, { pad: 8, radius: 10, alpha: 0.85, borderWidth: 2 });
+    frameButton(CUSTOM_PREFIX + def.id, def.name || "オリジナル枠", c);
+  }
+
+  // 作る・直す・消す
+  const row = $("frameActions");
+  row.replaceChildren(button("＋ オリジナル枠を作成する", () => openFrameEditor(), "btn btn--small btn--primary"));
+  const def = findCustomFrame(current);
+  if (def) {
+    row.append(
+      button("この枠を編集", () => openFrameEditor(def.id)),
+      button("この枠を削除", () => {
+        if (!confirm(`「${def.name || "オリジナル枠"}」を削除します。よろしいですか?`)) return;
+        saveCustomFrames(loadCustomFrames().filter((f) => f.id !== def.id));
+        pick("round");
+      }, "btn btn--small btn--danger"),
+    );
+  }
+}
+
+// 枠エディタへ移る。今のカードはすぐ保存しておく(戻ってきたら、そのまま続けられる)
+function openFrameEditor(id) {
+  saveNow();
+  location.href = "frame-editor.html" + (id ? "?id=" + encodeURIComponent(id) : "");
 }
 
 function renderSwatches() {
@@ -1669,7 +1732,7 @@ $("exportPng").addEventListener("click", async () => {
 });
 
 $("exportJson").addEventListener("click", () => {
-  const json = JSON.stringify({ version: 2, card: project.card, palette: project.palette, paletteId: project.paletteId, layers: project.layers }, null, 1);
+  const json = JSON.stringify({ version: 2, card: project.card, palette: project.palette, paletteId: project.paletteId, frame: project.frame, customFrames: findCustomFrame(project.frame) ? [findCustomFrame(project.frame)] : undefined, layers: project.layers }, null, 1);
   download(new Blob([json], { type: "application/json" }), "characa_template.json");
 });
 
@@ -1680,7 +1743,12 @@ $("importJson").addEventListener("change", async (e) => {
   try {
     const t = JSON.parse(await file.text());
     if (!t.card || !Array.isArray(t.layers)) throw new Error("形式が違います");
-    project = normalize({ palette: project.palette, paletteId: project.paletteId, ...t, data: project.data });
+    // テンプレートに入っていたオリジナル枠を、このブラウザの枠に足す(同じ id があれば上書き)
+    if (Array.isArray(t.customFrames) && t.customFrames.length) {
+      const ids = new Set(t.customFrames.map((f) => f.id));
+      saveCustomFrames([...loadCustomFrames().filter((f) => !ids.has(f.id)), ...t.customFrames]);
+    }
+    project = normalize({ palette: project.palette, paletteId: project.paletteId, frame: project.frame, ...t, data: project.data });
     selectedId = null;
     renderAll();
     saveSoon();
@@ -1691,7 +1759,7 @@ $("importJson").addEventListener("change", async (e) => {
 
 $("reset").addEventListener("click", () => {
   if (!confirm("レイアウトを初期状態に戻します(キャラ情報はそのまま)。よろしいですか?")) return;
-  project = { ...defaultProject(), data: project.data, palette: project.palette, paletteId: project.paletteId };
+  project = { ...defaultProject(), data: project.data, palette: project.palette, paletteId: project.paletteId, frame: project.frame };
   selectedId = null;
   renderAll();
   saveSoon();
@@ -1940,6 +2008,18 @@ openTab(document.querySelector(`.sheet-tab[data-tab="${savedTab}"]`) ? savedTab 
 
 if (matchMedia("(pointer: coarse)").matches) {
   $("hint").textContent = "タップで選択 / ドラッグで移動 / 辺・角(ピンクの●)をドラッグで大きさを変える / 2本指でつまむと表示を拡大縮小、2本指で動かすとスクロール";
+}
+
+// 枠エディタで保存して戻ってきたときは、その枠を選んだ状態にする
+{
+  const params = new URLSearchParams(location.search);
+  const back = params.get("frame");
+  if (back && findCustomFrame(back)) {
+    project.frame = back;
+    saveNow();
+    openTab("design");
+  }
+  if (params.toString()) history.replaceState(null, "", location.pathname);
 }
 
 renderAll();

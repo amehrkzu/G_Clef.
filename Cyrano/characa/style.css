@@ -398,6 +398,28 @@ input[type="range"] { padding: 0; border: none; box-shadow: none; }
 }
 .gallery .note { grid-column: 1 / -1; }
 
+/* 枠の形 */
+.frames { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 8px; }
+.frame-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: #fff;
+  border: var(--border) solid var(--line);
+  border-radius: 14px;
+  padding: 6px 4px;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.frame-btn:hover { border-color: var(--accent); }
+.frame-btn[aria-pressed="true"] { border-color: var(--accent); background: #fff3f8; box-shadow: 0 0 0 3px #ffe1ec; }
+.frame-btn .frame-canvas { width: 48px; height: 32px; }
+.frame-btn svg { width: 48px; height: 32px; fill: #f4edff; stroke: var(--ink); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+
 .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
 .swatch {
   display: flex;
