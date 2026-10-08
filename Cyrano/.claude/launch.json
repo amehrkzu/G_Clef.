@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "cyrano-static",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["C:/Users/kikuchi/AppData/Local/Temp/claude/C--Users-kikuchi-Documents-homepage-Cyrano/760031d6-c24a-4c83-9798-8407528ccfed/scratchpad/serve.js", "C:/Users/kikuchi/Documents/homepage/Cyrano"],
+      "port": 8765
+    }
+  ]
+}

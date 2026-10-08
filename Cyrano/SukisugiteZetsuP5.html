@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>好きすぎて絶！P5</title>
+  <link rel="stylesheet" href="./files/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Yusei+Magic&display=swap" rel="stylesheet">
+  <style>
+    html, body { background: rgba(255, 255, 255, 0.1); margin: 0; }
+    body, button, select, input { font-family: 'Yusei Magic', sans-serif; }
+    .status-strip > div:nth-child(3) { min-width: 140px; }
+    #debuffDisplay { font-size: 13px; }
+
+    .debuff-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; min-height: 26px; }
+    .debuff-badge {
+      padding: 4px 10px; border-radius: 4px; font-size: 12px;
+      border: 1px solid var(--c); color: var(--c); background: rgba(255,255,255,0.04);
+    }
+    .debuff-none { color: var(--muted); font-size: 12px; }
+    .guide-box {
+      margin-top: 12px; padding: 11px; border-radius: 4px;
+      background: rgba(120,255,170,0.06); border-left: 2px solid rgba(120,255,170,0.6);
+      font-size: 12px; line-height: 1.6; min-height: 3.4em;
+    }
+    .guide-box span { display: block; color: var(--muted); font-size: 9px; letter-spacing: .14em; margin-bottom: 3px; }
+    #mechDesc { margin: 8px 0 0; color: #b4c0d4; font-size: 12px; line-height: 1.75; }
+    #timeline { max-height: 260px; overflow-y: auto; }
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; color: var(--muted); font-size: 11px; }
+    .toggle-row input { width: 18px; height: 18px; accent-color: var(--cyan); }
+    .side-button {
+      width: 100%; margin-top: 14px; padding: 9px; border: 1px solid #35425a; border-radius: 4px;
+      background: #111827; color: #fff; cursor: pointer;
+    }
+    .side-button:hover { border-color: var(--cyan); }
+    .mode-buttons { grid-template-columns: repeat(3, 1fr); }
+    .mode-buttons .strategy-button { min-height: 92px; }
+    .prestart-settings { display: flex; flex-wrap: wrap; gap: 10px 26px; margin-bottom: 18px; }
+    .prestart-settings .speed-control, .prestart-settings .toggle-row { margin-top: 0; gap: 10px; font-size: 12px; }
+    .menu-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .secondary-button { padding: 12px 22px; border: 1px solid #35425a; border-radius: 4px; background: #111827; color: #fff; cursor: pointer; }
+    .note { color: #75839a; font-size: 11px; line-height: 1.65; margin: 4px 0 18px; }
+
+    .joystick {
+      position: fixed; width: 120px; height: 120px;
+      background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.2); border-radius: 50%;
+      z-index: 5; user-select: none; display: none; transform: translate(-50%, -50%);
+      left: 50%; top: 85%;
+    }
+    .joystick-stick {
+      position: absolute; top: 35px; left: 35px; width: 50px; height: 50px;
+      background: rgba(255,255,255,0.3); border-radius: 50%; transition: transform 0.1s;
+    }
+    footer { text-align: center; color: #56627a; font-size: 11px; padding: 10px; }
+
+    @media (max-width: 960px) {
+      .app-shell { padding: 8px; }
+      .controls-card .key-row { display: none; }
+    }
+    @media (max-width: 680px) {
+      .mode-buttons { grid-template-columns: 1fr; }
+      .mode-buttons .strategy-button { min-height: 0; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">FF14 絶妖星乱舞 PHASE 5</p>
+        <h1 id="modeName">P5 回避練習</h1>
+      </div>
+      <div class="status-strip">
+        <div><span>TIME</span><strong id="timeDisplay">0:00</strong></div>
+        <div><span>NEXT</span><strong id="nextDisplay">練習を選択</strong></div>
+        <div><span>DEBUFF</span><strong id="debuffDisplay">—</strong></div>
+      </div>
+    </header>
+
+    <section class="game-layout">
+      <div class="arena-panel">
+        <canvas id="arena" width="800" height="800" aria-label="P5の戦闘フィールド"></canvas>
+        <div id="castBar" class="cast-bar hidden">
+          <span id="castName"></span>
+          <div><i id="castFill"></i></div>
+        </div>
+        <div id="banner" class="banner hidden"></div>
+      </div>
+
+      <aside class="side-panel">
+        <section class="card assignment-card">
+          <p class="card-label">YOU</p>
+          <div class="assignment-main">
+            <img id="roleIcon" src="./files/TankRole.png" alt="">
+            <div><strong id="roleName">未選択</strong><span>操作中のロール</span></div>
+            <span></span>
+          </div>
+          <div id="debuffBadges" class="debuff-row"><span class="debuff-none">デバフなし</span></div>
+          <div class="guide-box"><span>GUIDE</span><div id="guideText">—</div></div>
+        </section>
+
+        <section class="card">
+          <div class="card-heading"><p class="card-label">MECHANIC</p><span id="segmentDisplay">—</span></div>
+          <strong id="mechTitle">—</strong>
+          <p id="mechDesc"></p>
+        </section>
+
+        <section class="card timeline-card">
+          <div class="card-heading"><p class="card-label">TIMELINE</p></div>
+          <ol id="timeline"></ol>
+        </section>
+
+        <section class="card controls-card">
+          <p class="card-label">CONTROLS</p>
+          <div class="key-row"><kbd>WASD</kbd><kbd>矢印</kbd><span>移動</span></div>
+          <div class="key-row"><kbd>SHIFT</kbd><span>スプリント</span></div>
+          <div class="key-row"><kbd>CLICK</kbd><span>クリック地点へ移動</span></div>
+          <label class="toggle-row">正解位置ガイド<input type="checkbox" id="guideToggleSide"></label>
+          <button id="openMenuButton" class="side-button" type="button">練習メニューへ</button>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <div id="menuModal" class="modal">
+    <div class="modal-card">
+      <p class="eyebrow">SELECT PRACTICE</p>
+      <h2>P5 ギミック別練習</h2>
+      <p class="note">
+        攻略記事（kanatan.info）の処理をもとにした練習用シミュレーターです。タイミングや範囲の大きさは仮の値です。<br>
+        残りの7人は自動で正解位置へ移動します。あなたのロールだけを操作してください。
+      </p>
+      <div id="modeButtons" class="strategy-buttons mode-buttons"></div>
+      <div id="roleSelection" class="role-selection hidden">
+        <h3>担当ロールを選択</h3>
+        <div class="prestart-settings">
+          <label class="speed-control">進行速度
+            <select id="speedSelect">
+              <option value="0.5">0.5x</option>
+              <option value="0.75">0.75x</option>
+              <option value="1" selected>1.0x</option>
+              <option value="1.25">1.25x</option>
+              <option value="1.5">1.5x</option>
+            </select>
+          </label>
+          <label class="toggle-row">正解位置ガイド<input type="checkbox" id="guideToggle"></label>
+        </div>
+        <div id="roleButtons" class="role-buttons"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="resultModal" class="modal hidden">
+    <div class="modal-card result-card">
+      <p id="resultKicker" class="eyebrow">DUTY FAILED</p>
+      <h2 id="resultTitle">GAME OVER</h2>
+      <p id="resultReason" class="modal-copy"></p>
+      <div class="menu-actions">
+        <button id="retryButton" class="primary-button" type="button">もう一度挑戦</button>
+        <button id="menuButton" class="secondary-button" type="button">練習メニューへ</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="joystick" class="joystick"><div id="joystick-stick" class="joystick-stick"></div></div>
+
+  <script src="./SukisugiteZetsuP5.js"></script>
+  <script>
+    // バーチャルジョイスティック（P2と同じ操作感：触れた位置が中心になる）
+    // 指でもマウスでも動かせる（PCでウィンドウを狭くしたとき用）
+    (() => {
+      const joystick = document.getElementById('joystick');
+      const stick = document.getElementById('joystick-stick');
+      const MAX = 35;
+      let active = false, cx = 0, cy = 0;
+      window.joystickDirection = { dx: 0, dy: 0 };
+      window.__joystickActive = false;
+      const usable = (target) => getComputedStyle(joystick).display !== 'none' && window.__p5Running &&
+        !target.closest('.modal, button, input, select, label, .side-panel');
+      const begin = (x, y) => {
+        active = true; window.__joystickActive = true;
+        cx = x; cy = y;
+        joystick.style.left = cx + 'px'; joystick.style.top = cy + 'px';
+        stick.style.transform = 'translate(0px, 0px)';
+      };
+      const moveTo = (x, y) => {
+        let dx = x - cx, dy = y - cy;
+        const d = Math.hypot(dx, dy);
+        if (d > MAX) { dx = dx / d * MAX; dy = dy / d * MAX; }
+        stick.style.transform = `translate(${dx}px, ${dy}px)`;
+        window.joystickDirection.dx = dx / MAX;
+        window.joystickDirection.dy = dy / MAX;
+      };
+      const end = () => {
+        active = false; window.__joystickActive = false;
+        stick.style.transform = 'translate(0px, 0px)';
+        window.joystickDirection.dx = 0; window.joystickDirection.dy = 0;
+      };
+
+      // 指
+      document.addEventListener('touchstart', (e) => {
+        if (!usable(e.target)) return;
+        begin(e.touches[0].clientX, e.touches[0].clientY);
+        e.preventDefault();
+      }, { passive: false });
+      document.addEventListener('touchmove', (e) => {
+        if (!active) return;
+        moveTo(e.touches[0].clientX, e.touches[0].clientY);
+        e.preventDefault();
+      }, { passive: false });
+      document.addEventListener('touchend', end);
+      document.addEventListener('touchcancel', end);
+
+      // マウス（キャプチャ段階で拾って、クリック移動より先に処理する）
+      document.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'touch' || e.button !== 0 || !usable(e.target)) return;
+        begin(e.clientX, e.clientY);
+        e.preventDefault();
+      }, true);
+      document.addEventListener('pointermove', (e) => {
+        if (!active || e.pointerType === 'touch') return;
+        moveTo(e.clientX, e.clientY);
+      });
+      document.addEventListener('pointerup', (e) => { if (e.pointerType !== 'touch' && active) end(); });
+      window.addEventListener('blur', () => { if (active) end(); });
+    })();
+  </script>
+  <footer>© SQUARE ENIX</footer>
+</body>
+</html>
