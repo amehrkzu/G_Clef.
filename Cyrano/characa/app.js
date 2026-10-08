@@ -410,7 +410,7 @@ const DRAW = {
         if (icon) {
           ctx.drawImage(icon, x, cy - iconSize / 2, iconSize, iconSize);
         } else {
-          // アイコンが無いジョブ(魔獣使い・クラフター等)は頭文字で代用
+          // アイコンが無いジョブ(クラフター・ギャザラー)は頭文字で代用
           ctx.textAlign = "center";
           ctx.fillStyle = dim ?? col(l.iconColor);
           ctx.fillText(j.name[0], x + iconSize / 2, cy);
