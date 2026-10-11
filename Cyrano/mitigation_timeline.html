@@ -133,6 +133,15 @@
   .lane-row .gridline { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--border-soft); opacity: .5; }
   .lane-row .gridline.major { opacity: 1; }
 
+  /* ---- boss attack lane ---- */
+  .lane-label-row.boss { color: var(--accent); align-items: flex-start; padding-top: 7px; }
+  .boss-lane { position: relative; border-top: 1px solid var(--border-soft); background: rgba(224,194,60,.04); }
+  .boss-ev { position: absolute; height: 18px; line-height: 18px; padding: 0 6px 0 5px; font-size: 11px; white-space: nowrap; color: var(--text); border-left: 2px solid var(--accent); background: rgba(224,194,60,.16); border-radius: 0 4px 4px 0; cursor: default; }
+  .boss-ev:hover { background: rgba(224,194,60,.32); z-index: 5; }
+  .boss-guides { position: absolute; left: 0; top: 34px; bottom: 0; pointer-events: none; }
+  .boss-guide { position: absolute; top: 0; bottom: 0; border-left: 1px dashed rgba(224,194,60,.38); }
+  .boss-guide.range { border-left: none; background: rgba(224,194,60,.07); }
+
   .mark { position: absolute; top: 50%; width: 10px; height: 10px; border-radius: 50%; transform: translate(-50%, -50%); cursor: pointer; box-shadow: 0 0 0 2px var(--panel); transition: transform .1s ease, opacity .15s ease, filter .15s ease; }
   .mark.icon {
     width: 26px; height: 26px; border-radius: 6px;
@@ -223,6 +232,8 @@
       <div class="scroll-area" id="scrollArea">
         <div class="scroll-inner" id="scrollInner">
           <div class="ruler" id="ruler"></div>
+          <div class="boss-guides" id="bossGuides"></div>
+          <div class="boss-lane" id="bossLane"></div>
           <div id="laneRows"></div>
         </div>
       </div>
@@ -293,6 +304,44 @@ const EMBEDDED_LOG_SOURCES = [
   { label: "ログ1", gid: "0" },
   { label: "ログ2", gid: "473641346" },
   { label: "ログ3", gid: "1511201865" },
+];
+
+/* ============================================================
+   ボスの攻撃タイムライン
+   ------------------------------------------------------------
+   t は経過時間(分:秒)。end を書くと t〜end の範囲として帯で表示されます。
+   タイムライン最上段の「攻撃」レーンと、各ジョブのレーンを貫く縦のガイド線に使われます。
+   ============================================================ */
+const BOSS_TIMELINE = [
+  { t: "15:00", label: "P5スタート" },
+  { t: "15:07", label: "連続アルテマ" },
+  { t: "15:12", end: "15:18", label: "AA3" },
+  { t: "15:25", label: "フラッド" },
+  { t: "15:37", label: "狂気のオーケストラ" },
+  { t: "15:39", label: "狂気のオーケストラ着弾①" },
+  { t: "15:41", label: "狂気のオーケストラ着弾②" },
+  { t: "15:48", end: "15:51", label: "AA2(ロール頭割り)" },
+  { t: "15:58", label: "スリースターズ" },
+  { t: "16:07", label: "2択のカタストロフ" },
+  { t: "16:08", label: "2択のカタストロフ着弾①" },
+  { t: "16:14", label: "2択のカタストロフ着弾②" },
+  { t: "16:20", label: "2択のカタストロフ着弾③" },
+  { t: "16:29", label: "連続アルテマ" },
+  { t: "16:34", end: "16:37", label: "AA2(ロール頭割り)" },
+  { t: "16:41", label: "混沌の終末(エクサ)" },
+  { t: "16:59", label: "混沌の渦" },
+  { t: "17:09", label: "狂気のオーケストラ" },
+  { t: "17:11", label: "狂気のオーケストラ 着弾①" },
+  { t: "17:13", label: "狂気のオーケストラ 着弾②" },
+  { t: "17:16", label: "デバフ発動" },
+  { t: "17:22", end: "17:28", label: "AA3 (ロール頭割り)" },
+  { t: "17:37", label: "ミッシング" },
+  { t: "17:45", label: "頭割り" },
+  { t: "17:52", label: "頭割り" },
+  { t: "18:00", label: "頭割り" },
+  { t: "18:08", label: "頭割り" },
+  { t: "18:13", label: "ミッシングゼロ詠唱開始" },
+  { t: "18:38", label: "時間切れ" },
 ];
 
 /* ============================================================
@@ -910,6 +959,8 @@ function cssEscape(s){ return window.CSS && CSS.escape ? CSS.escape(s) : s; }
   const scrollInnerEl = document.getElementById("scrollInner");
   const rulerEl = document.getElementById("ruler");
   const laneRowsEl = document.getElementById("laneRows");
+  const bossLaneEl = document.getElementById("bossLane");
+  const bossGuidesEl = document.getElementById("bossGuides");
   const logTbody = document.getElementById("logTbody");
   const tooltipEl = document.getElementById("tooltip");
   const ttSkill = document.getElementById("ttSkill");
@@ -955,6 +1006,11 @@ function cssEscape(s){ return window.CSS && CSS.escape ? CSS.escape(s) : s; }
     const spacer = document.createElement("div");
     spacer.className = "ruler-spacer";
     laneLabelsEl.appendChild(spacer);
+    const bossLabel = document.createElement("div");
+    bossLabel.className = "lane-label-row boss";
+    bossLabel.id = "bossLaneLabel";
+    bossLabel.textContent = "攻撃";
+    laneLabelsEl.appendChild(bossLabel);
     log.jobs.forEach(j => {
       const row = document.createElement("div");
       row.className = "lane-label-row";
@@ -982,6 +1038,67 @@ function cssEscape(s){ return window.CSS && CSS.escape ? CSS.escape(s) : s; }
       rulerEl.appendChild(tick);
     }
   }
+  /* ---------- ボス攻撃レーン(ラベルが重ならないよう段を分けて配置) ---------- */
+  const BOSS_EVENTS = BOSS_TIMELINE.map(ev => {
+    const toSec = (s) => { const p = s.split(":"); return parseInt(p[0], 10) * 60 + parseInt(p[1], 10); };
+    const sec = toSec(ev.t);
+    return { label: ev.label, t: ev.t, end: ev.end || null, sec, endSec: ev.end ? toSec(ev.end) : sec };
+  }).sort((a, b) => a.sec - b.sec);
+  const BOSS_ROW_H = 21;
+  function bossLabelWidth(label) {
+    let w = 14; // 左右パディング + 左ボーダー
+    for (const ch of label) w += ch.charCodeAt(0) > 0xff ? 11 : 6.7;
+    return w;
+  }
+  function buildBossLane(log) {
+    bossLaneEl.innerHTML = "";
+    bossGuidesEl.innerHTML = "";
+    bossLaneEl.style.width = totalWidth(log) + "px";
+    const events = BOSS_EVENTS.filter(ev => ev.sec <= log.duration + PAD_END);
+    const rowEnds = [];
+    events.forEach(ev => {
+      const x = ev.sec * SCALE;
+      const rangeW = (ev.endSec - ev.sec) * SCALE;
+      const w = Math.max(bossLabelWidth(ev.label), rangeW);
+      let rowIdx = rowEnds.findIndex(end => end + 6 <= x);
+      if (rowIdx < 0) { rowIdx = rowEnds.length; rowEnds.push(0); }
+      rowEnds[rowIdx] = x + w;
+
+      const chip = document.createElement("div");
+      chip.className = "boss-ev";
+      chip.textContent = ev.label;
+      chip.style.left = x + "px";
+      chip.style.top = (5 + rowIdx * BOSS_ROW_H) + "px";
+      if (rangeW) chip.style.minWidth = rangeW + "px";
+      const timeText = ev.end ? `${ev.t}〜${ev.end}` : ev.t;
+      chip.addEventListener("mouseenter", (e) => {
+        ttSkill.textContent = ev.label;
+        ttMeta.textContent = timeText;
+        tooltipEl.style.display = "block";
+        positionTooltip(e);
+      });
+      chip.addEventListener("mousemove", (e) => positionTooltip(e));
+      chip.addEventListener("mouseleave", hideTooltip);
+      bossLaneEl.appendChild(chip);
+
+      if (rangeW) {
+        const band = document.createElement("div");
+        band.className = "boss-guide range";
+        band.style.left = x + "px";
+        band.style.width = rangeW + "px";
+        bossGuidesEl.appendChild(band);
+      }
+      const line = document.createElement("div");
+      line.className = "boss-guide";
+      line.style.left = x + "px";
+      bossGuidesEl.appendChild(line);
+    });
+    const h = Math.max(ROW_H, rowEnds.length * BOSS_ROW_H + 9);
+    bossLaneEl.style.height = h + "px";
+    const labelEl = document.getElementById("bossLaneLabel");
+    if (labelEl) labelEl.style.height = h + "px";
+  }
+
   function buildLaneRows(log) {
     laneRowsEl.innerHTML = "";
     const w = totalWidth(log);
@@ -1089,6 +1206,7 @@ function cssEscape(s){ return window.CSS && CSS.escape ? CSS.escape(s) : s; }
     const log = currentLog();
     if (!log) return;
     buildRuler(log);
+    buildBossLane(log);
     buildLaneRows(log);
     applyFilters();
   });
@@ -1104,6 +1222,8 @@ function cssEscape(s){ return window.CSS && CSS.escape ? CSS.escape(s) : s; }
     laneLabelsEl.innerHTML = "";
     rulerEl.innerHTML = "";
     laneRowsEl.innerHTML = "";
+    bossLaneEl.innerHTML = "";
+    bossGuidesEl.innerHTML = "";
     logTbody.innerHTML = "";
     document.getElementById("timelineFlex").hidden = true;
     document.getElementById("emptyState").hidden = false;
@@ -1123,6 +1243,7 @@ function cssEscape(s){ return window.CSS && CSS.escape ? CSS.escape(s) : s; }
     buildChips(log);
     buildLaneLabels(log);
     buildRuler(log);
+    buildBossLane(log);
     buildLaneRows(log);
     buildLogTable(log);
     applyFilters();
