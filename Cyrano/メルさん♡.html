@@ -1,0 +1,2484 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>動画同期タイムライン</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #12141a;
+    --panel: #1b1e26;
+    --panel-2: #20242d;
+    --border: #2a2e38;
+    --border-soft: #23262f;
+    --text: #ece9e4;
+    --text-dim: #8b93a1;
+    --text-dimmer: #5c6371;
+    --accent: #e0c23c;
+    --cyan: #4fd6e8;
+    --tank: #5B8DEF;
+    --healer: #4FC38A;
+    --dps: #E1615F;
+    --ok: #4FC38A;
+    --err: #e0706e;
+    --warn: #e0c23c;
+    --radius: 10px;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  * { box-sizing: border-box; }
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+  }
+  body { padding: 28px 20px 60px; }
+  h1, h2, h3, .display {
+    font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+    margin: 0;
+  }
+  a { color: var(--cyan); }
+
+  .wrap { max-width: 1280px; margin: 0 auto; }
+
+  header.top {
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  header.top h1 {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--text);
+  }
+  header.top p {
+    margin: 6px 0 0;
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+
+  .stat-row { display: flex; gap: 22px; flex-wrap: wrap; }
+  .vstat { text-align: right; }
+  .vstat .num { font-family: "Space Grotesk", sans-serif; font-size: 22px; font-weight: 600; color: var(--text); line-height: 1; }
+  .vstat .lbl { font-size: 11px; color: var(--text-dimmer); margin-top: 4px; }
+
+  /* ---- log tabs ---- */
+  .log-tabs { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+  .log-tab { display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 14px; border-radius: 8px 8px 0 0; background: var(--panel-2); border: 1px solid var(--border); border-bottom: 2px solid transparent; font-size: 12.5px; color: var(--text-dim); cursor: pointer; user-select: none; }
+  .log-tab .count { color: var(--text-dimmer); font-size: 10.5px; }
+  .log-tab .close-btn { color: var(--text-dimmer); font-size: 15px; line-height: 1; padding: 2px 4px; border-radius: 4px; }
+  .log-tab .close-btn:hover { color: var(--text); background: rgba(255,255,255,.06); }
+  .log-tab.active { color: var(--text); background: var(--panel); border-bottom: 2px solid var(--accent); }
+  .log-tab:hover:not(.active) { color: var(--text); }
+  .log-tab-add { padding: 8px 16px; border-radius: 8px; border: 1px dashed var(--border); font-size: 12.5px; color: var(--text-dim); cursor: pointer; background: transparent; font-family: inherit; }
+  .log-tab-add:hover { border-color: var(--text-dimmer); color: var(--text); }
+  #fileInput { display: none; }
+
+  .drop-note { font-size: 11px; color: var(--text-dimmer); margin: -4px 0 18px; }
+  .drop-note b { color: var(--text-dim); font-weight: 500; }
+
+  .timeline-panel.drag-over { border-color: var(--accent) !important; box-shadow: 0 0 0 1px var(--accent) inset; }
+
+  /* ---- controls ---- */
+  .controls { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 18px; }
+  .job-chips { display: flex; flex-wrap: wrap; gap: 6px; flex: 1 1 420px; }
+  .job-chips .jobchip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px 5px 8px; border-radius: 20px; border: 1px solid var(--border); background: var(--panel-2); font-size: 12px; color: var(--text-dim); cursor: pointer; user-select: none; transition: border-color .15s, color .15s, background .15s; }
+  .job-chips .jobchip .dot { width: 8px; height: 8px; }
+  .job-chips .jobchip.active { color: var(--text); border-color: var(--dotcolor, var(--border)); background: var(--panel-2); }
+  .job-chips .jobchip.off { opacity: .38; }
+  .job-chips .jobchip:hover { border-color: var(--dotcolor, var(--text-dimmer)); }
+
+  .side-controls { display: flex; align-items: center; gap: 16px; flex: 0 0 auto; }
+  .search-box { display: flex; align-items: center; gap: 8px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; }
+  .search-box input { background: transparent; border: none; outline: none; color: var(--text); font-family: inherit; font-size: 13px; width: 150px; }
+  .search-box input::placeholder { color: var(--text-dimmer); }
+  .zoom-box { display: flex; align-items: center; gap: 8px; color: var(--text-dim); font-size: 12px; }
+  .zoom-box input[type="range"] { accent-color: var(--accent); width: 90px; }
+
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 18px; font-size: 11px; color: var(--text-dimmer); }
+  .legend .item { display: flex; align-items: center; gap: 6px; }
+  .legend .bar { width: 14px; height: 3px; border-radius: 2px; }
+
+  /* ---- timeline ---- */
+  .timeline-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 34px; transition: border-color .15s, box-shadow .15s; }
+  .timeline-flex { display: flex; }
+  .lane-labels { flex: 0 0 132px; border-right: 1px solid var(--border); background: var(--panel); position: sticky; left: 0; z-index: 3; }
+  .lane-labels .ruler-spacer { height: 34px; border-bottom: 1px solid var(--border); }
+  .lane-label-row { height: 46px; display: flex; align-items: center; gap: 8px; padding: 0 12px; font-size: 12px; color: var(--text); border-top: 1px solid var(--border-soft); }
+  .lane-label-row .dot { width: 9px; height: 9px; }
+  .lane-label-row.dim { opacity: .3; }
+
+  .scroll-area { flex: 1; overflow-x: auto; overflow-y: hidden; }
+  .scroll-inner { position: relative; }
+
+  .ruler { height: 34px; position: relative; border-bottom: 1px solid var(--border); }
+  .tick { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--border-soft); }
+  .tick.major { border-left: 1px solid var(--border); }
+  .tick .tick-label { position: absolute; top: 6px; left: 5px; font-size: 10px; color: var(--text-dimmer); white-space: nowrap; }
+  .tick.major .tick-label { color: var(--text-dim); }
+
+  .lane-row { height: 46px; position: relative; border-top: 1px solid var(--border-soft); }
+  .lane-row .gridline { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--border-soft); opacity: .5; }
+  .lane-row .gridline.major { opacity: 1; }
+
+  /* ---- boss attack lane ---- */
+  .lane-label-row.boss { color: var(--accent); align-items: flex-start; padding-top: 7px; }
+  .boss-lane { position: relative; border-top: 1px solid var(--border-soft); background: rgba(224,194,60,.04); }
+  .boss-ev { position: absolute; height: 18px; line-height: 18px; padding: 0 6px 0 5px; font-size: 11px; white-space: nowrap; color: var(--text); border-left: 2px solid var(--accent); background: rgba(224,194,60,.16); border-radius: 0 4px 4px 0; cursor: default; }
+  .boss-ev:hover { background: rgba(224,194,60,.32); z-index: 5; }
+  .boss-guides { position: absolute; left: 0; top: 34px; bottom: 0; pointer-events: none; }
+  .boss-guide { position: absolute; top: 0; bottom: 0; border-left: 1px dashed rgba(224,194,60,.38); }
+  .boss-guide.range { border-left: none; background: rgba(224,194,60,.07); }
+
+  /* ---- video sync ---- */
+  .sync-panel { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; margin-bottom: 18px; }
+  @media (max-width: 860px) { .sync-panel { grid-template-columns: 1fr; } }
+  /* 動画とタイムラインが1画面に収まるよう、動画の高さは画面の約6割までに抑える */
+  .video-box { position: relative; aspect-ratio: 16 / 9; width: min(100%, calc(60vh * 16 / 9)); margin: 0 auto; background: #000; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .video-bar { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 10px 0 14px; }
+  .video-bar .lbl { font-size: 11px; color: var(--text-dimmer); }
+  .video-bar .sync-msg { flex: 1 1 200px; }
+  .vol-box { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-dim); }
+  .vol-box input[type="range"] { accent-color: var(--cyan); width: 140px; }
+  .vol-box span { width: 26px; text-align: right; font-variant-numeric: tabular-nums; }
+  .video-box iframe, .video-box #ytPlayer { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .sync-side { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .field-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 12px; color: var(--text-dim); }
+  .txt-in { background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; color: var(--text); font-family: inherit; font-size: 13px; outline: none; min-width: 0; }
+  .txt-in:focus { border-color: var(--text-dimmer); }
+  .txt-in.grow { flex: 1 1 160px; }
+  .txt-in.clock { width: 84px; text-align: center; }
+  select.txt-in { padding: 5px 8px; }
+  .btn { background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; color: var(--text); font-family: inherit; font-size: 12.5px; cursor: pointer; white-space: nowrap; }
+  .btn:hover { border-color: var(--text-dimmer); }
+  .btn.primary { border-color: var(--accent); color: var(--accent); }
+  .btn.small { padding: 4px 8px; font-size: 11.5px; }
+  .clock-row { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .fight-clock { font-family: "Space Grotesk", sans-serif; font-size: 30px; font-weight: 700; line-height: 1; color: var(--cyan); font-variant-numeric: tabular-nums; }
+  .clock-row .lbl { font-size: 11px; color: var(--text-dimmer); }
+  .sync-box { border-top: 1px solid var(--border-soft); border-bottom: 1px solid var(--border-soft); padding: 10px 0; display: flex; flex-direction: column; gap: 8px; }
+  .sync-help { font-size: 11px; color: var(--text-dimmer); line-height: 1.6; }
+  .sync-msg { font-size: 11.5px; color: var(--err); line-height: 1.6; }
+  .sync-msg:empty { display: none; }
+  .upcoming { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .up-col { min-width: 0; }
+  .up-col h3 { font-size: 11px; color: var(--text-dimmer); font-weight: 500; margin-bottom: 6px; }
+  .up-item { display: flex; gap: 8px; align-items: baseline; font-size: 12.5px; padding: 3px 6px; border-radius: 5px; }
+  .up-item .cd { flex: 0 0 40px; text-align: right; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+  .up-item .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .up-item .dot { width: 7px; height: 7px; margin-right: 5px; }
+  .up-item.soon .cd { color: var(--accent); }
+  .up-item.now { background: rgba(79,214,232,.14); color: var(--cyan); }
+  .up-item.now .cd { color: var(--cyan); }
+  .up-empty { font-size: 12px; color: var(--text-dimmer); padding: 3px 6px; }
+  .scroll-inner.seekable { cursor: pointer; }
+  .playhead { position: absolute; top: 0; bottom: 0; width: 0; border-left: 2px solid var(--cyan); z-index: 4; pointer-events: none; display: none; }
+  .playhead::before { content: attr(data-t); position: absolute; top: 0; left: 0; background: var(--cyan); color: #0e1015; font-size: 10px; font-weight: 600; padding: 1px 5px; border-radius: 0 3px 3px 0; white-space: nowrap; }
+
+  /* ---- 最小表示(折りたたみ)レーン ---- */
+  .lane-label-row { cursor: pointer; }
+  .lane-label-row .lane-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lane-label-row.collapsed { font-size: 9.5px; color: var(--text-dimmer); }
+  .lane-label-row.collapsed .dot { width: 6px; height: 6px; }
+  .lane-label-row.boss.collapsed { padding-top: 0; align-items: center; color: var(--text-dimmer); }
+  .lane-btn { background: var(--panel-2); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; color: var(--text-dim); font-family: inherit; font-size: 10px; cursor: pointer; white-space: nowrap; }
+  .lane-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+  .lane-arrow { margin-left: auto; font-size: 10px; color: var(--text-dimmer); }
+  .lane-label-row:hover .lane-arrow { color: var(--cyan); }
+  .lane-label-row.collapsed .lane-arrow { font-size: 8px; }
+  .lane-labels .ruler-spacer { display: flex; align-items: center; padding: 0 12px; }
+  .lane-row.collapsed .mark, .lane-row.collapsed .mark.icon { width: 3px; height: 10px; border-radius: 1px; border: none; box-shadow: none; background-image: none !important; background-color: currentColor !important; }
+  .boss-lane.collapsed { background: transparent; }
+  .boss-lane.collapsed .boss-ev { top: 3px !important; height: 10px; width: 3px; min-width: 0 !important; padding: 0; font-size: 0; border: none; border-radius: 1px; background: var(--accent); }
+
+  .mark { position: absolute; top: 50%; width: 10px; height: 10px; border-radius: 50%; transform: translate(-50%, -50%); cursor: pointer; box-shadow: 0 0 0 2px var(--panel); transition: transform .1s ease, opacity .15s ease, filter .15s ease; }
+  .mark.icon {
+    width: 26px; height: 26px; border-radius: 6px;
+    background-color: var(--panel-2);
+    background-size: cover; background-position: center;
+    border: 2px solid var(--ring, transparent);
+    box-shadow: 0 0 0 1px var(--panel);
+  }
+  .mark:hover, .mark.match { transform: translate(-50%, -50%) scale(1.5); z-index: 5; }
+  .mark.dim { opacity: .15; }
+  .mark.searching.match { filter: drop-shadow(0 0 4px currentColor); }
+
+  .tooltip { position: fixed; pointer-events: none; background: #0e1015; border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; font-size: 12px; color: var(--text); z-index: 50; white-space: nowrap; display: none; box-shadow: 0 6px 18px rgba(0,0,0,.45); }
+  .tooltip .tt-skill { font-family: "Space Grotesk", sans-serif; font-weight: 600; }
+  .tooltip .tt-meta { color: var(--text-dim); margin-top: 2px; font-size: 11px; }
+
+  .tl-hint { font-size: 11px; color: var(--text-dimmer); padding: 10px 16px 14px; border-top: 1px solid var(--border-soft); }
+  .empty-state { padding: 60px 20px; text-align: center; color: var(--text-dimmer); font-size: 13px; }
+
+  /* ---- log table ---- */
+  .log-section h2 { font-size: 16px; font-weight: 600; margin-bottom: 12px; color: var(--text); }
+  details.log-details { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; }
+  details.log-details > summary { cursor: pointer; padding: 14px 16px; font-family: "Space Grotesk", sans-serif; font-size: 14px; font-weight: 600; color: var(--text); list-style: none; }
+  details.log-details > summary::-webkit-details-marker { display: none; }
+  details.log-details > summary::before { content: "▸"; display: inline-block; margin-right: 8px; color: var(--text-dimmer); transition: transform .15s; }
+  details.log-details[open] > summary::before { transform: rotate(90deg); }
+
+  .table-scroll { max-height: 480px; overflow-y: auto; border-top: 1px solid var(--border); }
+  table.log-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  table.log-table th { position: sticky; top: 0; background: var(--panel-2); text-align: left; padding: 8px 14px; color: var(--text-dimmer); font-weight: 500; font-size: 11px; border-bottom: 1px solid var(--border); }
+  table.log-table td { padding: 7px 14px; border-bottom: 1px solid var(--border-soft); color: var(--text); }
+  table.log-table tr:hover td { background: var(--panel-2); }
+  table.log-table .job-cell { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+  table.log-table .job-cell .dot { width: 8px; height: 8px; }
+  table.log-table .t-cell { color: var(--text-dim); white-space: nowrap; }
+
+  footer.note { margin-top: 26px; font-size: 11px; color: var(--text-dimmer); line-height: 1.6; }
+
+  .dot { display: inline-block; border-radius: 50%; flex: 0 0 auto; }
+
+  ::-webkit-scrollbar { height: 10px; width: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #333846; border-radius: 6px; }
+  ::-webkit-scrollbar-thumb:hover { background: #454b5c; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="title-block">
+      <h1>動画同期タイムライン</h1>
+      <p id="subtitle">ログが読み込まれていません</p>
+    </div>
+    <div class="stat-row">
+      <div class="vstat"><div class="num" id="statCount">—</div><div class="lbl">使用数</div></div>
+      <div class="vstat"><div class="num" id="statJobs">—</div><div class="lbl">ジョブ数</div></div>
+      <div class="vstat"><div class="num" id="statDuration">—</div><div class="lbl">戦闘時間</div></div>
+    </div>
+  </header>
+
+  <div class="video-box">
+    <div id="ytPlayer"></div>
+  </div>
+  <div class="video-bar">
+    <div class="fight-clock" id="fightClock">–:––</div>
+    <div class="lbl">戦闘時間</div>
+    <div class="sync-msg" id="syncMsg"></div>
+    <label class="vol-box">音量
+      <input type="range" id="volRange" min="0" max="100" step="1" value="30">
+      <span id="volValue">30</span>
+    </label>
+  </div>
+  <div class="timeline-panel" id="timelinePanel">
+    <div class="empty-state" id="emptyState" hidden>まだログがありません。上の「＋ ログを追加」ボタン、またはこの欄へのドラッグ&amp;ドロップでCSVを読み込んでください。</div>
+    <div class="timeline-flex" id="timelineFlex" hidden>
+      <div class="lane-labels" id="laneLabels"></div>
+      <div class="scroll-area" id="scrollArea">
+        <div class="scroll-inner" id="scrollInner">
+          <div class="ruler" id="ruler"></div>
+          <div class="boss-guides" id="bossGuides"></div>
+          <div class="boss-lane" id="bossLane"></div>
+          <div id="laneRows"></div>
+          <div class="playhead" id="playhead"></div>
+        </div>
+      </div>
+    </div>
+    <div class="tl-hint">タイムラインをクリックするとその時刻へ動画をシーク / 左のジョブ名や「攻撃」の ▼ をクリックで最小表示(もう一度で元に戻す) / ドットにカーソルを合わせると詳細を表示 /ジョブ名クリックで表示切替 / 横スクロールで全体を確認 / CSVをここにドロップして追加</div>
+  </div>
+
+  <div class="sync-panel">
+    <div class="sync-side">
+      <div class="field-row">
+        <input type="text" class="txt-in grow" id="ytUrl" placeholder="YouTubeのURL">
+        <button type="button" class="btn primary" id="ytLoad">読み込む</button>
+      </div>
+      <div class="sync-box">
+        <div class="field-row">
+          <span>今の再生位置 = 戦闘時間</span>
+          <input type="text" class="txt-in clock" id="syncAtInput" value="0:00">
+          <button type="button" class="btn primary" id="syncNowBtn">ここで合わせる</button>
+        </div>
+        <div class="field-row">
+          <span>戦闘0:00 = 動画の</span>
+          <input type="text" class="txt-in clock" id="offsetInput" value="0:00.0">
+          <button type="button" class="btn small" data-nudge="-1">−1s</button>
+          <button type="button" class="btn small" data-nudge="-0.1">−0.1s</button>
+          <button type="button" class="btn small" data-nudge="0.1">+0.1s</button>
+          <button type="button" class="btn small" data-nudge="1">+1s</button>
+        </div>
+        <div class="sync-help">動画を戦闘開始(または時刻の分かる攻撃)の瞬間で止め、その戦闘時間を入れて「ここで合わせる」。ずれは ±ボタンで微調整できます。</div>
+      </div>
+      <div class="field-row">
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="followChk" checked style="accent-color:var(--cyan);">再生に追従</label>
+        <button type="button" class="btn small" id="shareBtn">共有リンクをコピー</button>
+      </div>
+    </div>
+    <div class="sync-side">
+      <div class="field-row">
+        <span>注目ジョブ</span>
+        <select class="txt-in" id="focusJob"></select>
+      </div>
+      <div class="upcoming">
+        <div class="up-col"><h3>ボスの攻撃</h3><div id="upAttacks"></div></div>
+        <div class="up-col"><h3>注目ジョブのスキル</h3><div id="upSkills"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="log-tabs" id="logTabs"></div>
+  <div class="drop-note">CSV(<b>経過時間,ジョブ,スキル</b>。プレイヤー・対象列があっても可)をここに追加すると、タブとして切り替えながら見られます。タイムライン欄へのドラッグ&amp;ドロップにも対応。</div>
+  <input type="file" id="fileInput" accept=".csv,text/csv" multiple>
+
+  <div class="controls">
+    <div class="job-chips" id="jobChips"></div>
+    <div class="side-controls">
+      <div class="search-box">
+        <span style="color:var(--text-dimmer);font-size:12px;">検索</span>
+        <input type="text" id="searchInput" placeholder="スキル名で絞り込み">
+      </div>
+      <div class="zoom-box">
+        <span>拡大</span>
+        <input type="range" id="zoomRange" min="3" max="14" step="1" value="6">
+      </div>
+    </div>
+  </div>
+
+  <div class="legend" id="legend"></div>
+
+  <div class="log-section">
+    <h2>全ログ(時系列)</h2>
+    <details class="log-details">
+      <summary id="logSummary">時系列ログを開く</summary>
+      <div class="table-scroll">
+        <table class="log-table">
+          <thead><tr><th>経過時間</th><th>ジョブ</th><th>スキル</th></tr></thead>
+          <tbody id="logTbody"></tbody>
+        </table>
+      </div>
+    </details>
+  </div>
+
+  <footer class="note">経過時間・ジョブ・スキルの3列からなるログを可視化しています。効果範囲(全体/単体)や重複判定などの追加情報は含まれていません。同じ形式のCSVであれば別ログも追加で読み込めます。<br>スキルアイコンは <code>ff14データ/FFXIVIcons Battle(PvE)/</code> を同じ階層に置いた状態で開くと表示されます(見つからない場合は色ドットにフォールバックします)。</footer>
+</div>
+
+<div class="tooltip" id="tooltip">
+  <div class="tt-skill" id="ttSkill"></div>
+  <div class="tt-meta" id="ttMeta"></div>
+</div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   公開用: ログの埋め込み(複数可)
+   ------------------------------------------------------------
+   「②軽減抽出」でダウンロードしたCSVの中身を、そのままEMBEDDED_LOGSの
+   配列に追加してからこのファイルを公開すると、FF Logsの認証もCSVアップロードも
+   不要で、開いた瞬間にそのログがタブ切り替え可能な状態で表示されます。
+   (中身は既に確定したログデータであり、Client ID/Secretのような
+   秘密情報ではないので、そのまま公開して問題ありません)
+
+   使い方:
+   1. 「②軽減抽出」の「CSVをダウンロード」で保存したファイルをテキストエディタで開く
+   2. 中身を全部コピーして、{ label: "タブに出す名前", csv: `...` } の形で
+      下の配列に追加する(複数追加すればタブとして並びます)
+   3. このファイルを保存してそのまま公開する
+
+   埋め込まない場合は EMBEDDED_LOGS を空配列 [] のままにしておけば、
+   これまで通り「読み込まれていません」の空の状態で起動します。
+   ============================================================ */
+const EMBEDDED_LOGS = [
+  // 動画(39PCCkX6t7c)のログ: FF Logs 89q64QZJ7GN1TxRB fight 1
+  { label: "動画のログ", csv: `経過時間,ジョブ,スキル
+0:01,暗黒騎士,ザ・ブラッケストナイト
+0:02,学者,連環計
+0:02,白魔道士,インドゥルゲンティア
+0:03,白魔道士,神速魔
+0:03,学者,転化
+0:05,白魔道士,ルーシッドドリーム
+0:08,暗黒騎士,ランパート
+0:09,学者,野戦治療の陣
+0:09,暗黒騎士,リプライザル
+0:11,学者,エーテルフロー
+0:11,暗黒騎士,シャドウヴィジル
+0:12,白魔道士,ディヴァインベニゾン
+0:13,暗黒騎士,ダークマインド
+0:14,暗黒騎士,オブレーション
+0:14,白魔道士,アクアヴェール
+0:16,ナイト,インターベンション
+0:16,白魔道士,ディヴァインベニゾン
+0:18,暗黒騎士,ザ・ブラッケストナイト
+0:18,学者,ルーシッドドリーム
+0:21,学者,秘策
+0:21,ナイト,ホーリーシェルトロン
+0:23,学者,生命回生法
+0:25,赤魔道士,ルーシッドドリーム
+0:25,学者,鼓舞激励の策
+0:28,学者,展開戦術
+0:31,白魔道士,テンパランス
+0:32,学者,疾風怒濤の計
+0:36,暗黒騎士,ダークミッショナリー
+0:36,踊り子,シールドサンバ
+0:37,学者,サモン・セラフィム
+0:38,白魔道士,アサイラム
+0:40,学者,コンソレイション
+0:41,白魔道士,ハート・オブ・ラプチャー
+0:42,学者,光の囁き
+0:47,学者,コンソレイション
+0:48,白魔道士,ハート・オブ・ラプチャー
+0:49,学者,不撓不屈の策
+0:50,学者,野戦治療の陣
+0:50,赤魔道士,迅速魔
+0:52,白魔道士,ディヴァインカレス
+0:54,ナイト,ディヴァインベール
+0:56,ナイト,ランパート
+0:57,ナイト,リプライザル
+0:59,赤魔道士,アドル
+1:00,侍,フェイント
+1:01,暗黒騎士,オブレーション
+1:02,白魔道士,インドゥルゲンティア
+1:03,暗黒騎士,ザ・ブラッケストナイト
+1:05,白魔道士,ハート・オブ・ラプチャー
+1:07,白魔道士,ディヴァインベニゾン
+1:07,ナイト,ホーリーシェルトロン
+1:09,白魔道士,ルーシッドドリーム
+1:11,学者,意気軒昂の策
+1:12,ナイト,ホーリーシェルトロン
+1:12,学者,エーテルフロー
+1:22,学者,野戦治療の陣
+1:24,学者,ルーシッドドリーム
+1:25,白魔道士,シンエアー
+1:25,赤魔道士,ルーシッドドリーム
+1:26,暗黒騎士,リプライザル
+1:27,白魔道士,メディガ
+1:28,白魔道士,リタージー・オブ・ベル
+1:29,学者,フェイブレッシング
+1:36,ナイト,ホリーグラウンド
+1:36,学者,深謀遠慮の策
+1:43,暗黒騎士,ザ・ブラッケストナイト
+1:43,学者,意気軒昂の策
+1:44,暗黒騎士,オブレーション
+1:46,学者,フェイイルミネーション
+1:48,学者,光の囁き
+1:48,白魔道士,ハート・オブ・ラプチャー
+1:48,学者,セラフィズム
+1:52,学者,アクセッション
+1:56,赤魔道士,マギックバリア
+1:56,ナイト,インターベンション
+1:56,学者,野戦治療の陣
+2:01,学者,アクセッション
+2:02,白魔道士,ハート・オブ・ラプチャー
+2:02,暗黒騎士,ザ・ブラッケストナイト
+2:02,学者,連環計
+2:03,白魔道士,インドゥルゲンティア
+2:03,白魔道士,神速魔
+2:05,学者,アクセッション
+2:06,白魔道士,ハート・オブ・ラプチャー
+2:06,ナイト,リプライザル
+2:09,踊り子,シールドサンバ
+2:09,白魔道士,ルーシッドドリーム
+2:09,リーパー,フェイント
+2:11,暗黒騎士,ダークミッショナリー
+2:12,リーパー,アルケインクレスト
+2:12,学者,エーテルフロー
+2:14,暗黒騎士,リビングデッド
+2:17,学者,エーテルパクト
+2:22,学者,秘策
+2:22,白魔道士,ベネディクション
+2:24,学者,ルーシッドドリーム
+2:26,赤魔道士,ルーシッドドリーム
+2:26,学者,意気軒昂の策
+2:29,学者,フェイユニオン解除
+2:44,白魔道士,テンパランス
+2:46,学者,野戦治療の陣
+2:49,ナイト,インターベンション
+2:49,学者,フェイブレッシング
+2:49,白魔道士,ハート・オブ・ラプチャー
+2:52,白魔道士,リジェネ
+2:52,暗黒騎士,リプライザル
+2:52,学者,光の囁き
+3:01,白魔道士,ディヴァインカレス
+3:02,学者,疾風怒濤の計
+3:02,学者,不撓不屈の策
+3:09,白魔道士,ルーシッドドリーム
+3:12,白魔道士,ハート・オブ・ラプチャー
+3:13,学者,エーテルフロー
+3:19,白魔道士,ハート・オブ・ラプチャー
+3:20,学者,鼓舞激励の策
+3:21,学者,深謀遠慮の策
+3:23,白魔道士,リジェネ
+3:24,学者,鼓舞激励の策
+3:25,白魔道士,リジェネ
+3:30,学者,転化
+3:32,暗黒騎士,ランパート
+3:33,暗黒騎士,シャドウヴィジル
+3:33,白魔道士,ディヴァインベニゾン
+3:33,ナイト,ランパート
+3:34,暗黒騎士,ダークマインド
+3:35,赤魔道士,ルーシッドドリーム
+3:35,白魔道士,ディヴァインベニゾン
+3:35,暗黒騎士,オブレーション
+3:37,暗黒騎士,ザ・ブラッケストナイト
+3:37,白魔道士,アクアヴェール
+3:37,侍,フェイント
+3:37,学者,生命回生法
+3:38,暗黒騎士,オブレーション
+3:38,ナイト,インターベンション
+3:40,ナイト,ディヴァインベール
+3:40,学者,秘策
+3:40,ナイト,ホーリーシェルトロン
+3:42,学者,野戦治療の陣
+3:44,白魔道士,テトラグラマトン
+3:45,学者,鼓舞激励の策
+3:47,学者,展開戦術
+3:50,学者,ルーシッドドリーム
+3:50,ナイト,リプライザル
+3:50,暗黒騎士,ダークミッショナリー
+3:51,ナイト,パッセージオブアームズ
+3:52,リーパー,アルケインクレスト
+3:52,踊り子,シールドサンバ
+3:52,暗黒騎士,ザ・ブラッケストナイト
+3:52,赤魔道士,アドル
+3:53,赤魔道士,迅速魔
+3:56,白魔道士,シンエアー
+3:58,白魔道士,メディガ
+3:59,学者,意気軒昂の策
+4:02,学者,連環計
+4:03,学者,サモン・セラフィム
+4:05,白魔道士,神速魔
+4:05,暗黒騎士,リプライザル
+4:07,暗黒騎士,ザ・ブラッケストナイト
+4:09,白魔道士,アサイラム
+4:10,学者,コンソレイション
+4:11,白魔道士,ルーシッドドリーム
+4:12,学者,意気軒昂の策
+4:14,学者,エーテルフロー
+4:15,学者,野戦治療の陣
+4:16,白魔道士,インドゥルゲンティア
+4:20,学者,コンソレイション
+4:21,白魔道士,ハート・オブ・ラプチャー
+4:21,学者,光の囁き
+4:25,学者,意気軒昂の策
+4:28,学者,フェイイルミネーション
+4:29,白魔道士,リタージー・オブ・ベル
+4:32,学者,意気軒昂の策
+4:33,白魔道士,ハート・オブ・ラプチャー
+4:39,赤魔道士,マギックバリア
+4:42,白魔道士,ハート・オブ・ラプチャー
+4:42,学者,フェイブレッシング
+4:43,赤魔道士,ルーシッドドリーム
+4:47,学者,意気軒昂の策
+4:49,学者,野戦治療の陣
+4:51,白魔道士,テンパランス
+4:52,学者,セラフィズム
+4:53,白魔道士,ハート・オブ・ラプチャー
+4:53,学者,アクセッション
+4:54,学者,ルーシッドドリーム
+4:56,ナイト,リプライザル
+5:02,学者,疾風怒濤の計
+5:04,学者,アクセッション
+5:12,白魔道士,ルーシッドドリーム
+5:13,白魔道士,ディヴァインカレス
+5:14,学者,不撓不屈の策
+5:14,白魔道士,ハート・オブ・ラプチャー
+5:16,学者,意気軒昂の策
+5:18,学者,エーテルフロー
+5:19,学者,野戦治療の陣
+5:23,赤魔道士,迅速魔
+5:24,学者,秘策
+5:27,学者,迅速魔
+5:28,学者,鼓舞激励の策
+5:29,学者,展開戦術
+5:32,学者,深謀遠慮の策
+5:32,ナイト,ディヴァインベール
+5:33,踊り子,シールドサンバ
+5:35,赤魔道士,アドル
+5:38,白魔道士,インドゥルゲンティア
+5:38,リーパー,フェイント
+5:38,暗黒騎士,リプライザル
+5:40,暗黒騎士,ダークミッショナリー
+5:42,暗黒騎士,ザ・ブラッケストナイト
+5:43,白魔道士,ハート・オブ・ラプチャー
+5:44,学者,光の囁き
+5:45,赤魔道士,ルーシッドドリーム
+5:54,学者,エーテルパクト
+5:56,学者,ルーシッドドリーム
+6:03,ナイト,ランパート
+6:03,学者,連環計
+6:05,白魔道士,神速魔
+6:05,暗黒騎士,ランパート
+6:06,暗黒騎士,シャドウヴィジル
+6:08,暗黒騎士,ダークマインド
+6:08,学者,野戦治療の陣
+6:09,暗黒騎士,オブレーション
+6:10,暗黒騎士,オブレーション
+6:11,白魔道士,ディヴァインベニゾン
+6:12,白魔道士,アクアヴェール
+6:12,ナイト,リプライザル
+6:13,暗黒騎士,ザ・ブラッケストナイト
+6:13,侍,フェイント
+6:14,学者,生命回生法
+6:14,白魔道士,ディヴァインベニゾン
+6:14,ナイト,インターベンション
+6:15,白魔道士,ルーシッドドリーム
+6:16,学者,鼓舞激励の策
+6:17,ナイト,ホーリーシェルトロン
+6:18,学者,エーテルフロー
+6:19,学者,フェイユニオン解除
+6:23,白魔道士,ハート・オブ・ラプチャー
+6:25,白魔道士,ハート・オブ・ラプチャー
+6:28,白魔道士,ハート・オブ・ラプチャー
+7:01,白魔道士,リジェネ
+7:03,学者,鼓舞激励の策
+7:04,白魔道士,リジェネ
+7:04,学者,深謀遠慮の策
+7:06,学者,鼓舞激励の策
+7:09,白魔道士,テンパランス
+7:10,暗黒騎士,リプライザル
+7:12,白魔道士,ディヴァインベニゾン
+7:13,暗黒騎士,ザ・ブラッケストナイト
+7:14,白魔道士,ディヴァインベニゾン
+7:15,学者,野戦治療の陣
+7:16,白魔道士,ルーシッドドリーム
+7:16,赤魔道士,ルーシッドドリーム
+7:17,学者,ルーシッドドリーム
+7:20,学者,エーテルフロー
+7:27,暗黒騎士,ダークミッショナリー
+7:27,学者,秘策
+7:28,白魔道士,インドゥルゲンティア
+7:28,リーパー,フェイント
+7:29,暗黒騎士,ザ・ブラッケストナイト
+7:29,学者,生命回生法
+7:32,学者,鼓舞激励の策
+7:33,白魔道士,ハート・オブ・ラプチャー
+7:34,白魔道士,ディヴァインカレス
+7:34,学者,展開戦術
+7:36,白魔道士,リジェネ
+7:37,学者,光の囁き
+7:37,ナイト,ホーリーシェルトロン
+7:40,白魔道士,リジェネ
+7:42,ナイト,リプライザル
+7:44,白魔道士,アサイラム
+7:46,学者,野戦治療の陣
+7:46,暗黒騎士,ザ・ブラッケストナイト
+7:49,学者,深謀遠慮の策
+7:52,ナイト,ディヴァインベール
+7:54,白魔道士,ハート・オブ・ラプチャー
+7:56,暗黒騎士,リビングデッド
+7:56,学者,迅速魔
+7:58,学者,サモン・セラフィム
+8:03,白魔道士,ベネディクション
+8:04,学者,連環計
+8:05,白魔道士,神速魔
+8:06,暗黒騎士,ザ・ブラッケストナイト
+8:06,学者,意気軒昂の策
+8:07,学者,コンソレイション
+8:11,暗黒騎士,リプライザル
+8:12,学者,フェイイルミネーション
+8:14,ナイト,インターベンション
+8:16,赤魔道士,ルーシッドドリーム
+8:17,白魔道士,ルーシッドドリーム
+8:17,学者,コンソレイション
+8:18,学者,生命活性法
+8:19,白魔道士,テトラグラマトン
+8:20,学者,エーテルフロー
+8:20,白魔道士,ハート・オブ・ラプチャー
+8:20,学者,ルーシッドドリーム
+8:25,学者,セラフィズム
+8:26,学者,アクセッション
+8:27,学者,野戦治療の陣
+8:31,踊り子,シールドサンバ
+8:31,学者,アクセッション
+8:32,赤魔道士,マギックバリア
+8:32,白魔道士,インドゥルゲンティア
+8:35,白魔道士,メディガ
+8:36,学者,疾風怒濤の計
+8:37,リーパー,アルケインクレスト
+8:37,白魔道士,リタージー・オブ・ベル
+8:38,学者,深謀遠慮の策
+8:40,学者,フェイブレッシング
+8:41,学者,光の囁き
+8:42,白魔道士,リジェネ
+8:42,学者,アクセッション
+8:44,白魔道士,リジェネ
+8:49,暗黒騎士,ダークマインド
+8:49,暗黒騎士,オブレーション
+8:53,学者,生命活性法
+8:53,白魔道士,ケアル
+8:54,暗黒騎士,ザ・ブラッケストナイト
+8:54,学者,転化
+8:54,ナイト,リプライザル
+8:54,白魔道士,ディヴァインベニゾン
+8:55,赤魔道士,アドル
+8:56,学者,生命回生法
+8:56,白魔道士,ケアル
+8:56,暗黒騎士,ランパート
+8:56,白魔道士,ディヴァインベニゾン
+8:57,侍,フェイント
+8:57,白魔道士,アクアヴェール
+8:58,ナイト,ランパート
+8:59,学者,鼓舞激励の策
+8:59,ナイト,ホーリーシェルトロン
+9:01,学者,秘策
+9:02,白魔道士,ハート・オブ・ラプチャー
+9:04,学者,迅速魔
+9:04,学者,鼓舞激励の策
+9:05,学者,展開戦術
+9:08,暗黒騎士,シャドウヴィジル
+9:11,暗黒騎士,ザ・ブラッケストナイト
+9:11,暗黒騎士,リプライザル
+9:13,暗黒騎士,オブレーション
+9:16,ナイト,ホーリーシェルトロン
+9:16,暗黒騎士,ダークミッショナリー
+9:18,学者,鼓舞激励の策
+9:18,白魔道士,テンパランス
+9:18,リーパー,フェイント
+9:19,白魔道士,ルーシッドドリーム
+9:19,白魔道士,シンエアー
+9:20,赤魔道士,ルーシッドドリーム
+9:20,学者,鼓舞激励の策
+9:21,白魔道士,メディガ
+9:22,学者,野戦治療の陣
+9:23,白魔道士,メディカ
+9:24,白魔道士,テトラグラマトン
+9:25,学者,フィジク
+9:26,白魔道士,ケアル
+9:26,学者,生命活性法
+9:26,暗黒騎士,ザ・ブラッケストナイト
+9:29,学者,意気軒昂の策
+9:31,学者,不撓不屈の策
+9:32,学者,エーテルフロー
+9:32,ナイト,ディヴァインベール
+9:32,白魔道士,ディヴァインカレス
+9:33,白魔道士,インドゥルゲンティア
+9:33,学者,ルーシッドドリーム
+9:34,学者,深謀遠慮の策
+9:39,白魔道士,ハート・オブ・ラプチャー
+9:44,学者,意気軒昂の策
+9:46,学者,エーテルパクト
+9:53,ナイト,ホリーグラウンド
+9:54,学者,野戦治療の陣
+9:58,学者,意気軒昂の策
+9:59,白魔道士,リジェネ
+10:00,学者,サモン・セラフィム
+10:02,白魔道士,リジェネ
+10:03,暗黒騎士,ザ・ブラッケストナイト
+10:04,踊り子,シールドサンバ
+10:05,白魔道士,アサイラム
+10:05,学者,連環計
+10:06,白魔道士,神速魔
+10:09,学者,コンソレイション
+10:15,白魔道士,ハート・オブ・ラプチャー
+10:16,学者,光の囁き
+10:17,学者,コンソレイション
+10:19,学者,意気軒昂の策
+10:20,白魔道士,ケアルラ
+10:20,赤魔道士,ルーシッドドリーム
+10:20,白魔道士,ルーシッドドリーム
+10:21,学者,フィジク
+10:22,学者,フェイイルミネーション
+10:22,白魔道士,ケアルラ
+10:23,学者,フェイイルミネーション
+10:24,学者,フィジク
+10:25,白魔道士,テトラグラマトン
+10:25,学者,野戦治療の陣
+10:27,白魔道士,ケアルラ
+10:28,暗黒騎士,ランパート
+10:29,暗黒騎士,ダークマインド
+10:30,ナイト,ランパート
+10:30,学者,生命回生法
+10:31,暗黒騎士,オブレーション
+10:32,学者,エーテルフロー
+10:33,白魔道士,ディヴァインベニゾン
+10:33,暗黒騎士,リプライザル
+10:34,学者,鼓舞激励の策
+10:35,ナイト,リプライザル
+10:36,白魔道士,アクアヴェール
+10:36,学者,鼓舞激励の策
+10:38,白魔道士,ディヴァインベニゾン
+10:38,学者,深謀遠慮の策
+10:39,白魔道士,ハート・オブ・ラプチャー
+10:39,ナイト,ホーリーシェルトロン
+10:39,学者,ルーシッドドリーム
+10:42,学者,エーテルパクト
+10:44,学者,意気軒昂の策
+10:46,暗黒騎士,ダークミッショナリー
+10:53,ナイト,ホーリーシェルトロン
+10:54,学者,フィジク
+10:54,白魔道士,ケアルラ
+10:56,学者,意気軒昂の策
+10:57,白魔道士,テトラグラマトン
+10:58,学者,フィジク
+10:59,学者,野戦治療の陣
+10:59,白魔道士,ケアルラ
+11:02,白魔道士,ケアルラ
+11:02,学者,秘策
+11:03,赤魔道士,迅速魔
+11:04,白魔道士,シンエアー
+11:04,学者,フェイブレッシング
+11:04,学者,不撓不屈の策
+11:06,白魔道士,メディガ
+11:07,学者,意気軒昂の策
+11:07,白魔道士,ハート・オブ・ソラス
+11:08,学者,疾風怒濤の計
+11:11,暗黒騎士,ザ・ブラッケストナイト
+11:18,学者,光の囁き
+11:18,白魔道士,ハート・オブ・ラプチャー
+11:20,白魔道士,シンエアー
+11:21,学者,意気軒昂の策
+11:22,白魔道士,メディガ
+11:23,白魔道士,リジェネ
+11:26,白魔道士,リジェネ
+11:26,学者,深謀遠慮の策
+11:26,暗黒騎士,シャドウヴィジル
+11:29,学者,セラフィズム
+11:32,白魔道士,テトラグラマトン
+11:33,学者,エーテルフロー
+11:33,白魔道士,ルーシッドドリーム
+11:33,ナイト,ディヴァインベール
+11:36,赤魔道士,ルーシッドドリーム
+11:36,白魔道士,メディガ
+11:36,学者,アクセッション
+11:38,学者,野戦治療の陣
+11:39,ナイト,リプライザル
+11:41,学者,ルーシッドドリーム
+11:41,白魔道士,インドゥルゲンティア
+11:44,学者,アクセッション
+11:44,白魔道士,ハート・オブ・ラプチャー
+11:45,赤魔道士,迅速魔
+11:46,学者,不撓不屈の策
+11:47,学者,アクセッション
+11:47,白魔道士,ハート・オブ・ラプチャー
+11:54,白魔道士,ハート・オブ・ラプチャー
+11:56,白魔道士,リジェネ
+11:58,白魔道士,リジェネ
+12:03,学者,生命活性法
+12:05,暗黒騎士,ザ・ブラッケストナイト
+12:06,学者,転化
+12:07,白魔道士,神速魔
+12:08,学者,秘策
+12:10,白魔道士,メディガ
+12:11,学者,生命回生法
+12:13,学者,鼓舞激励の策
+12:15,学者,連環計
+12:17,学者,展開戦術
+12:26,暗黒騎士,ランパート
+12:28,暗黒騎士,オブレーション
+12:33,学者,野戦治療の陣
+12:34,暗黒騎士,リプライザル
+12:35,白魔道士,テンパランス
+12:35,学者,エーテルフロー
+12:36,白魔道士,アサイラム
+12:36,白魔道士,ルーシッドドリーム
+12:37,赤魔道士,マギックバリア
+12:39,白魔道士,シンエアー
+12:40,学者,フェイイルミネーション
+12:41,白魔道士,メディガ
+12:42,学者,意気軒昂の策
+12:42,赤魔道士,ルーシッドドリーム
+12:43,学者,サモン・セラフィム
+12:45,学者,ルーシッドドリーム
+12:45,学者,不撓不屈の策
+12:46,学者,コンソレイション
+12:48,学者,意気軒昂の策
+12:49,学者,光の囁き
+12:51,白魔道士,ディヴァインカレス
+12:56,学者,意気軒昂の策
+12:57,学者,コンソレイション
+12:57,踊り子,シールドサンバ
+12:57,暗黒騎士,ダークマインド
+12:58,暗黒騎士,オブレーション
+13:01,白魔道士,ハート・オブ・ラプチャー
+13:02,学者,意気軒昂の策
+13:03,学者,野戦治療の陣
+13:04,白魔道士,シンエアー
+13:06,白魔道士,メディガ
+13:11,学者,意気軒昂の策
+13:12,白魔道士,ハート・オブ・ラプチャー
+13:13,白魔道士,リタージー・オブ・ベル
+13:17,学者,疾風怒濤の計
+13:18,白魔道士,インドゥルゲンティア
+13:23,白魔道士,ハート・オブ・ラプチャー
+13:34,白魔道士,ハート・オブ・ラプチャー
+13:37,学者,エーテルフロー
+13:37,白魔道士,メディガ
+13:41,学者,秘策
+13:43,暗黒騎士,リプライザル
+13:43,赤魔道士,アドル
+13:44,学者,意気軒昂の策
+13:44,ナイト,ディヴァインベール
+13:45,学者,野戦治療の陣
+13:46,白魔道士,ハート・オブ・ラプチャー
+13:47,赤魔道士,ルーシッドドリーム
+13:47,白魔道士,迅速魔
+13:48,学者,迅速魔
+13:48,白魔道士,メディガ
+13:49,白魔道士,ルーシッドドリーム
+13:50,学者,意気軒昂の策
+13:51,学者,不撓不屈の策
+14:01,白魔道士,メディガ
+14:09,白魔道士,神速魔
+14:09,学者,ルーシッドドリーム
+14:12,リーパー,アルケインクレスト
+14:13,暗黒騎士,ザ・ブラッケストナイト
+14:15,学者,連環計
+14:16,白魔道士,ハート・オブ・ラプチャー
+14:20,学者,野戦治療の陣
+14:21,ナイト,リプライザル
+14:22,学者,意気軒昂の策
+14:24,ナイト,パッセージオブアームズ
+14:26,白魔道士,シンエアー
+14:28,白魔道士,メディガ
+14:29,白魔道士,ハート・オブ・ラプチャー
+14:37,学者,エーテルフロー
+14:47,学者,秘策
+14:54,学者,意気軒昂の策
+14:54,暗黒騎士,ダークミッショナリー
+14:55,踊り子,シールドサンバ
+15:00,白魔道士,ルーシッドドリーム
+15:02,学者,野戦治療の陣
+15:03,暗黒騎士,リプライザル
+15:03,侍,フェイント
+15:04,暗黒騎士,シャドウヴィジル
+15:04,白魔道士,テンパランス
+15:04,リーパー,アルケインクレスト
+15:05,学者,光の囁き
+15:05,赤魔道士,マギックバリア
+15:05,白魔道士,インドゥルゲンティア
+15:07,学者,意気軒昂の策
+15:07,白魔道士,メディガ
+15:09,暗黒騎士,オブレーション
+15:10,学者,意気軒昂の策
+15:11,赤魔道士,ルーシッドドリーム
+15:12,暗黒騎士,ザ・ブラッケストナイト
+15:12,学者,ルーシッドドリーム
+15:14,白魔道士,ディヴァインベニゾン
+15:14,ナイト,ホーリーシェルトロン
+15:15,学者,フェイイルミネーション
+15:19,学者,意気軒昂の策
+15:19,白魔道士,ハート・オブ・ラプチャー
+15:21,学者,疾風怒濤の計
+15:23,ナイト,リプライザル
+15:24,学者,フェイブレッシング
+15:24,白魔道士,ハート・オブ・ラプチャー
+15:26,学者,不撓不屈の策
+15:29,学者,意気軒昂の策
+15:29,白魔道士,ディヴァインカレス
+15:30,白魔道士,アサイラム
+15:31,学者,生命回生法
+15:32,学者,野戦治療の陣
+15:32,ナイト,ランパート
+15:32,白魔道士,アクアヴェール
+15:34,学者,鼓舞激励の策
+15:34,暗黒騎士,ダークマインド
+15:35,ナイト,ホーリーシェルトロン
+15:35,暗黒騎士,ランパート
+15:36,リーパー,アルケインクレスト
+15:37,学者,エーテルフロー
+15:38,暗黒騎士,ザ・ブラッケストナイト
+15:40,学者,深謀遠慮の策
+15:42,暗黒騎士,リビングデッド
+15:48,学者,意気軒昂の策
+15:49,学者,エーテルパクト
+15:52,学者,意気軒昂の策
+15:52,白魔道士,ベネディクション
+15:53,学者,サモン・セラフィム
+15:54,学者,秘策
+15:54,白魔道士,シンエアー
+15:56,ナイト,ディヴァインベール
+15:57,白魔道士,メディガ
+15:57,学者,鼓舞激励の策
+15:59,学者,展開戦術
+16:00,学者,コンソレイション
+16:07,白魔道士,ルーシッドドリーム
+16:08,学者,コンソレイション
+16:08,白魔道士,ハート・オブ・ラプチャー
+16:09,学者,光の囁き
+16:11,白魔道士,シンエアー
+16:12,暗黒騎士,ザ・ブラッケストナイト
+16:12,赤魔道士,迅速魔
+16:12,白魔道士,メディガ
+16:15,学者,迅速魔
+16:16,学者,意気軒昂の策
+16:18,学者,野戦治療の陣
+16:19,白魔道士,ハート・オブ・ラプチャー
+16:20,学者,連環計
+16:21,白魔道士,神速魔
+16:24,学者,意気軒昂の策
+16:24,リーパー,フェイント
+16:25,暗黒騎士,ダークミッショナリー
+16:25,白魔道士,インドゥルゲンティア
+16:25,踊り子,シールドサンバ
+16:25,学者,ルーシッドドリーム
+16:25,赤魔道士,アドル
+16:26,ナイト,リプライザル
+16:27,白魔道士,メディガ
+16:27,リーパー,アルケインクレスト
+16:28,学者,意気軒昂の策
+16:29,白魔道士,ハート・オブ・ラプチャー
+16:29,学者,フェイブレッシング
+16:30,暗黒騎士,オブレーション
+16:31,ナイト,ホーリーシェルトロン
+16:32,白魔道士,ディヴァインベニゾン
+16:32,学者,意気軒昂の策
+16:34,暗黒騎士,ザ・ブラッケストナイト
+16:34,白魔道士,ディヴァインベニゾン
+16:35,赤魔道士,ルーシッドドリーム
+16:39,学者,意気軒昂の策
+16:41,学者,エーテルフロー
+16:59,学者,野戦治療の陣
+17:01,学者,深謀遠慮の策
+17:03,白魔道士,ハート・オブ・ラプチャー
+17:04,学者,転化
+17:05,ナイト,ランパート
+17:06,学者,意気軒昂の策
+17:06,ナイト,ホーリーシェルトロン
+17:07,白魔道士,アクアヴェール
+17:07,学者,生命活性法
+17:07,暗黒騎士,ダークマインド
+17:08,暗黒騎士,ランパート
+17:08,白魔道士,ハート・オブ・ラプチャー
+17:08,学者,生命回生法
+17:10,暗黒騎士,ザ・ブラッケストナイト
+17:11,学者,鼓舞激励の策
+17:12,リーパー,アルケインクレスト
+17:12,ナイト,ホーリーシェルトロン
+17:14,ナイト,ホリーグラウンド
+17:14,白魔道士,ルーシッドドリーム
+17:14,暗黒騎士,シャドウヴィジル
+17:17,学者,意気軒昂の策
+17:18,白魔道士,テトラグラマトン
+17:19,白魔道士,ディヴァインベニゾン
+17:21,暗黒騎士,オブレーション
+17:21,侍,フェイント
+17:21,白魔道士,シンエアー
+17:22,学者,意気軒昂の策
+17:23,白魔道士,メディガ
+17:25,暗黒騎士,ザ・ブラッケストナイト
+17:26,学者,ルーシッドドリーム
+17:27,学者,秘策
+17:27,白魔道士,ハート・オブ・ラプチャー
+17:29,学者,鼓舞激励の策
+17:30,白魔道士,テンパランス
+17:31,学者,展開戦術
+17:31,白魔道士,アサイラム
+17:32,白魔道士,リタージー・オブ・ベル
+17:33,学者,疾風怒濤の計
+17:34,暗黒騎士,リプライザル
+17:34,ナイト,パッセージオブアームズ
+17:34,学者,野戦治療の陣
+17:35,白魔道士,インドゥルゲンティア
+17:36,学者,フェイイルミネーション
+17:38,学者,意気軒昂の策
+17:39,赤魔道士,迅速魔
+17:39,学者,光の囁き
+17:42,学者,セラフィズム
+17:43,学者,アクセッション
+17:43,学者,エーテルフロー
+17:44,白魔道士,メディガ
+17:44,学者,不撓不屈の策
+17:45,学者,アクセッション
+17:47,白魔道士,ハート・オブ・ラプチャー
+17:48,学者,アクセッション
+17:48,赤魔道士,マギックバリア
+17:49,学者,フェイブレッシング
+17:52,ナイト,リプライザル
+17:53,ナイト,ディヴァインベール
+17:53,学者,アクセッション
+17:53,学者,サモン・セラフィム
+17:55,赤魔道士,ルーシッドドリーム
+17:55,学者,アクセッション
+17:56,白魔道士,ディヴァインカレス
+17:57,暗黒騎士,ダークミッショナリー
+17:57,踊り子,シールドサンバ
+17:58,赤魔道士,アドル
+18:00,白魔道士,メディガ
+18:00,学者,アクセッション
+18:01,学者,コンソレイション
+18:03,学者,アクセッション
+18:03,リーパー,フェイント
+18:03,白魔道士,ハート・オブ・ラプチャー
+18:04,学者,コンソレイション
+18:07,学者,野戦治療の陣
+18:13,白魔道士,ハート・オブ・ラプチャー
+18:16,白魔道士,ルーシッドドリーム
+18:20,学者,連環計
+18:21,白魔道士,神速魔
+18:27,学者,ルーシッドドリーム` },
+];
+
+/* ============================================================
+   公開用: ログの外部読み込み(Googleスプレッドシート)
+   ------------------------------------------------------------
+   EMBEDDED_LOGSと違い、CSVの中身をこのファイルに書き込まない代わりに、
+   起動時にここに書いたURLへfetch()しに行きます。ファイルサイズを増やさずに
+   ログを差し替えられます(その代わりネット接続が必要)。
+
+   sheetId はGoogleスプレッドシートのURL中の /d/<ここ>/edit の部分、
+   gid は各シートのURL末尾の #gid=<ここ> の部分。
+   スプレッドシートの共有設定が「リンクを知っている全員が閲覧可」になっている必要があります。
+   (file://で直接開いてもCORSに引っかからないよう、fetchではなくGoogle Visualization API の
+   JSONP形式(<script>タグ経由)で読み込んでいます)
+   ============================================================ */
+const EMBEDDED_SHEET_ID = "1sFg2F8HpQVn7zX17yfMEWs6_dbOFHblE-yXw8ENTLuk";
+const EMBEDDED_LOG_SOURCES = [];
+
+/* ============================================================
+   ボスの攻撃タイムライン
+   ------------------------------------------------------------
+   t は経過時間(分:秒)。end を書くと t〜end の範囲として帯で表示されます。
+   タイムライン最上段の「攻撃」レーンと、各ジョブのレーンを貫く縦のガイド線に使われます。
+   ============================================================ */
+const BOSS_TIMELINE = [
+  { t: "15:00", label: "P5スタート" },
+  { t: "15:07", label: "連続アルテマ" },
+  { t: "15:12", end: "15:18", label: "AA3" },
+  { t: "15:25", label: "フラッド" },
+  { t: "15:37", label: "狂気のオーケストラ" },
+  { t: "15:39", label: "狂気のオーケストラ着弾①" },
+  { t: "15:41", label: "狂気のオーケストラ着弾②" },
+  { t: "15:48", end: "15:51", label: "AA2(ロール頭割り)" },
+  { t: "15:58", label: "スリースターズ" },
+  { t: "16:07", label: "2択のカタストロフ" },
+  { t: "16:08", label: "2択のカタストロフ着弾①" },
+  { t: "16:14", label: "2択のカタストロフ着弾②" },
+  { t: "16:20", label: "2択のカタストロフ着弾③" },
+  { t: "16:29", label: "連続アルテマ" },
+  { t: "16:34", end: "16:37", label: "AA2(ロール頭割り)" },
+  { t: "16:41", label: "混沌の終末(エクサ)" },
+  { t: "16:59", label: "混沌の渦" },
+  { t: "17:09", label: "狂気のオーケストラ" },
+  { t: "17:11", label: "狂気のオーケストラ 着弾①" },
+  { t: "17:13", label: "狂気のオーケストラ 着弾②" },
+  { t: "17:16", label: "デバフ発動" },
+  { t: "17:22", end: "17:28", label: "AA3 (ロール頭割り)" },
+  { t: "17:37", label: "ミッシング" },
+  { t: "17:45", label: "頭割り" },
+  { t: "17:52", label: "頭割り" },
+  { t: "18:00", label: "頭割り" },
+  { t: "18:08", label: "頭割り" },
+  { t: "18:13", label: "ミッシングゼロ詠唱開始" },
+  { t: "18:38", label: "時間切れ" },
+];
+
+/* ============================================================
+   ジョブマスタ
+   ============================================================ */
+const FF_JOBS = [
+  { key:"paladin",     ja:"ナイト",         role:"tank",  fineRole:"tank",         color:"#5B8DEF" },
+  { key:"warrior",     ja:"戦士",           role:"tank",  fineRole:"tank",         color:"#4A7FD6" },
+  { key:"darkknight",  ja:"暗黒騎士",       role:"tank",  fineRole:"tank",         color:"#7C6FE0" },
+  { key:"gunbreaker",  ja:"ガンブレイカー", role:"tank",  fineRole:"tank",         color:"#4AA8D6" },
+
+  { key:"whitemage",   ja:"白魔道士",       role:"healer",fineRole:"healer",       color:"#4FC38A" },
+  { key:"scholar",     ja:"学者",           role:"healer",fineRole:"healer",       color:"#2E9E86" },
+  { key:"astrologian", ja:"占星術師",       role:"healer",fineRole:"healer",       color:"#57C3B0" },
+  { key:"sage",        ja:"賢者",           role:"healer",fineRole:"healer",       color:"#3FAE6E" },
+
+  { key:"monk",        ja:"モンク",         role:"dps",   fineRole:"melee",        color:"#E1615F" },
+  { key:"dragoon",     ja:"竜騎士",         role:"dps",   fineRole:"melee",        color:"#D9574F" },
+  { key:"ninja",       ja:"忍者",           role:"dps",   fineRole:"melee",        color:"#C9484A" },
+  { key:"samurai",     ja:"侍",             role:"dps",   fineRole:"melee",        color:"#E0763C" },
+  { key:"reaper",      ja:"リーパー",       role:"dps",   fineRole:"melee",        color:"#B94A6E" },
+  { key:"viper",       ja:"ヴァイパー",     role:"dps",   fineRole:"melee",        color:"#E08A3C" },
+
+  { key:"bard",        ja:"詩人",           role:"dps",   fineRole:"phys_ranged",  color:"#E0C23C" },
+  { key:"machinist",   ja:"機工士",         role:"dps",   fineRole:"phys_ranged",  color:"#D9A62E" },
+  { key:"dancer",      ja:"踊り子",         role:"dps",   fineRole:"phys_ranged",  color:"#E0D23C" },
+
+  { key:"blackmage",   ja:"黒魔道士",       role:"dps",   fineRole:"magic_ranged", color:"#A855C9" },
+  { key:"summoner",    ja:"召喚士",         role:"dps",   fineRole:"magic_ranged", color:"#7C5CD9" },
+  { key:"redmage",     ja:"赤魔道士",       role:"dps",   fineRole:"magic_ranged", color:"#C060D9" },
+  { key:"pictomancer", ja:"ピクトマンサー", role:"dps",   fineRole:"magic_ranged", color:"#D978C9" },
+
+  { key:"bluemage",    ja:"青魔道士",       role:"dps",   fineRole:"misc",         color:"#8B93A1" },
+];
+const JOB_BY_JA = Object.fromEntries(FF_JOBS.map(j=>[j.ja,j]));
+
+/* ============================================================
+   軽減スキル辞書（英語アビリティ名 | 表示名）。アイコン解決（日本語名→英語名）に使う。
+   ============================================================ */
+const MIT_SKILL_DICT_TEXT = `
+# --- 全ジョブ / タンク共通 ---
+Rampart|ランパート
+Reprisal|リプライザル
+Feint|牽制
+Addle|アドル
+
+# --- ヒーラー共通ロールアクション ---
+Esuna|エスナ
+Lucid Dreaming|ルーシッドドリーム
+Swiftcast|迅速魔
+Surecast|堅実魔
+Rescue|救出
+Repose|リポーズ
+
+# --- ナイト ---
+Sentinel|センチネル
+Divine Veil|ディヴァインベール
+Passage of Arms|パッセージオブアームズ
+Sheltron|シェルトロン
+Holy Sheltron|ホーリーシェルトロン
+Intervention|インターベンション
+Cover|カバー
+Hallowed Ground|ホリーグラウンド
+
+# --- 戦士 ---
+Vengeance|ヴェンジェンス
+Damnation|ダムネーション
+Shake It Off|シェイクオフ
+Bloodwhetting|原初の血気
+Nascent Flash|原初の猛り
+Raw Intuition|原初の直感
+Thrill of Battle|スリルオブバトル
+Holmgang|ホルムギャング
+
+# --- 暗黒騎士 ---
+Shadow Wall|シャドウウォール
+Dark Mind|ダークマインド
+The Blackest Night|ブラックナイト
+Oblation|オブレーション
+Dark Missionary|ダークミッショナリー
+Shadowed Vigil|シャドウヴィジル
+Living Dead|リビングデッド
+
+# --- ガンブレイカー ---
+Camouflage|カモフラージュ
+Nebula|ネビュラ
+Great Nebula|グレートネビュラ
+Heart of Light|ハートオブライト
+Heart of Stone|ハートオブストーン
+Aurora|オーロラ
+Superbolide|スーパーボライド
+
+# --- 白魔道士 ---
+Cure|ケアル
+Medica|メディカ
+Raise|レイズ
+Cure II|ケアルラ
+Presence of Mind|神速魔
+Regen|リジェネ
+Cure III|ケアルガ
+Aetherial Shift|エーテリアルシフト
+Medica II|メディカラ
+Benediction|ベネディクション
+Afflatus Solace|ハート・オブ・ソラス
+Asylum|アサイラム
+Thin Air|シンエアー
+Tetragrammaton|テトラグラマトン
+Divine Benison|ディヴァインベニゾン
+Plenary Indulgence|インドゥルゲンティア
+Afflatus Rapture|ハート・オブ・ラプチャー
+Temperance|テンパランス
+Aquaveil|アクアヴェール
+Liturgy of the Bell|リタージー・オブ・ベル
+Medica III|メディガ
+Divine Caress|ディヴァインカレス
+
+# --- 学者 ---
+Physick|フィジク
+Summon Eos|サモン・エオス
+Resurrection|リザレク
+Whispering Dawn|光の囁き
+Adloquium|鼓舞激励の策
+Succor|士気高揚の策
+Fey Illumination|フェイイルミネーション
+Aetherflow|エーテルフロー
+Lustrate|生命活性法
+Sacred Soil|野戦治療の陣
+Indomitability|不撓不屈の策
+Deployment Tactics|展開戦術
+Emergency Tactics|応急戦術
+Dissipation|転化
+Excogitation|深謀遠慮の策
+Chain Stratagem|連環計
+Aetherpact|エーテルパクト
+Dissolve Union|フェイユニオン解除
+Recitation|秘策
+Fey Blessing|フェイブレッシング
+Summon Seraph|サモン・セラフィム
+Consolation|コンソレイション
+Protraction|生命回生法
+Expedient|疾風怒濤の計
+Concitation|意気軒昂の策
+Seraphism|セラフィズム
+Manifestation|マニフェステーション
+Accession|アクセッション
+
+# --- 占星術師 ---
+Benefic|ベネフィク
+Lightspeed|ライトスピード
+Helios|ヘリオス
+Ascend|アセンド
+Essential Dignity|ディグニティ
+Benefic II|ベネフィラ
+Astral Draw|アストラルドロー
+Umbral Draw|アンブラルドロー
+The Balance|アーゼマの均衡
+The Arrow|オシュオンの矢
+The Spire|ビエルゴの塔
+The Spear|ハルオーネの槍
+The Bole|世界樹の幹
+The Ewer|サリャクの水瓶
+Lady of Crowns|クラウンレディ
+Aspected Benefic|アスペクト・ベネフィク
+Aspected Helios|アスペクト・ヘリオス
+Synastry|シナストリー
+Divination|ディヴィネーション
+Collective Unconscious|運命の輪
+Celestial Opposition|星天対抗
+Earthly Star|アーサリースター
+Stellar Detonation|ステラデトネーション
+Minor Arcana|マイナーアルカナ
+Celestial Intersection|星天交差
+Horoscope|ホロスコープ
+Neutral Sect|ニュートラルセクト
+Exaltation|エクザルテーション
+Macrocosmos|マクロコスモス
+Microcosmos|ミクロコスモス
+Helios Conjunction|コンジャンクション・ヘリオス
+Sun Sign|サンサイン
+
+# --- 賢者 ---
+Diagnosis|ディアグノシス
+Kardia|カルディア
+Prognosis|プログノシス
+Egeiro|エゲイロー
+Physis|ピュシス
+Eukrasia|エウクラシア
+Eukrasian Diagnosis|エウクラシア・ディアグノシス
+Eukrasian Prognosis|エウクラシア・プログノシス
+Soteria|ソーテリア
+Icarus|イカロス
+Druochole|ドルオコレ
+Kerachole|ケーラコレ
+Ixochole|イックソコレ
+Zoe|ゾーエ
+Pepsis|ペプシス
+Physis II|ピュシスII
+Taurochole|タウロコレ
+Rhizomata|リゾーマタ
+Holos|ホーリズム
+Panhaima|パンハイマ
+Krasis|クラーシス
+Eukrasian Prognosis II|エウクラシア・プログノシスII
+Philosophia|フィロソフィア
+
+# --- モンク ---
+Riddle of Earth|リドルオブアース
+Earth's Reply|アースズリプライ
+
+# --- 忍者 ---
+Shukuchi|縮地（回避目的の使用は誤検出の可能性あり）
+
+# --- リーパー ---
+Arcane Crest|アルケインクレスト
+
+# --- 詩人 ---
+Troubadour|トルバドゥール
+
+# --- 機工士 ---
+Tactician|タクティシャン
+
+# --- 踊り子 ---
+Shield Samba|シールドサンバ
+
+# --- 黒魔道士 ---
+Manaward|マナウォード
+
+# --- 赤魔道士 ---
+Magick Barrier|マギックバリア
+
+# --- ピクトマンサー ---
+Tempera Coat|テンペラコート
+Tempera Grassa|テンペラグラッサ
+`.trim();
+function parseSkillDictText(text){
+  const lines=text.split("\n");
+  const out=[];
+  for(let line of lines){
+    line=line.trim();
+    if(!line || line.startsWith("#")) continue;
+    const [en,ja]=line.split("|").map(x=>x&&x.trim());
+    if(en) out.push({en, ja: ja||en});
+  }
+  return out;
+}
+const MIT_SKILL_DICT = parseSkillDictText(MIT_SKILL_DICT_TEXT);
+const JA_TO_EN = Object.fromEntries(MIT_SKILL_DICT.map(d=>[d.ja, d.en]));
+// 以前の辞書で出力された旧表記 → 正式名称。古いCSVやスプレッドシートのログを読んだときも正式名称で表示する。
+const SKILL_NAME_ALIASES = {
+  "フェイント":"牽制", "シェイクイットオフ":"シェイクオフ", "ブラッドウェットニング":"原初の血気",
+  "ネセントフラッシュ":"原初の猛り", "ロウインテュイション":"原初の直感", "ホルムガング":"ホルムギャング",
+  "ザ・ブラッケストナイト":"ブラックナイト", "ディバインベニゾン":"ディヴァインベニゾン", "リタージーオブベル":"リタージー・オブ・ベル",
+};
+
+/* ============================================================
+   スキルアイコン（ローカルのff14データ配下を参照。英語アビリティ名→相対パス）
+   ============================================================ */
+const MIT_ICON_MAP = {
+  "Rampart": "02_WAR/Role_Actions/Rampart.png",
+  "Reprisal": "02_WAR/Role_Actions/Reprisal.png",
+  "Feint": "05_MNK/Role_Actions/Feint.png",
+  "Addle": "14_BLM/Role_Actions/Addle.png",
+
+  "Esuna": "18_WHM/Role_Actions/Esuna.png",
+  "Lucid Dreaming": "18_WHM/Role_Actions/Lucid_Dreaming.png",
+  "Swiftcast": "18_WHM/Role_Actions/Swiftcast.png",
+  "Surecast": "18_WHM/Role_Actions/Surecast.png",
+  "Rescue": "18_WHM/Role_Actions/Rescue.png",
+  "Repose": "18_WHM/Role_Actions/Repose.png",
+
+  "Sentinel": "01_PLD/Sentinel.png",
+  "Divine Veil": "01_PLD/Divine_Veil.png",
+  "Passage of Arms": "01_PLD/Passage_of_Arms.png",
+  "Sheltron": "01_PLD/Sheltron.png",
+  "Holy Sheltron": "01_PLD/Holy_Sheltron.png",
+  "Intervention": "01_PLD/Intervention.png",
+  "Cover": "01_PLD/Cover.png",
+  "Hallowed Ground": "01_PLD/Hallowed_Ground.png",
+
+  "Vengeance": "02_WAR/Vengeance.png",
+  "Damnation": "02_WAR/Damnation.png",
+  "Shake It Off": "02_WAR/Shake_It_Off.png",
+  "Bloodwhetting": "02_WAR/Bloodwhetting.png",
+  "Nascent Flash": "02_WAR/Nascent_Flash.png",
+  "Raw Intuition": "02_WAR/Raw_Intuition.png",
+  "Thrill of Battle": "02_WAR/Thrill_of_Battle.png",
+  "Holmgang": "02_WAR/Holmgang.png",
+
+  "Shadow Wall": "03_DRK/Shadow_Wall.png",
+  "Dark Mind": "03_DRK/Dark_Mind.png",
+  "The Blackest Night": "03_DRK/The_Blackest_Night.png",
+  "Oblation": "03_DRK/Oblation.png",
+  "Dark Missionary": "03_DRK/Dark_Missionary.png",
+  "Shadowed Vigil": "03_DRK/Shadowed_Vigil.png",
+  "Living Dead": "03_DRK/Living_Dead.png",
+
+  "Camouflage": "04_GNB/Camouflage.png",
+  "Nebula": "04_GNB/Nebula.png",
+  "Great Nebula": "04_GNB/Great_Nebula.png",
+  "Heart of Light": "04_GNB/Heart_of_Light.png",
+  "Heart of Stone": "04_GNB/Heart_of_Stone.png",
+  "Aurora": "04_GNB/Aurora.png",
+  "Superbolide": "04_GNB/Superbolide.png",
+
+  "Divine Benison": "18_WHM/Divine_Benison.png",
+  "Aquaveil": "18_WHM/Aquaveil.png",
+  "Temperance": "18_WHM/Temperance.png",
+  "Liturgy of the Bell": "18_WHM/Liturgy_of_the_Bell.png",
+  "Asylum": "18_WHM/Asylum.png",
+
+  "Physick": "19_SCH/Physick.png",
+  "Summon Eos": "19_SCH/Summon_Eos.png",
+  "Resurrection": "19_SCH/Resurrection.png",
+  "Whispering Dawn": "19_SCH/Whispering_Dawn.png",
+  "Adloquium": "19_SCH/Adloquium.png",
+  "Succor": "19_SCH/Succor.png",
+  "Fey Illumination": "19_SCH/Fey_Illumination.png",
+  "Aetherflow": "19_SCH/Aetherflow.png",
+  "Lustrate": "19_SCH/Lustrate.png",
+  "Sacred Soil": "19_SCH/Sacred_Soil.png",
+  "Indomitability": "19_SCH/Indomitability.png",
+  "Deployment Tactics": "19_SCH/Deployment_Tactics.png",
+  "Emergency Tactics": "19_SCH/Emergency_Tactics.png",
+  "Dissipation": "19_SCH/Dissipation.png",
+  "Excogitation": "19_SCH/Excogitation.png",
+  "Chain Stratagem": "19_SCH/Chain_Stratagem.png",
+  "Aetherpact": "19_SCH/Aetherpact.png",
+  "Dissolve Union": "19_SCH/Dissolve_Union.png",
+  "Recitation": "19_SCH/Recitation.png",
+  "Fey Blessing": "19_SCH/Fey_Blessing.png",
+  "Summon Seraph": "19_SCH/Summon_Seraph.png",
+  "Consolation": "19_SCH/Consolation.png",
+  "Protraction": "19_SCH/Protraction.png",
+  "Expedient": "19_SCH/Expedient.png",
+  "Concitation": "19_SCH/Concitation.png",
+  "Seraphism": "19_SCH/Seraphism.png",
+  "Manifestation": "19_SCH/Manifestation.png",
+  "Accession": "19_SCH/Accession.png",
+
+  "Neutral Sect": "20_AST/Neutral_Sect.png",
+  "Collective Unconscious": "20_AST/Collective_Unconscious.png",
+  "Celestial Intersection": "20_AST/Celestial_Intersection.png",
+  "Exaltation": "20_AST/Exaltation.png",
+  "Macrocosmos": "20_AST/Macrocosmos.png",
+
+  "Diagnosis": "21_SGE/Diagnosis.png",
+  "Kardia": "21_SGE/Kardia.png",
+  "Prognosis": "21_SGE/Prognosis.png",
+  "Egeiro": "21_SGE/Egeiro.png",
+  "Physis": "21_SGE/Physis.png",
+  "Eukrasia": "21_SGE/Eukrasia.png",
+  "Eukrasian Diagnosis": "21_SGE/Eukrasian_Diagnosis.png",
+  "Eukrasian Prognosis": "21_SGE/Eukrasian_Prognosis.png",
+  "Soteria": "21_SGE/Soteria.png",
+  "Icarus": "21_SGE/Icarus.png",
+  "Druochole": "21_SGE/Druochole.png",
+  "Kerachole": "21_SGE/Kerachole.png",
+  "Ixochole": "21_SGE/Ixochole.png",
+  "Zoe": "21_SGE/Zoe.png",
+  "Pepsis": "21_SGE/Pepsis.png",
+  "Physis II": "21_SGE/Physis_II.png",
+  "Taurochole": "21_SGE/Taurochole.png",
+  "Rhizomata": "21_SGE/Rhizomata.png",
+  "Holos": "21_SGE/Holos.png",
+  "Panhaima": "21_SGE/Panhaima.png",
+  "Krasis": "21_SGE/Krasis.png",
+  "Eukrasian Prognosis II": "21_SGE/Eukrasian_Prognosis_II.png",
+  "Philosophia": "21_SGE/Philosophia.png",
+
+  "Cure": "18_WHM/Cure.png",
+  "Medica": "18_WHM/Medica.png",
+  "Raise": "18_WHM/Raise.png",
+  "Cure II": "18_WHM/Cure_II.png",
+  "Presence of Mind": "18_WHM/Presence_of_Mind.png",
+  "Regen": "18_WHM/Regen.png",
+  "Cure III": "18_WHM/Cure_III.png",
+  "Aetherial Shift": "18_WHM/Aetherial_Shift.png",
+  "Medica II": "18_WHM/Medica_II.png",
+  "Benediction": "18_WHM/Benediction.png",
+  "Afflatus Solace": "18_WHM/Afflatus_Solace.png",
+  "Thin Air": "18_WHM/Thin_Air.png",
+  "Tetragrammaton": "18_WHM/Tetragrammaton.png",
+  "Plenary Indulgence": "18_WHM/Plenary_Indulgence.png",
+  "Afflatus Rapture": "18_WHM/Afflatus_Rapture.png",
+  "Medica III": "18_WHM/Medica_III.png",
+  "Divine Caress": "18_WHM/Divine_Caress.png",
+
+  "Benefic": "20_AST/Benefic.png",
+  "Lightspeed": "20_AST/Lightspeed.png",
+  "Helios": "20_AST/Helios.png",
+  "Ascend": "20_AST/Ascend.png",
+  "Essential Dignity": "20_AST/Essential_Dignity.png",
+  "Benefic II": "20_AST/Benefic_II.png",
+  "Astral Draw": "20_AST/Astral_Draw.png",
+  "Umbral Draw": "20_AST/Umbral_Draw.png",
+  "The Balance": "20_AST/The_Balance.png",
+  "The Arrow": "20_AST/The_Arrow.png",
+  "The Spire": "20_AST/The_Spire.png",
+  "The Spear": "20_AST/The_Spear.png",
+  "The Bole": "20_AST/The_Bole.png",
+  "The Ewer": "20_AST/The_Ewer.png",
+  "Lady of Crowns": "20_AST/Lady_of_Crowns.png",
+  "Aspected Benefic": "20_AST/Aspected_Benefic.png",
+  "Aspected Helios": "20_AST/Aspected_Helios.png",
+  "Synastry": "20_AST/Synastry.png",
+  "Divination": "20_AST/Divination.png",
+  "Collective Unconscious": "20_AST/Collective_Unconscious.png",
+  "Celestial Opposition": "20_AST/Celestial_Opposition.png",
+  "Earthly Star": "20_AST/Earthly_Star.png",
+  "Stellar Detonation": "20_AST/Stellar_Detonation.png",
+  "Minor Arcana": "20_AST/Minor_Arcana.png",
+  "Horoscope": "20_AST/Horoscope_1.png",
+  "Microcosmos": "20_AST/Microcosmos.png",
+  "Helios Conjunction": "20_AST/Helios_Conjunction.png",
+  "Sun Sign": "20_AST/Sun_Sign.png",
+
+  "Riddle of Earth": "05_MNK/Riddle_of_Earth.png",
+  "Earth's Reply": "05_MNK/Earth's_Reply.png",
+  "Shukuchi": "09_NIN/Shukuchi.png",
+  "Arcane Crest": "08_RPR/Arcane_Crest.png",
+  "Troubadour": "11_BRD/Troubadour.png",
+  "Tactician": "12_MCH/Tactician.png",
+  "Shield Samba": "13_DNC/Shield_Samba.png",
+  "Manaward": "14_BLM/Manaward.png",
+  "Magick Barrier": "16_RDM/Magick_Barrier.png",
+  "Tempera Coat": "17_PCT/Tempera_Coat.png",
+  "Tempera Grassa": "17_PCT/Tempera_Grassa.png",
+};
+function iconUrl(relPath){
+  return ["ff14データ","FFXIVIcons Battle(PvE)"].concat(relPath.split("/")).map(encodeURIComponent).join("/");
+}
+function iconFor(skillJa){
+  const en = JA_TO_EN[skillJa];
+  if(!en) return null;
+  const rel = MIT_ICON_MAP[en];
+  if(!rel) return null;
+  return iconUrl(rel);
+}
+
+/* ============================================================
+   共通ユーティリティ
+   ============================================================ */
+function escapeHtml(s){ return (s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function cssEscape(s){ return window.CSS && CSS.escape ? CSS.escape(s) : s; }
+
+/* ============================================================
+   タイムライン本体
+   ============================================================ */
+(function vizModule(){
+  const ROLE_ORDER = ["tank", "healer", "melee", "phys_ranged", "magic_ranged", "misc"];
+  const FALLBACK_COLORS = ["#8B93A1", "#A3AAB8", "#6E7686", "#B7BEC9"];
+
+  function metaFor(job) {
+    const j = JOB_BY_JA[job];
+    if (j) return { role: j.fineRole, color: j.color };
+    let h = 0;
+    for (let i = 0; i < job.length; i++) h = (h * 31 + job.charCodeAt(i)) >>> 0;
+    return { role: "misc", color: FALLBACK_COLORS[h % FALLBACK_COLORS.length] };
+  }
+
+  /* ---------- CSVパース(ヘッダー名で列を解決。引用符付きフィールドにも対応) ---------- */
+  function splitCsvLine(line){
+    const out=[]; let cur=""; let inQ=false;
+    for(let i=0;i<line.length;i++){
+      const c=line[i];
+      if(inQ){
+        if(c==='"'){
+          if(line[i+1]==='"'){ cur+='"'; i++; } else { inQ=false; }
+        } else cur+=c;
+      } else {
+        if(c==='"') inQ=true;
+        else if(c===','){ out.push(cur); cur=""; }
+        else cur+=c;
+      }
+    }
+    out.push(cur);
+    return out;
+  }
+  // Googleスプレッドシートに「1セルにCSV行がまるごと貼り付けられている」場合、
+  // エクスポートしたCSVは各行が「"経過時間,ジョブ,スキル..."」のように1フィールドに
+  // まとめて引用符で囲まれる。その場合は中身をもう一段分解する。
+  function splitDataLine(line){
+    let cols = splitCsvLine(line);
+    if (cols.length === 1 && cols[0].includes(",")) {
+      cols = splitCsvLine(cols[0]);
+    }
+    return cols;
+  }
+  function parseCSV(text) {
+    const clean = text.replace(/^﻿/, "");
+    const lines = clean.split(/\r\n|\n|\r/).filter(l => l.trim().length);
+    if (!lines.length) return [];
+
+    // ヘッダー行から 経過時間/ジョブ/スキル の列位置を解決する。見つからなければ従来通り先頭3列(0,1,2)とみなす。
+    let idxTime = 0, idxJob = 1, idxSkill = 2, startLine = 0;
+    const headCols = splitDataLine(lines[0]).map(c => c.trim());
+    const hTime = headCols.indexOf("経過時間"), hJob = headCols.indexOf("ジョブ"), hSkill = headCols.indexOf("スキル");
+    if (hTime >= 0 && hJob >= 0 && hSkill >= 0) {
+      idxTime = hTime; idxJob = hJob; idxSkill = hSkill; startLine = 1;
+    }
+
+    const rows = [];
+    for (let li = startLine; li < lines.length; li++) {
+      const cols = splitDataLine(lines[li]);
+      if (cols.length <= Math.max(idxTime, idxJob, idxSkill)) continue;
+      const tRaw = (cols[idxTime]||"").trim();
+      const job = (cols[idxJob]||"").trim();
+      const rawSkill = (cols[idxSkill]||"").trim();
+      const skill = SKILL_NAME_ALIASES[rawSkill] || rawSkill;
+      const m = tRaw.match(/^(\d+):(\d{1,2})$/);
+      if (!m) continue; // ヘッダー行(未認識時)や不正な行はスキップ
+      const sec = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+      rows.push({ t: tRaw, sec, job, skill });
+    }
+    rows.sort((a, b) => a.sec - b.sec);
+    return rows;
+  }
+
+  function buildLog(rows, label) {
+    const jobSet = new Set(rows.map(r => r.job));
+    const jobs = Array.from(jobSet).sort((a, b) => {
+      const ra = ROLE_ORDER.indexOf(metaFor(a).role);
+      const rb = ROLE_ORDER.indexOf(metaFor(b).role);
+      if (ra !== rb) return ra - rb;
+      return a.localeCompare(b, "ja");
+    });
+    const duration = rows.length ? Math.max(...rows.map(r => r.sec)) : 0;
+    return { label, rows, jobs, duration };
+  }
+
+  const initialLogs = EMBEDDED_LOGS.map(entry => buildLog(parseCSV(entry.csv), entry.label)).filter(log => log.rows.length);
+  const state = { logs: initialLogs, activeIndex: 0, activeJobs: new Set(initialLogs.length ? initialLogs[0].jobs : []), query: "" };
+
+  const ROW_H = 46;
+  // 最小表示(折りたたみ)中のレーン。ジョブ名、または攻撃レーンを表す BOSS_KEY が入る
+  const COLLAPSED_H = 16;
+  const BOSS_KEY = "__boss";
+  state.collapsed = new Set();
+  function laneH(key) { return state.collapsed.has(key) ? COLLAPSED_H : ROW_H; }
+  function rebuildLanes() {
+    const log = currentLog();
+    if (!log) return;
+    buildLaneLabels(log);
+    buildBossLane(log);
+    buildLaneRows(log);
+    applyFilters();
+    saveStore();
+  }
+  function toggleCollapse(key) {
+    if (state.collapsed.has(key)) state.collapsed.delete(key); else state.collapsed.add(key);
+    rebuildLanes();
+  }
+  // レーン名の右端に出す開閉マーク(▼=表示中、▶=最小表示中)。クリックは行全体で受ける
+  function laneArrow(collapsed) {
+    const arrow = document.createElement("span");
+    arrow.className = "lane-arrow";
+    arrow.textContent = collapsed ? "▶" : "▼";
+    return arrow;
+  }
+  let SCALE = 6;
+  const PAD_END = 40;
+
+  function fmtTime(sec) { const m = Math.floor(sec / 60); const s = sec % 60; return m + ":" + String(s).padStart(2, "0"); }
+  function currentLog() { return state.logs[state.activeIndex]; }
+
+  const logTabsEl = document.getElementById("logTabs");
+  const fileInput = document.getElementById("fileInput");
+
+  function buildTabs() {
+    logTabsEl.innerHTML = "";
+    state.logs.forEach((log, i) => {
+      const tab = document.createElement("div");
+      tab.className = "log-tab" + (i === state.activeIndex ? " active" : "");
+      tab.innerHTML = `<span>${escapeHtml(log.label)}</span><span class="count">${log.rows.length}件</span>`;
+      tab.addEventListener("click", () => switchLog(i));
+      if (state.logs.length > 1) {
+        const closeBtn = document.createElement("span");
+        closeBtn.className = "close-btn";
+        closeBtn.textContent = "×";
+        closeBtn.title = "このログを閉じる";
+        closeBtn.addEventListener("click", (e) => { e.stopPropagation(); removeLog(i); });
+        tab.appendChild(closeBtn);
+      }
+      logTabsEl.appendChild(tab);
+    });
+    const addBtn = document.createElement("button");
+    addBtn.className = "log-tab-add";
+    addBtn.textContent = "＋ ログを追加";
+    addBtn.type = "button";
+    addBtn.addEventListener("click", () => fileInput.click());
+    logTabsEl.appendChild(addBtn);
+  }
+
+  function switchLog(i) {
+    state.activeIndex = i;
+    state.activeJobs = new Set(currentLog().jobs);
+    state.query = "";
+    document.getElementById("searchInput").value = "";
+    fullRebuild();
+  }
+  function removeLog(i) {
+    state.logs.splice(i, 1);
+    if (state.activeIndex >= state.logs.length) state.activeIndex = state.logs.length - 1;
+    if (state.activeIndex === i && i > 0) state.activeIndex = i - 1;
+    state.activeJobs = new Set(currentLog().jobs);
+    fullRebuild();
+  }
+  function addLogFromFile(file, rows) {
+    const label = file.name.replace(/\.csv$/i, "");
+    const log = buildLog(rows, label);
+    state.logs.push(log);
+    state.activeIndex = state.logs.length - 1;
+    state.activeJobs = new Set(log.jobs);
+    state.query = "";
+    document.getElementById("searchInput").value = "";
+    fullRebuild();
+  }
+  function handleFiles(fileList) {
+    Array.from(fileList).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const rows = parseCSV(e.target.result);
+        if (!rows.length) {
+          alert(`"${file.name}" から有効な行を読み取れませんでした。「経過時間,ジョブ,スキル」の列を含むCSVか確認してください。`);
+          return;
+        }
+        addLogFromFile(file, rows);
+      };
+      reader.onerror = () => alert(`"${file.name}" の読み込みに失敗しました。`);
+      reader.readAsText(file, "UTF-8");
+    });
+  }
+  fileInput.addEventListener("change", (e) => { if (e.target.files && e.target.files.length) handleFiles(e.target.files); fileInput.value = ""; });
+
+  const timelinePanel = document.getElementById("timelinePanel");
+  ["dragenter", "dragover"].forEach(evt => {
+    timelinePanel.addEventListener(evt, (e) => { e.preventDefault(); timelinePanel.classList.add("drag-over"); });
+  });
+  ["dragleave", "drop"].forEach(evt => {
+    timelinePanel.addEventListener(evt, (e) => { e.preventDefault(); timelinePanel.classList.remove("drag-over"); });
+  });
+  timelinePanel.addEventListener("drop", (e) => { const files = e.dataTransfer.files; if (files && files.length) handleFiles(files); });
+
+  const chipsEl = document.getElementById("jobChips");
+  const legendEl = document.getElementById("legend");
+  const laneLabelsEl = document.getElementById("laneLabels");
+  const scrollInnerEl = document.getElementById("scrollInner");
+  const rulerEl = document.getElementById("ruler");
+  const laneRowsEl = document.getElementById("laneRows");
+  const bossLaneEl = document.getElementById("bossLane");
+  const bossGuidesEl = document.getElementById("bossGuides");
+  const logTbody = document.getElementById("logTbody");
+  const tooltipEl = document.getElementById("tooltip");
+  const ttSkill = document.getElementById("ttSkill");
+  const ttMeta = document.getElementById("ttMeta");
+
+  function totalWidth(log) { return (log.duration + PAD_END) * SCALE; }
+
+  function buildStats(log) {
+    document.getElementById("statCount").textContent = log.rows.length;
+    document.getElementById("statJobs").textContent = log.jobs.length;
+    document.getElementById("statDuration").textContent = fmtTime(log.duration);
+    document.getElementById("subtitle").textContent = log.label;
+    document.getElementById("logSummary").textContent = "時系列ログを開く(" + log.rows.length + "件)";
+  }
+  function buildLegend(log) {
+    legendEl.innerHTML = "";
+    log.jobs.forEach(j => {
+      const item = document.createElement("div");
+      item.className = "item";
+      item.innerHTML = `<span class="bar" style="background:${metaFor(j).color}"></span>${j}`;
+      legendEl.appendChild(item);
+    });
+  }
+  function buildChips(log) {
+    chipsEl.innerHTML = "";
+    log.jobs.forEach(j => {
+      const chip = document.createElement("div");
+      const active = state.activeJobs.has(j);
+      chip.className = "jobchip" + (active ? " active" : " off");
+      chip.style.setProperty("--dotcolor", metaFor(j).color);
+      chip.dataset.job = j;
+      chip.innerHTML = `<span class="dot" style="background:${metaFor(j).color}"></span>${j}`;
+      chip.addEventListener("click", () => {
+        if (state.activeJobs.has(j)) { state.activeJobs.delete(j); chip.classList.remove("active"); chip.classList.add("off"); }
+        else { state.activeJobs.add(j); chip.classList.add("active"); chip.classList.remove("off"); }
+        applyFilters();
+      });
+      chipsEl.appendChild(chip);
+    });
+  }
+  function buildLaneLabels(log) {
+    laneLabelsEl.innerHTML = "";
+    const spacer = document.createElement("div");
+    spacer.className = "ruler-spacer";
+    if (state.collapsed.size) {
+      const showAll = document.createElement("button");
+      showAll.type = "button";
+      showAll.className = "lane-btn";
+      showAll.textContent = "すべて表示";
+      showAll.addEventListener("click", () => { state.collapsed = new Set(); rebuildLanes(); });
+      spacer.appendChild(showAll);
+    }
+    laneLabelsEl.appendChild(spacer);
+    const bossLabel = document.createElement("div");
+    bossLabel.className = "lane-label-row boss" + (state.collapsed.has(BOSS_KEY) ? " collapsed" : "");
+    bossLabel.id = "bossLaneLabel";
+    bossLabel.innerHTML = `<span class="lane-name">攻撃</span>`;
+    bossLabel.appendChild(laneArrow(state.collapsed.has(BOSS_KEY)));
+    bossLabel.title = "クリックで最小表示/元に戻す";
+    bossLabel.addEventListener("click", () => toggleCollapse(BOSS_KEY));
+    laneLabelsEl.appendChild(bossLabel);
+    log.jobs.forEach(j => {
+      const row = document.createElement("div");
+      const collapsed = state.collapsed.has(j);
+      row.className = "lane-label-row" + (collapsed ? " collapsed" : "");
+      row.dataset.job = j;
+      row.style.height = laneH(j) + "px";
+      row.title = "クリックで最小表示/元に戻す";
+      row.innerHTML = `<span class="dot" style="background:${metaFor(j).color}"></span><span class="lane-name">${j}</span>`;
+      row.addEventListener("click", () => toggleCollapse(j));
+      row.appendChild(laneArrow(collapsed));
+      laneLabelsEl.appendChild(row);
+    });
+  }
+  function buildRuler(log) {
+    rulerEl.innerHTML = "";
+    const w = totalWidth(log);
+    rulerEl.style.width = w + "px";
+    const step = 30;
+    for (let t = 0; t <= log.duration + PAD_END; t += step) {
+      const tick = document.createElement("div");
+      const isMajor = t % 60 === 0;
+      tick.className = "tick" + (isMajor ? " major" : "");
+      tick.style.left = (t * SCALE) + "px";
+      if (t <= log.duration + PAD_END - 5) {
+        const lbl = document.createElement("span");
+        lbl.className = "tick-label";
+        lbl.textContent = fmtTime(t);
+        tick.appendChild(lbl);
+      }
+      rulerEl.appendChild(tick);
+    }
+  }
+  /* ---------- ボス攻撃レーン(ラベルが重ならないよう段を分けて配置) ---------- */
+  const BOSS_EVENTS = BOSS_TIMELINE.map(ev => {
+    const toSec = (s) => { const p = s.split(":"); return parseInt(p[0], 10) * 60 + parseInt(p[1], 10); };
+    const sec = toSec(ev.t);
+    return { label: ev.label, t: ev.t, end: ev.end || null, sec, endSec: ev.end ? toSec(ev.end) : sec };
+  }).sort((a, b) => a.sec - b.sec);
+  const BOSS_ROW_H = 21;
+  function bossLabelWidth(label) {
+    let w = 14; // 左右パディング + 左ボーダー
+    for (const ch of label) w += ch.charCodeAt(0) > 0xff ? 11 : 6.7;
+    return w;
+  }
+  function buildBossLane(log) {
+    bossLaneEl.innerHTML = "";
+    bossGuidesEl.innerHTML = "";
+    bossLaneEl.style.width = totalWidth(log) + "px";
+    const events = BOSS_EVENTS.filter(ev => ev.sec <= log.duration + PAD_END);
+    const rowEnds = [];
+    events.forEach(ev => {
+      const x = ev.sec * SCALE;
+      const rangeW = (ev.endSec - ev.sec) * SCALE;
+      const w = Math.max(bossLabelWidth(ev.label), rangeW);
+      let rowIdx = rowEnds.findIndex(end => end + 6 <= x);
+      if (rowIdx < 0) { rowIdx = rowEnds.length; rowEnds.push(0); }
+      rowEnds[rowIdx] = x + w;
+
+      const chip = document.createElement("div");
+      chip.className = "boss-ev";
+      chip.textContent = ev.label;
+      chip.style.left = x + "px";
+      chip.style.top = (5 + rowIdx * BOSS_ROW_H) + "px";
+      if (rangeW) chip.style.minWidth = rangeW + "px";
+      const timeText = ev.end ? `${ev.t}〜${ev.end}` : ev.t;
+      chip.addEventListener("mouseenter", (e) => {
+        ttSkill.textContent = ev.label;
+        ttMeta.textContent = timeText;
+        tooltipEl.style.display = "block";
+        positionTooltip(e);
+      });
+      chip.addEventListener("mousemove", (e) => positionTooltip(e));
+      chip.addEventListener("mouseleave", hideTooltip);
+      bossLaneEl.appendChild(chip);
+
+      if (rangeW) {
+        const band = document.createElement("div");
+        band.className = "boss-guide range";
+        band.style.left = x + "px";
+        band.style.width = rangeW + "px";
+        bossGuidesEl.appendChild(band);
+      }
+      const line = document.createElement("div");
+      line.className = "boss-guide";
+      line.style.left = x + "px";
+      bossGuidesEl.appendChild(line);
+    });
+    const bossCollapsed = state.collapsed.has(BOSS_KEY);
+    bossLaneEl.classList.toggle("collapsed", bossCollapsed);
+    const h = bossCollapsed ? COLLAPSED_H : Math.max(ROW_H, rowEnds.length * BOSS_ROW_H + 9);
+    bossLaneEl.style.height = h + "px";
+    const labelEl = document.getElementById("bossLaneLabel");
+    if (labelEl) labelEl.style.height = h + "px";
+  }
+
+  function buildLaneRows(log) {
+    laneRowsEl.innerHTML = "";
+    const w = totalWidth(log);
+    laneRowsEl.style.width = w + "px";
+    log.jobs.forEach(j => {
+      const row = document.createElement("div");
+      row.className = "lane-row" + (state.collapsed.has(j) ? " collapsed" : "");
+      row.dataset.job = j;
+      row.style.height = laneH(j) + "px";
+      const step = 30;
+      for (let t = 0; t <= log.duration + PAD_END; t += step) {
+        const gl = document.createElement("div");
+        gl.className = "gridline" + (t % 60 === 0 ? " major" : "");
+        gl.style.left = (t * SCALE) + "px";
+        row.appendChild(gl);
+      }
+      laneRowsEl.appendChild(row);
+    });
+    log.rows.forEach((r, idx) => {
+      const row = laneRowsEl.querySelector(`.lane-row[data-job="${cssEscape(r.job)}"]`);
+      if (!row) return;
+      const color = metaFor(r.job).color;
+      const mark = document.createElement("div");
+      mark.className = "mark";
+      mark.style.left = (r.sec * SCALE) + "px";
+      mark.style.color = color;
+      mark.dataset.idx = idx;
+
+      const iconSrc = iconFor(r.skill);
+      if (iconSrc) {
+        mark.classList.add("icon");
+        mark.style.setProperty("--ring", color);
+        mark.style.backgroundImage = `url("${iconSrc}")`;
+        // アイコンファイルが実際には見つからない場合に色ドットへ自動フォールバックする
+        const probe = new Image();
+        probe.onerror = () => {
+          mark.classList.remove("icon");
+          mark.style.backgroundImage = "";
+          mark.style.removeProperty("--ring");
+          mark.style.background = color;
+        };
+        probe.src = iconSrc;
+      } else {
+        mark.style.background = color;
+      }
+
+      row.appendChild(mark);
+      mark.addEventListener("mouseenter", (e) => showTooltip(e, r));
+      mark.addEventListener("mousemove", (e) => positionTooltip(e));
+      mark.addEventListener("mouseleave", hideTooltip);
+    });
+  }
+  function showTooltip(e, r) {
+    ttSkill.textContent = r.skill;
+    ttMeta.textContent = `${r.job} ・ ${r.t}`;
+    tooltipEl.style.display = "block";
+    positionTooltip(e);
+  }
+  function positionTooltip(e) {
+    const padPx = 14;
+    tooltipEl.style.left = (e.clientX + padPx) + "px";
+    tooltipEl.style.top = (e.clientY + padPx) + "px";
+  }
+  function hideTooltip() { tooltipEl.style.display = "none"; }
+
+  function buildLogTable(log) {
+    logTbody.innerHTML = "";
+    const frag = document.createDocumentFragment();
+    log.rows.forEach(r => {
+      const tr = document.createElement("tr");
+      const color = metaFor(r.job).color;
+      tr.innerHTML = `
+        <td class="t-cell">${r.t}</td>
+        <td><span class="job-cell"><span class="dot" style="background:${color}"></span>${r.job}</span></td>
+        <td>${escapeHtml(r.skill)}</td>
+      `;
+      frag.appendChild(tr);
+    });
+    logTbody.appendChild(frag);
+  }
+
+  function applyFilters() {
+    laneLabelsEl.querySelectorAll(".lane-label-row[data-job]").forEach(row => {
+      row.classList.toggle("dim", !state.activeJobs.has(row.dataset.job));
+    });
+    laneRowsEl.querySelectorAll(".lane-row").forEach(row => {
+      row.style.opacity = state.activeJobs.has(row.dataset.job) ? "1" : "0.12";
+    });
+    const q = state.query.trim().toLowerCase();
+    const searching = q.length > 0;
+    const log = currentLog();
+    laneRowsEl.querySelectorAll(".mark").forEach(mark => {
+      const r = log.rows[mark.dataset.idx];
+      const jobOn = state.activeJobs.has(r.job);
+      const matches = searching ? r.skill.toLowerCase().includes(q) : true;
+      mark.classList.toggle("searching", searching);
+      mark.classList.toggle("match", searching && matches);
+      mark.classList.toggle("dim", !jobOn || (searching && !matches));
+    });
+  }
+
+  document.getElementById("searchInput").addEventListener("input", (e) => { state.query = e.target.value; applyFilters(); });
+  document.getElementById("zoomRange").addEventListener("input", (e) => {
+    SCALE = Number(e.target.value);
+    const log = currentLog();
+    if (!log) return;
+    buildRuler(log);
+    buildBossLane(log);
+    buildLaneRows(log);
+    applyFilters();
+  });
+
+  function renderEmptyState() {
+    document.getElementById("statCount").textContent = "—";
+    document.getElementById("statJobs").textContent = "—";
+    document.getElementById("statDuration").textContent = "—";
+    document.getElementById("subtitle").textContent = "ログが読み込まれていません";
+    document.getElementById("logSummary").textContent = "時系列ログを開く(0件)";
+    chipsEl.innerHTML = "";
+    legendEl.innerHTML = "";
+    laneLabelsEl.innerHTML = "";
+    rulerEl.innerHTML = "";
+    laneRowsEl.innerHTML = "";
+    bossLaneEl.innerHTML = "";
+    bossGuidesEl.innerHTML = "";
+    logTbody.innerHTML = "";
+    document.getElementById("timelineFlex").hidden = true;
+    document.getElementById("emptyState").hidden = false;
+  }
+
+  function fullRebuild() {
+    buildTabs();
+    const log = currentLog();
+    if (!log) {
+      renderEmptyState();
+      return;
+    }
+    document.getElementById("timelineFlex").hidden = false;
+    document.getElementById("emptyState").hidden = true;
+    buildStats(log);
+    buildLegend(log);
+    buildChips(log);
+    buildLaneLabels(log);
+    buildRuler(log);
+    buildBossLane(log);
+    buildLaneRows(log);
+    buildLogTable(log);
+    applyFilters();
+    buildFocusSelect(log);
+    syncTick();
+  }
+
+  function gvizCsvQuote(s) {
+    s = String(s);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+  function gvizTableToCsvText(table) {
+    const lines = [];
+    lines.push(table.cols.map(c => gvizCsvQuote(c.label || c.id || "")).join(","));
+    table.rows.forEach(row => {
+      const cells = (row.c || []).map(cell => {
+        if (!cell) return "";
+        const val = (cell.f !== undefined && cell.f !== null) ? cell.f : (cell.v !== undefined && cell.v !== null ? cell.v : "");
+        return gvizCsvQuote(val);
+      });
+      lines.push(cells.join(","));
+    });
+    return lines.join("\n");
+  }
+  function loadGvizTable(sheetId, gid) {
+    return new Promise((resolve, reject) => {
+      const cbName = "__gvizCb_" + Math.random().toString(36).slice(2);
+      const timer = setTimeout(() => { cleanup(); reject(new Error("タイムアウト")); }, 15000);
+      function cleanup() {
+        clearTimeout(timer);
+        delete window[cbName];
+        if (script.parentNode) script.parentNode.removeChild(script);
+      }
+      window[cbName] = (resp) => {
+        cleanup();
+        if (!resp || resp.status === "error") {
+          const msg = (resp && resp.errors && resp.errors[0] && resp.errors[0].detailed_message) || "読み込みエラー";
+          reject(new Error(msg));
+          return;
+        }
+        resolve(resp.table);
+      };
+      const script = document.createElement("script");
+      script.src = "https://docs.google.com/spreadsheets/d/" + sheetId + "/gviz/tq?gid=" + encodeURIComponent(gid) +
+        "&headers=1&tqx=out:json;responseHandler:" + cbName;
+      script.onerror = () => { cleanup(); reject(new Error("スクリプトの読み込みに失敗")); };
+      document.head.appendChild(script);
+    });
+  }
+
+  async function loadEmbeddedSources() {
+    if (!EMBEDDED_LOG_SOURCES.length) return;
+    const emptyEl = document.getElementById("emptyState");
+    if (!state.logs.length) emptyEl.textContent = "ログを読み込み中…";
+
+    const results = await Promise.allSettled(EMBEDDED_LOG_SOURCES.map(async src => {
+      const table = await loadGvizTable(EMBEDDED_SHEET_ID, src.gid);
+      const text = gvizTableToCsvText(table);
+      const rows = parseCSV(text);
+      if (!rows.length) throw new Error("空、または経過時間/ジョブ/スキル列が見つからない");
+      return buildLog(rows, src.label);
+    }));
+
+    const loaded = [];
+    const failed = [];
+    results.forEach((r, i) => {
+      if (r.status === "fulfilled") loaded.push(r.value);
+      else failed.push(`${EMBEDDED_LOG_SOURCES[i].label}: ${r.reason}`);
+    });
+    if (failed.length) console.warn("EMBEDDED_LOG_SOURCESの読み込みに失敗:", failed);
+
+    if (loaded.length) {
+      const hadLogs = state.logs.length > 0;
+      state.logs = state.logs.concat(loaded);
+      if (!hadLogs) {
+        state.activeIndex = 0;
+        state.activeJobs = new Set(state.logs[0].jobs);
+      }
+    } else if (!state.logs.length) {
+      emptyEl.textContent = failed.length
+        ? "スプレッドシートからの読み込みに失敗しました(オフライン、または共有設定をご確認ください。詳細はブラウザのコンソールに出力しています)。"
+        : "まだログがありません。上の「＋ ログを追加」ボタン、またはこの欄へのドラッグ&ドロップでCSVを読み込んでください。";
+    }
+    if (loaded.length && sync.initialLog > 0 && sync.initialLog < state.logs.length) {
+      state.activeIndex = sync.initialLog;
+      state.activeJobs = new Set(currentLog().jobs);
+    }
+    fullRebuild();
+  }
+
+  /* ============================================================
+     動画同期(YouTube IFrame Player API)
+     ------------------------------------------------------------
+     sync.offset = 戦闘時間0:00にあたる動画の再生位置(秒)。
+     戦闘時間 = 動画の再生位置 - offset。
+     ============================================================ */
+  const STORE_KEY = "videoSyncTimeline:sch";
+  // 初回に開いたとき(保存済みの動画もURL指定もないとき)に読み込む動画
+  const DEFAULT_VIDEO_ID = "39PCCkX6t7c";
+  // DEFAULT_VIDEO_ID の動画で、戦闘0:00にあたる再生位置(秒)の既定値
+  const DEFAULT_OFFSET = 8.2;
+  const sync = { player: null, ready: false, videoId: "", offset: 0, volume: 30, focusJob: null, initialLog: 0, lastUpKey: "" };
+  const scrollAreaEl = document.getElementById("scrollArea");
+  const playheadEl = document.getElementById("playhead");
+  const fightClockEl = document.getElementById("fightClock");
+  const ytUrlEl = document.getElementById("ytUrl");
+  const offsetInputEl = document.getElementById("offsetInput");
+  const syncAtInputEl = document.getElementById("syncAtInput");
+  const focusJobEl = document.getElementById("focusJob");
+  const followChkEl = document.getElementById("followChk");
+  const syncMsgEl = document.getElementById("syncMsg");
+  const upAttacksEl = document.getElementById("upAttacks");
+  const upSkillsEl = document.getElementById("upSkills");
+
+  // "m:ss" / "m:ss.s" / 秒数 / 先頭マイナス を秒に変換。解釈できなければ null
+  function parseClock(str) {
+    const m = String(str).trim().match(/^(-)?(?:(\d+):)?(\d+(?:\.\d+)?)$/);
+    if (!m) return null;
+    const v = (m[2] ? parseInt(m[2], 10) * 60 : 0) + parseFloat(m[3]);
+    return m[1] ? -v : v;
+  }
+  function fmtClock(sec, tenths) {
+    const neg = sec < 0;
+    const a = tenths ? Math.round(Math.abs(sec) * 10) / 10 : Math.floor(Math.abs(sec));
+    const m = Math.floor(a / 60);
+    const s = a - m * 60;
+    const sTxt = tenths ? s.toFixed(1).padStart(4, "0") : String(s).padStart(2, "0");
+    return (neg && a > 0 ? "-" : "") + m + ":" + sTxt;
+  }
+  function parseVideoId(input) {
+    const s = String(input).trim();
+    if (/^[\w-]{11}$/.test(s)) return s;
+    const m = s.match(/(?:youtu\.be\/|[?&]v=|\/embed\/|\/shorts\/|\/live\/)([\w-]{11})/);
+    return m ? m[1] : null;
+  }
+
+  function loadStore() {
+    try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch (e) { return {}; }
+  }
+  function saveStore() {
+    try {
+      const store = loadStore();
+      store.videoId = sync.videoId;
+      store.focusJob = sync.focusJob;
+      store.volume = sync.volume;
+      store.collapsed = Array.from(state.collapsed);
+      // 自分で合わせた値だけを保存する(既定値のままなら保存せず、既定値の変更に追従させる)
+      if (sync.offsetUserSet && sync.videoId) {
+        store.userOffsets = store.userOffsets || {};
+        store.userOffsets[sync.videoId] = sync.offset;
+      }
+      localStorage.setItem(STORE_KEY, JSON.stringify(store));
+    } catch (e) { /* 保存できなくても動作には影響しない */ }
+  }
+
+  function setOffset(v) {
+    sync.offset = Math.round(v * 10) / 10;
+    sync.offsetUserSet = true;
+    offsetInputEl.value = fmtClock(sync.offset, true);
+    saveStore();
+    syncTick();
+  }
+  function videoTime() {
+    if (!sync.ready || !sync.player || typeof sync.player.getCurrentTime !== "function") return null;
+    return sync.player.getCurrentTime();
+  }
+  function isPlaying() {
+    return sync.ready && window.YT && sync.player.getPlayerState() === YT.PlayerState.PLAYING;
+  }
+
+  let ytApiPromise = null;
+  function ensureYtApi() {
+    if (ytApiPromise) return ytApiPromise;
+    ytApiPromise = new Promise((resolve, reject) => {
+      if (window.YT && YT.Player) { resolve(); return; }
+      window.onYouTubeIframeAPIReady = () => resolve();
+      const s = document.createElement("script");
+      s.src = "https://www.youtube.com/iframe_api";
+      s.onerror = () => { ytApiPromise = null; reject(new Error("YouTube APIの読み込みに失敗")); };
+      document.head.appendChild(s);
+    });
+    return ytApiPromise;
+  }
+  async function loadVideo(videoId) {
+    syncMsgEl.textContent = "";
+    sync.videoId = videoId;
+    const store = loadStore();
+    if (sync.offsetFromUrl !== videoId) {
+      // 自分で合わせた値があればそれを、無ければ既定値を使う
+      const saved = store.userOffsets && store.userOffsets[videoId];
+      sync.offsetUserSet = typeof saved === "number";
+      sync.offset = sync.offsetUserSet ? saved : (videoId === DEFAULT_VIDEO_ID ? DEFAULT_OFFSET : 0);
+    }
+    offsetInputEl.value = fmtClock(sync.offset, true);
+    saveStore();
+    try {
+      await ensureYtApi();
+    } catch (e) {
+      syncMsgEl.textContent = "YouTubeのプレイヤーを読み込めませんでした(ネット接続を確認してください)。";
+      return;
+    }
+    if (sync.player && sync.ready) { sync.player.cueVideoById(videoId); return; }
+    sync.player = new YT.Player("ytPlayer", {
+      videoId,
+      width: "100%",
+      height: "100%",
+      playerVars: { playsinline: 1, rel: 0 },
+      events: {
+        onReady: () => { sync.ready = true; scrollInnerEl.classList.add("seekable"); applyVolume(); },
+        onError: (e) => {
+          syncMsgEl.textContent = location.protocol === "file:"
+            ? "この動画を再生できません。YouTubeの埋め込みは file:// で開いたページでは動かないため、http://localhost などサーバー経由で開いてください。"
+            : `この動画を再生できません(YouTubeエラー ${e.data})。埋め込みが許可されていない動画の可能性があります。`;
+        },
+      },
+    });
+  }
+
+  const volRangeEl = document.getElementById("volRange");
+  const volValueEl = document.getElementById("volValue");
+  function applyVolume() {
+    volRangeEl.value = sync.volume;
+    volValueEl.textContent = sync.volume;
+    if (!sync.ready) return;
+    sync.player.setVolume(sync.volume);
+    if (sync.volume > 0 && sync.player.isMuted()) sync.player.unMute();
+  }
+  volRangeEl.addEventListener("input", () => { sync.volume = Number(volRangeEl.value); applyVolume(); saveStore(); });
+
+  function buildFocusSelect(log) {
+    const jobs = log.jobs;
+    if (!sync.focusJob || (sync.focusJob !== "*" && !jobs.includes(sync.focusJob))) {
+      sync.focusJob = jobs.includes("学者") ? "学者" : "*";
+    }
+    focusJobEl.innerHTML = `<option value="*">表示中のジョブすべて</option>` +
+      jobs.map(j => `<option value="${escapeHtml(j)}">${escapeHtml(j)}</option>`).join("");
+    focusJobEl.value = sync.focusJob;
+    sync.lastUpKey = "";
+  }
+
+  function upItemHtml(dt, nameHtml) {
+    const cls = dt <= 0.5 ? " now" : (dt <= 5 ? " soon" : "");
+    const cd = dt <= 0.5 ? "今" : (dt >= 60 ? fmtClock(Math.ceil(dt), false) : Math.ceil(dt) + "s");
+    return `<div class="up-item${cls}"><span class="cd">${cd}</span><span class="nm">${nameHtml}</span></div>`;
+  }
+  function renderUpcoming(ft, log) {
+    // 直前2秒以内に通過したものは「今」として残す
+    const attacks = BOSS_EVENTS.filter(ev => ev.endSec >= ft - 2).slice(0, 5);
+    const skills = log.rows.filter(r => r.sec >= ft - 2 &&
+      (sync.focusJob === "*" ? state.activeJobs.has(r.job) : r.job === sync.focusJob)).slice(0, 8);
+    const key = Math.floor(ft * 2) + "|" + sync.focusJob + "|" + state.activeIndex + "|" + state.activeJobs.size;
+    if (key === sync.lastUpKey) return;
+    sync.lastUpKey = key;
+    upAttacksEl.innerHTML = attacks.length
+      ? attacks.map(ev => upItemHtml(ev.sec - ft, escapeHtml(ev.label))).join("")
+      : `<div class="up-empty">この先の攻撃データなし</div>`;
+    upSkillsEl.innerHTML = skills.length
+      ? skills.map(r => upItemHtml(r.sec - ft,
+          (sync.focusJob === "*" ? `<span class="dot" style="background:${metaFor(r.job).color}"></span>` : "") + escapeHtml(r.skill))).join("")
+      : `<div class="up-empty">この先の使用なし</div>`;
+  }
+
+  function syncTick() {
+    const vt = videoTime();
+    const log = currentLog();
+    if (vt === null || !log) {
+      playheadEl.style.display = "none";
+      fightClockEl.textContent = "–:––";
+      if (log) renderUpcoming(0, log);
+      return;
+    }
+    const ft = vt - sync.offset;
+    fightClockEl.textContent = fmtClock(ft, false);
+    const x = Math.max(0, ft) * SCALE;
+    playheadEl.style.display = "block";
+    playheadEl.style.left = x + "px";
+    playheadEl.dataset.t = fmtClock(ft, false);
+    // 再生中だけでなく、停止中にシークしたときも追従する(位置が動いていない間は手動スクロールを邪魔しない)
+    if (followChkEl.checked && (isPlaying() || Math.abs(x - sync.lastX) > 0.5)) {
+      scrollAreaEl.scrollLeft = x - scrollAreaEl.clientWidth * 0.3;
+    }
+    sync.lastX = x;
+    renderUpcoming(ft, log);
+  }
+  setInterval(syncTick, 100);
+
+  document.getElementById("ytLoad").addEventListener("click", () => {
+    const id = parseVideoId(ytUrlEl.value);
+    if (!id) { syncMsgEl.textContent = "YouTubeのURLとして読み取れませんでした。"; return; }
+    loadVideo(id);
+  });
+  ytUrlEl.addEventListener("keydown", (e) => { if (e.key === "Enter") document.getElementById("ytLoad").click(); });
+  document.getElementById("syncNowBtn").addEventListener("click", () => {
+    const vt = videoTime();
+    if (vt === null) { syncMsgEl.textContent = "先に動画を読み込んでください。"; return; }
+    const at = parseClock(syncAtInputEl.value);
+    if (at === null) { syncMsgEl.textContent = "戦闘時間は 15:07 のように 分:秒 で入力してください。"; return; }
+    syncMsgEl.textContent = "";
+    setOffset(vt - at);
+  });
+  offsetInputEl.addEventListener("change", () => {
+    const v = parseClock(offsetInputEl.value);
+    if (v === null) { offsetInputEl.value = fmtClock(sync.offset, true); return; }
+    setOffset(v);
+  });
+  document.querySelectorAll("[data-nudge]").forEach(btn => {
+    btn.addEventListener("click", () => setOffset(sync.offset + Number(btn.dataset.nudge)));
+  });
+  focusJobEl.addEventListener("change", () => { sync.focusJob = focusJobEl.value; sync.lastUpKey = ""; saveStore(); syncTick(); });
+  document.getElementById("shareBtn").addEventListener("click", async (e) => {
+    const btn = e.currentTarget;
+    const params = new URLSearchParams();
+    if (sync.videoId) params.set("v", sync.videoId);
+    params.set("o", String(sync.offset));
+    params.set("log", String(state.activeIndex));
+    const url = location.origin + location.pathname + "?" + params.toString();
+    try {
+      await navigator.clipboard.writeText(url);
+      btn.textContent = "コピーしました";
+    } catch (err) {
+      prompt("このリンクをコピーしてください", url);
+    }
+    setTimeout(() => { btn.textContent = "共有リンクをコピー"; }, 1600);
+  });
+  // タイムライン上のクリック位置へ動画をシーク
+  scrollInnerEl.addEventListener("click", (e) => {
+    if (!sync.ready) return;
+    const sec = (e.clientX - scrollInnerEl.getBoundingClientRect().left) / SCALE;
+    sync.player.seekTo(Math.max(0, sec + sync.offset), true);
+    sync.lastUpKey = "";
+  });
+
+  (function initSync() {
+    if (location.protocol === "file:") {
+      syncMsgEl.textContent = "このページは file:// で開かれています。YouTubeの埋め込みは file:// では再生できないため、http://localhost などサーバー経由で開いてください。";
+    }
+    const params = new URLSearchParams(location.search);
+    const store = loadStore();
+    sync.focusJob = store.focusJob || null;
+    if (Array.isArray(store.collapsed)) state.collapsed = new Set(store.collapsed);
+    sync.volume = typeof store.volume === "number" ? store.volume : 30;
+    applyVolume();
+    const logParam = parseInt(params.get("log"), 10);
+    if (logParam > 0) sync.initialLog = logParam;
+    let videoId = store.videoId || DEFAULT_VIDEO_ID;
+    const urlVideo = params.get("v") && parseVideoId(params.get("v"));
+    if (urlVideo) {
+      videoId = urlVideo;
+      const o = parseFloat(params.get("o"));
+      if (!isNaN(o)) { sync.offset = o; sync.offsetFromUrl = urlVideo; }
+    }
+    if (videoId) {
+      ytUrlEl.value = "https://www.youtube.com/watch?v=" + videoId;
+      loadVideo(videoId);
+    }
+  })();
+
+  fullRebuild();
+  loadEmbeddedSources();
+})();
+</script>
+</body>
+</html>
