@@ -385,7 +385,7 @@ const MIT_SKILL_DICT_TEXT = `
 # --- 全ジョブ / タンク共通 ---
 Rampart|ランパート
 Reprisal|リプライザル
-Feint|フェイント
+Feint|牽制
 Addle|アドル
 
 # --- ヒーラー共通ロールアクション ---
@@ -409,17 +409,17 @@ Hallowed Ground|ホリーグラウンド
 # --- 戦士 ---
 Vengeance|ヴェンジェンス
 Damnation|ダムネーション
-Shake It Off|シェイクイットオフ
-Bloodwhetting|ブラッドウェットニング
-Nascent Flash|ネセントフラッシュ
-Raw Intuition|ロウインテュイション
+Shake It Off|シェイクオフ
+Bloodwhetting|原初の血気
+Nascent Flash|原初の猛り
+Raw Intuition|原初の直感
 Thrill of Battle|スリルオブバトル
-Holmgang|ホルムガング
+Holmgang|ホルムギャング
 
 # --- 暗黒騎士 ---
 Shadow Wall|シャドウウォール
 Dark Mind|ダークマインド
-The Blackest Night|ザ・ブラッケストナイト
+The Blackest Night|ブラックナイト
 Oblation|オブレーション
 Dark Missionary|ダークミッショナリー
 Shadowed Vigil|シャドウヴィジル
@@ -589,6 +589,12 @@ function parseSkillDictText(text){
 }
 const MIT_SKILL_DICT = parseSkillDictText(MIT_SKILL_DICT_TEXT);
 const JA_TO_EN = Object.fromEntries(MIT_SKILL_DICT.map(d=>[d.ja, d.en]));
+// 以前の辞書で出力された旧表記 → 正式名称。古いCSVやスプレッドシートのログを読んだときも正式名称で表示する。
+const SKILL_NAME_ALIASES = {
+  "フェイント":"牽制", "シェイクイットオフ":"シェイクオフ", "ブラッドウェットニング":"原初の血気",
+  "ネセントフラッシュ":"原初の猛り", "ロウインテュイション":"原初の直感", "ホルムガング":"ホルムギャング",
+  "ザ・ブラッケストナイト":"ブラックナイト", "ディバインベニゾン":"ディヴァインベニゾン", "リタージーオブベル":"リタージー・オブ・ベル",
+};
 
 /* ============================================================
    スキルアイコン（ローカルのff14データ配下を参照。英語アビリティ名→相対パス）
@@ -843,7 +849,8 @@ function cssEscape(s){ return window.CSS && CSS.escape ? CSS.escape(s) : s; }
       if (cols.length <= Math.max(idxTime, idxJob, idxSkill)) continue;
       const tRaw = (cols[idxTime]||"").trim();
       const job = (cols[idxJob]||"").trim();
-      const skill = (cols[idxSkill]||"").trim();
+      const rawSkill = (cols[idxSkill]||"").trim();
+      const skill = SKILL_NAME_ALIASES[rawSkill] || rawSkill;
       const m = tRaw.match(/^(\d+):(\d{1,2})$/);
       if (!m) continue; // ヘッダー行(未認識時)や不正な行はスキップ
       const sec = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
