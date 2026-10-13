@@ -139,6 +139,10 @@
   }
   .loading { color: var(--muted); margin: 60px 0; }
   .error { color: #d0507a; margin: 40px 0; line-height: 1.8; }
+  /* 著作権の表記(FF14 の素材を使っているため) */
+  .site-foot { margin: 48px auto 20px; padding: 0 16px; max-width: 720px; text-align: center; color: var(--muted); font-size: 11px; line-height: 1.6; }
+  .site-foot p { margin: 2px 0; }
+  .site-foot a { color: var(--muted); }
 </style>
 </head>
 <body>
@@ -152,6 +156,11 @@
 </div>
 
 <div class="result" id="result"></div>
+
+<footer class="site-foot">
+  <p>記載されている会社名・製品名・システム名などは、各社の商標、または登録商標です。</p>
+  <p>(C) SQUARE ENIX / <a href="https://support.jp.square-enix.com/rule.php?id=5382&tag=authc" target="_blank" rel="noopener">FINAL FANTASY XIV 著作物利用条件</a></p>
+</footer>
 
 <script>
 // ============================================================

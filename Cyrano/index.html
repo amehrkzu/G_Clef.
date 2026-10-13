@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>あめちゃんもの置き</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&display=swap">
+<style>
+/* キャラカと同じ雰囲気:パステルカラー・太めの枠線・まるい角・ふんわり水玉 */
+:root {
+  --bg: #fff4f8;
+  --dot: #ffe1ec;
+  --ink: #8a6f9e;
+  --ink-soft: #d9c6e6;
+  --text: #4f3f5c;
+  --muted: #9b89a9;
+  --accent: #ff7fae;
+  --pink: #ffc6dc;
+  --mint: #bdeccd;
+  --sky: #bfdcff;
+  --lemon: #ffe7a3;
+  --lilac: #dccbff;
+  --border: 2.5px;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text);
+  font: 15px/1.6 "M PLUS Rounded 1c", system-ui, sans-serif;
+  background-color: var(--bg);
+  background-image: radial-gradient(var(--dot) 18%, transparent 19%), radial-gradient(var(--dot) 18%, transparent 19%);
+  background-size: 28px 28px;
+  background-position: 0 0, 14px 14px;
+}
+.wrap { max-width: 880px; margin: 0 auto; padding: max(28px, env(safe-area-inset-top)) 16px 40px; }
+
+header { text-align: center; margin-bottom: 28px; }
+h1 {
+  display: inline-block;
+  margin: 0;
+  font-size: 30px;
+  letter-spacing: .06em;
+  padding: 0 6px;
+  background: linear-gradient(transparent 62%, #ffd1e3 62%);
+}
+.lead { margin: 8px 0 0; color: var(--muted); font-size: 13px; }
+
+/* グループ(キャラ / ツール) */
+section + section { margin-top: 30px; }
+h2 { margin: 0 0 12px; font-size: 17px; color: var(--accent); }
+h2::before { content: "✿ "; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: #fff;
+  color: inherit;
+  text-decoration: none;
+  border: var(--border) solid var(--ink);
+  border-radius: 18px;
+  box-shadow: 0 4px 0 var(--ink-soft);
+  transition: transform .1s, box-shadow .1s;
+}
+.card:hover { transform: translateY(-2px); box-shadow: 0 6px 0 var(--ink-soft); }
+.card:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--ink-soft); }
+.card:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+/* 左のまるいアイコン。色はカードごとに --c で */
+.icon {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--c, var(--pink));
+}
+.icon svg { width: 28px; height: 28px; fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.card b { display: block; font-size: 15px; }
+.card small { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>あめちゃんもの置き</h1>
+    <p class="lead">つくったものの置き場所</p>
+  </header>
+
+  <!-- 並べるページは、下の <a class="card"> をコピーして増やす(href がページの場所、--c がアイコンの色) -->
+  <section>
+    <h2>キャラ</h2>
+    <div class="cards">
+      <a class="card" href="profile.html">
+        <span class="icon" style="--c: var(--pink)">
+          <svg viewBox="0 0 28 28"><circle cx="14" cy="10" r="5"/><path d="M5 24c1.5-5 5-7 9-7s7.5 2 9 7"/></svg>
+        </span>
+        <span><b>キャラクター紹介</b><small>キャラごとのプロフィール</small></span>
+      </a>
+      <a class="card" href="coupling.html">
+        <span class="icon" style="--c: var(--lilac)">
+          <svg viewBox="0 0 28 28"><path d="M14 23s-9-5.4-9-11.5A4.7 4.7 0 0 1 14 9a4.7 4.7 0 0 1 9 2.5C23 17.6 14 23 14 23z"/></svg>
+        </span>
+        <span><b>カップリング辞典</b><small>2人を選ぶと、カップリング名がわかる</small></span>
+      </a>
+    </div>
+  </section>
+
+  <section>
+    <h2>ツール</h2>
+    <div class="cards">
+      <a class="card" href="characa/index.html">
+        <span class="icon" style="--c: var(--mint)">
+          <svg viewBox="0 0 28 28"><rect x="4" y="6" width="20" height="16" rx="3"/><circle cx="10.5" cy="12.5" r="2.5"/><path d="M15 12h5M15 16h5M7 18h6"/></svg>
+        </span>
+        <span><b>FF14 キャラカメーカー</b><small>スクショからキャラカードを作る</small></span>
+      </a>
+      <a class="card" href="tshirt-designer.html">
+        <span class="icon" style="--c: var(--sky)">
+          <svg viewBox="0 0 28 28"><path d="M10 5l-6 3 2 5 3-1v11h10V12l3 1 2-5-6-3c-.5 2-2 3-4 3s-3.5-1-4-3z"/></svg>
+        </span>
+        <span><b>Tシャツ画像データメーカー</b><small>Tシャツ用の画像データを作る</small></span>
+      </a>
+    </div>
+  </section>
+
+  <section>
+    <h2>その他</h2>
+    <div class="cards">
+      <a class="card" href="test.html">
+        <span class="icon" style="--c: var(--lemon)">
+          <svg viewBox="0 0 28 28"><rect x="4" y="6" width="20" height="16" rx="3"/><path d="M8 18l4-5 3 3 2-2 3 4"/><path d="M8 10h4"/></svg>
+        </span>
+        <span><b>HNB～それはまぜまぜ～</b><small>文字アニメーション演出確認</small></span>
+      </a>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>
